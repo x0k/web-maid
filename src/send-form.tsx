@@ -5,11 +5,11 @@ import { parse } from "yaml";
 import { fromZodError } from "zod-validation-error";
 
 import { traverseJsonLike } from "@/lib/json-like-traverser";
+import { Op, OpOrVal, evalOnContext } from "@/lib/operator";
 import { Json } from "@/lib/zod";
 
 import { configSchema } from "./config";
 import { makeAppOperatorResolver } from "./operator";
-import { Op, OpOrVal, evalOnContext } from "./lib/operator";
 
 interface ConfigFormProps {
   value: Exclude<OpOrVal, Op>;
@@ -68,7 +68,7 @@ export function SendForm({ config }: SendFormProps) {
   }
   const parseResult = configSchema.safeParse(configData);
   if (!parseResult.success) {
-    const err = fromZodError(parseResult.error)
+    const err = fromZodError(parseResult.error);
     return (
       <Alert severity="error">
         <AlertTitle>Validation error</AlertTitle>
@@ -80,12 +80,7 @@ export function SendForm({ config }: SendFormProps) {
   const resolver = makeAppOperatorResolver();
   let value: Exclude<OpOrVal, Op>;
   try {
-    let result = traverseJsonLike(resolver, data);
-    if (typeof result === "function") {
-      result = result(context);
-    } else {
-      result = evalOnContext(result, context);
-    }
+    const result = evalOnContext(traverseJsonLike(resolver, data), context);
     if (typeof result === "function") {
       throw new Error("Extraction produces a function, expected data");
     }
