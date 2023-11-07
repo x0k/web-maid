@@ -85,31 +85,6 @@ export class AndOpFactory extends SimpleFactory<typeof andConfig> {
   }
 }
 
-const forkConfig = z.object({
-  branches: z.array(z.any()).or(z.record(z.any())),
-});
-
-export class ForkOpFactory extends SimpleFactory<typeof forkConfig> {
-  readonly schema = forkConfig;
-  create({ branches }: z.TypeOf<this["schema"]>): Op {
-    return Array.isArray(branches)
-      ? (context) => {
-          const result = new Array<OpOrVal>(branches.length);
-          for (let i = 0; i < branches.length; i++) {
-            result[i] = evalOnContext(branches[i], context);
-          }
-          return result;
-        }
-      : (context) => {
-          const result: Record<string, OpOrVal> = {};
-          for (const [key, value] of Object.entries(branches)) {
-            result[key] = evalOnContext(value, context);
-          }
-          return result;
-        };
-  }
-}
-
 const evalConfig = z.object({
   value: z.any(),
   context: z.any(),
@@ -129,7 +104,6 @@ export function flowOperatorsFactories(): Record<string, OpFactory> {
     get: new GetOpFactory(),
     pipe: new PipeOpFactory(),
     and: new AndOpFactory(),
-    fork: new ForkOpFactory(),
     eval: new EvalOpFactory(),
   };
 }
