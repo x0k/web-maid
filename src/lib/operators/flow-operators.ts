@@ -12,7 +12,7 @@ const ctxConf = z.any();
 
 export class ContextOpFactory extends SimpleFactory<typeof ctxConf> {
   readonly schema = ctxConf;
-  create(_: z.TypeOf<this["schema"]>): Op {
+  create(): Op {
     return (context) => context;
   }
 }
@@ -119,14 +119,14 @@ export class ForkOpFactory extends SimpleFactory<typeof forkConfig> {
   create({ branches }: z.TypeOf<this["schema"]>): Op {
     return Array.isArray(branches)
       ? (context) => {
-          let result = new Array<OpOrVal>(branches.length);
+          const result = new Array<OpOrVal>(branches.length);
           for (let i = 0; i < branches.length; i++) {
             result[i] = evalOnContext(branches[i], context);
           }
           return result;
         }
       : (context) => {
-          let result: Record<string, OpOrVal> = {};
+          const result: Record<string, OpOrVal> = {};
           for (const [key, value] of Object.entries(branches)) {
             result[key] = evalOnContext(value, context);
           }

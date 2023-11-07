@@ -24,6 +24,9 @@ export function Editor({ initialValue, append, prepend }: EditorProps) {
     if (boxRef.current) {
       const model = monaco.editor.createModel(initialValue, "yaml");
       const editor = monaco.editor.create(boxRef.current, {
+        minimap: {
+          enabled: false,
+        },
         automaticLayout: true,
         model,
       });
