@@ -12,7 +12,7 @@ export type OpOrVal = JsonLike<JSONPrimitive | Op>;
 
 export type OpFactoryConfig = Record<string, OpOrVal>;
 
-export interface OpFactory extends Factory<OpFactoryConfig, Op> {}
+export interface OpFactory extends Factory<OpFactoryConfig, OpOrVal> {}
 
 export abstract class SimpleFactory<S extends ZodType> implements OpFactory {
   abstract readonly schema: S;

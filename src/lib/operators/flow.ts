@@ -5,6 +5,7 @@ import {
   evalOnContext,
   type OpOrVal,
   type OpFactory,
+  OpFactoryConfig,
 } from "@/lib/operator";
 import { get } from "@/lib/object";
 
@@ -109,6 +110,19 @@ export class ForkOpFactory extends SimpleFactory<typeof forkConfig> {
   }
 }
 
+const evalConfig = z.object({
+  value: z.any(),
+  context: z.any(),
+})
+
+export class EvalOpFactory implements OpFactory {
+  readonly schema = evalConfig;
+  Create(config: OpFactoryConfig): OpOrVal {
+    const { value, context } = this.schema.parse(config);
+    return evalOnContext(value, context);
+  }
+}
+
 export function flowOperatorsFactories(): Record<string, OpFactory> {
   return {
     ctx: new ContextOpFactory(),
@@ -116,5 +130,6 @@ export function flowOperatorsFactories(): Record<string, OpFactory> {
     pipe: new PipeOpFactory(),
     and: new AndOpFactory(),
     fork: new ForkOpFactory(),
+    eval: new EvalOpFactory(),
   };
 }
