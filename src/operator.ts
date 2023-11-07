@@ -1,10 +1,11 @@
-import { composedFactory, makeOperatorResolver } from "./lib/operator";
-import { flowOperatorsFactories } from "./lib/operators/flow-operators";
+import { composedFactory, makeOperatorResolver } from "@/lib/operator";
+import { browserOperatorsFactories } from "@/lib/operators/browser";
+import { flowOperatorsFactories } from "@/lib/operators/flow";
 import {
   RuntimeSystem,
   runtimeOperatorsFactories,
-} from "./lib/operators/runtime-operators";
-import { stdOperatorsFactories } from "./lib/operators/std-operators";
+} from "@/lib/operators/runtime";
+import { stdOperatorsFactories } from "@/lib/operators/std";
 
 export function makeAppOperatorResolver() {
   const runtime = new RuntimeSystem({
@@ -17,7 +18,8 @@ export function makeAppOperatorResolver() {
         {},
         flowOperatorsFactories(),
         stdOperatorsFactories(),
-        runtimeOperatorsFactories(runtime)
+        runtimeOperatorsFactories(runtime),
+        browserOperatorsFactories()
       )
     )
   );

@@ -6,7 +6,7 @@ import {
   type OpOrVal,
   type OpFactory,
 } from "@/lib/operator";
-import { isObject } from "@/lib/guards";
+import { get } from "@/lib/object";
 
 const ctxConf = z.any();
 
@@ -40,33 +40,7 @@ export class GetOpFactory extends SimpleFactory<typeof getConfig> {
       const realKey = composedKeyConfig.parse(resolvedKey);
       const resolvedFrom = evalOnContext(from ?? context, context);
       const realFrom = arrayOrRecordConfig.parse(resolvedFrom);
-      if (Array.isArray(realKey)) {
-        let result: unknown = realFrom;
-        for (const k of realKey) {
-          if (Array.isArray(result) && typeof k === "number") {
-            result = result[k];
-            continue;
-          }
-          if (isObject(result)) {
-            result = result[k];
-            continue;
-          }
-          throw new Error(
-            `Invalid container type "${typeof result}: ${result}", expected an array or object`
-          );
-        }
-        return result;
-      }
-      if (Array.isArray(realFrom) && typeof realKey === "number") {
-        return realFrom[realKey];
-      }
-      if (isObject(realFrom)) {
-        return realFrom[realKey];
-      }
-      if (defaultValue !== undefined) {
-        return defaultValue;
-      }
-      throw new Error(`Value not found for key "${realKey}"`);
+      return get(realKey, realFrom, defaultValue);
     };
   }
 }
