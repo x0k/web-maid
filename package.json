@@ -26,7 +26,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "yaml": "^2.3.4",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zod-validation-error": "^2.1.0"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "beta",

@@ -1,52 +1,80 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { Box, Button } from "@mui/material";
-
+import { enqueueSnackbar } from "notistack";
 import { Editor, StateRefContext } from "./components/editor";
-import { Form } from "./components/form";
-import { makeAppOperatorResolver } from './operator'
-import { parse } from 'yaml';
-import { traverseJsonLike } from './lib/json-like-traverser';
-import { enqueueSnackbar } from 'notistack';
+import { SendForm } from "./send-form";
 
-function makeOperator(data: string) {
-  const code = parse(data)
-  const resolver = makeAppOperatorResolver();
-  return traverseJsonLike(resolver, code)
+interface EditorButtonProps {
+  onClick: (value: string) => void;
 }
 
-
-function EditorButton() {
+function EditorButton({ onClick }: EditorButtonProps) {
   const ref = useContext(StateRefContext);
   return (
     <Button
       variant="contained"
       onClick={() => {
-        const code = ref.current?.model.getValue()
+        const code = ref.current?.model.getValue();
         if (!code) {
           enqueueSnackbar({
-            message: 'Empty code',
-            variant: 'error'
-          })
-          return
+            message: "Empty code",
+            variant: "error",
+          });
+          return;
         }
-        const result = makeOperator(code)
-        console.log(result)
+        onClick(code);
       }}
     >
-      Click
+      Save
     </Button>
   );
 }
+const initialValue = `endpoint: http://localhost:3000
+schema:
+  type: object
+  properties:
+    title:
+      type: string
+    url:
+      type: string
+    html:
+      type: string
+    selection:
+      type: string
+data:
+  title:
+    $op: document
+    key: title
+  url:
+    $op: document
+    key:
+      - location
+      - href
+  html:
+    $op: document
+    key:
+      - documentElement
+      - outerHTML
+  selection:
+    $op: jsEval
+    expression: document.getSelection().toString()
+`
 
 export function App() {
+  const [value, setValue] = useState(initialValue);
   return (
     <Box p={2} height="100vh" display="flex" flexDirection="column" gap={2}>
       <Box>Title</Box>
       <Box flexGrow={1} display="grid" gridTemplateColumns={"1fr 1fr"} gap={2}>
         <Box display="flex" flexDirection="column" gap={2}>
-          <Editor initialValue="" append={<EditorButton />} />
+          <Editor
+            initialValue={value}
+            append={<EditorButton onClick={setValue} />}
+          />
         </Box>
-        <Form />
+        <Box display="flex" flexDirection="column" gap={2}>
+          <SendForm config={value} />
+        </Box>
       </Box>
     </Box>
   );
