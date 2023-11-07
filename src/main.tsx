@@ -6,11 +6,8 @@ import ReactDOM from "react-dom/client";
 // import '@fontsource/roboto/700.css';
 
 import "./index.css";
-import { editorLoader } from "./editor";
 import { App } from "./app";
 import { CssBaseline } from "@mui/material";
-
-await editorLoader;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
