@@ -2,6 +2,10 @@ export type NotPresent = null | undefined
 
 export type Falsy = 0 | '' | null | undefined | false
 
+export function neverError (value: never, message: string) {
+  return new Error(`${message}: ${value}`)
+}
+
 export function isDefined<T>(value: T | undefined): value is T {
   return value !== undefined
 }
