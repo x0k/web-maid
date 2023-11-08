@@ -52,7 +52,7 @@ export interface Scope<R> {
 
 export type ScopedOp<R> = Op<Scope<R>, R>;
 
-export type ScopedOpFactory<R> = Factory<unknown, OpOrVal<Scope<unknown>, R>>;
+export type ScopedOpFactory<R> = Factory<unknown, OpOrVal<Scope<R>, R>>;
 
 export async function evalInScope<T, R>(
   value: Ast<OpOrVal<T, R>>,
