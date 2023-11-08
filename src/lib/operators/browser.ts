@@ -1,7 +1,20 @@
 import { z } from "zod";
+
 import { AutoFactory, OpFactory, OpOrVal } from "@/lib/operator";
 import { get } from "@/lib/object";
-import { jsonSchema } from '@/lib/zod';
+import { jsonSchema } from "@/lib/zod";
+import { evalInScope } from "@/lib/eval";
+
+export abstract class BrowserFactory<
+  Z extends z.ZodType
+> extends AutoFactory<Z> {
+  constructor(
+    protected readonly window: Window,
+    protected readonly document: Document
+  ) {
+    super();
+  }
+}
 
 const primitiveKeyConfig = z.union([z.string(), z.number().int()]);
 
@@ -15,10 +28,10 @@ const documentConfig = z.object({
   default: z.any().optional(),
 });
 
-export class DocumentOpFactory extends AutoFactory<typeof documentConfig> {
+export class DocumentOpFactory extends BrowserFactory<typeof documentConfig> {
   readonly schema = documentConfig;
   exec({ key, default: defaultValue }: z.TypeOf<this["schema"]>): OpOrVal {
-    const value = get(key, document);
+    const value = get(key, this.document);
     if (value !== undefined) {
       return jsonSchema.parse(value);
     }
@@ -31,18 +44,37 @@ export class DocumentOpFactory extends AutoFactory<typeof documentConfig> {
 
 const jsEvalConfig = z.object({
   expression: z.string(),
-})
+  default: z.any().optional(),
+});
 
-export class JsEvalOpFactory extends AutoFactory<typeof jsEvalConfig> {
+export class JsEvalOpFactory extends BrowserFactory<typeof jsEvalConfig> {
   readonly schema = jsEvalConfig;
-  exec({ expression }: z.TypeOf<this["schema"]>): OpOrVal {
-    return eval(expression);
+  private evalScope = {
+    window: this.window,
+    document: this.document,
+  };
+  exec({
+    expression,
+    default: defaultValue,
+  }: z.TypeOf<this["schema"]>): OpOrVal {
+    if (defaultValue === undefined) {
+      return evalInScope(expression, this.evalScope);
+    }
+    try {
+      return evalInScope(expression, this.evalScope);
+    } catch (e) {
+      console.error(e);
+      return defaultValue;
+    }
   }
 }
 
-export function browserOperatorsFactories(): Record<string, OpFactory> {
+export function browserOperatorsFactories(
+  window: Window,
+  document: Document
+): Record<string, OpFactory> {
   return {
-    document: new DocumentOpFactory(),
-    jsEval: new JsEvalOpFactory(),
+    document: new DocumentOpFactory(window, document),
+    jsEval: new JsEvalOpFactory(window, document),
   };
 }

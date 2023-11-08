@@ -49,6 +49,7 @@ data:
       - outerHTML
   selection:
     $op: jsEval
+    default: ""
     expression: document.getSelection().toString()
 `,
 };

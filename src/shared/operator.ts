@@ -19,7 +19,7 @@ export function makeAppOperatorResolver() {
         flowOperatorsFactories(),
         stdOperatorsFactories(),
         runtimeOperatorsFactories(runtime),
-        browserOperatorsFactories()
+        browserOperatorsFactories(window, document)
       )
     )
   );
