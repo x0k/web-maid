@@ -1,17 +1,19 @@
 import { z } from "zod";
 import {
-  type Op,
   evalInScope,
-  type OpOrVal,
+  FlowOpFactory,
+  ScopedOp,
+  BaseOpFactory,
+  ScopedOpFactory,
 } from "@/lib/operator";
 import { get } from "@/lib/object";
 
 const ctxConf = z.any();
 
-export class ContextOpFactory extends FactoryWithValidation<typeof ctxConf> {
+export class ContextOpFactory extends FlowOpFactory<typeof ctxConf, unknown> {
   readonly schema = ctxConf;
-  create(): Op {
-    return (context) => context;
+  create(): ScopedOp<unknown> {
+    return (scope) => scope.context;
   }
 }
 
@@ -22,57 +24,59 @@ const composedKeyConfig = z.union([
   z.array(primitiveKeyConfig),
 ]);
 
-const arrayOrRecordConfig = z.array(z.any()).or(z.record(z.any()));
+const arrayOrRecordConfig = z.array(z.unknown()).or(z.record(z.unknown()));
 
 const getConfig = z.object({
-  key: z.any(),
-  from: z.any().optional(),
-  default: z.any().optional(),
+  key: z.unknown(),
+  from: z.unknown().optional(),
+  default: z.unknown().optional(),
 });
 
-export class GetOpFactory extends FactoryWithValidation<typeof getConfig> {
+export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
   readonly schema = getConfig;
-  create({ key, from, default: defaultValue }: z.TypeOf<this["schema"]>): Op {
-    return (context) => {
-      const resolvedKey = evalInScope(key, context);
+  create({
+    key,
+    from,
+    default: defaultValue,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      const resolvedKey = await evalInScope(key, scope);
       const realKey = composedKeyConfig.parse(resolvedKey);
-      const resolvedFrom = evalInScope(from ?? context, context);
+      const resolvedFrom = await evalInScope(from ?? scope.context, scope);
       const realFrom = arrayOrRecordConfig.parse(resolvedFrom);
       return get(realKey, realFrom, defaultValue);
     };
   }
 }
 
-const opConfig = z.function().args(z.any()).returns(z.any());
-
 const pipeConfig = z.object({
-  do: z.array(opConfig),
+  do: z.array(z.unknown()),
 });
 
-export class PipeOpFactory extends FactoryWithValidation<typeof pipeConfig> {
+export class PipeOpFactory extends FlowOpFactory<typeof pipeConfig, unknown> {
   readonly schema = pipeConfig;
-  create({ do: operators }: z.TypeOf<this["schema"]>): Op {
-    return (context) => {
-      let result = context;
+  create({ do: operators }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      const result = { ...scope };
       for (const op of operators) {
-        result = op(result);
+        result.context = await evalInScope(op, result);
       }
-      return result;
+      return result.context;
     };
   }
 }
 
 const andConfig = z.object({
-  conditions: z.array(z.any()),
+  conditions: z.array(z.unknown()),
 });
 
-export class AndOpFactory extends FactoryWithValidation<typeof andConfig> {
+export class AndOpFactory extends FlowOpFactory<typeof andConfig, unknown> {
   readonly schema = andConfig;
-  create({ conditions }: z.TypeOf<this["schema"]>): Op {
-    return (context) => {
-      let result: OpOrVal = false;
+  create({ conditions }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      let result: unknown;
       for (const condition of conditions) {
-        result = evalInScope(condition, context);
+        result = await evalInScope(condition, scope);
         if (!result) {
           return result;
         }
@@ -83,19 +87,32 @@ export class AndOpFactory extends FactoryWithValidation<typeof andConfig> {
 }
 
 const evalConfig = z.object({
-  value: z.any(),
-  context: z.any(),
-})
+  value: z.unknown(),
+  scope: z
+    .object({
+      functions: z.record(z.unknown()).default({}),
+      constants: z.record(z.unknown()).default({}),
+      context: z.unknown().default(null),
+    })
+    .default({
+      constants: {},
+      functions: {},
+      context: null,
+    }),
+});
 
-export class EvalOpFactory implements OpFactory {
+export class EvalOpFactory extends BaseOpFactory<typeof evalConfig, unknown> {
   readonly schema = evalConfig;
-  Create(config: OpFactoryConfig): OpOrVal {
-    const { value, context } = this.schema.parse(config);
-    return evalInScope(value, context);
+  Create(config: unknown): unknown {
+    const { value, scope } = this.schema.parse(config);
+    return evalInScope(value, scope);
   }
 }
 
-export function flowOperatorsFactories(): Record<string, OpFactory> {
+export function flowOperatorsFactories(): Record<
+  string,
+  ScopedOpFactory<unknown>
+> {
   return {
     ctx: new ContextOpFactory(),
     get: new GetOpFactory(),
