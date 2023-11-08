@@ -1,6 +1,6 @@
 import { z, type TypeOf, type ZodType } from "zod";
 
-import { isFunction, isObject, isRecord } from "@/lib/guards";
+import { isObject, isRecord } from "@/lib/guards";
 import { Factory } from "@/lib/factory";
 
 export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
@@ -60,9 +60,8 @@ export async function evalInScope<T, R>(
 ): Promise<R> {
   // @ts-expect-error ouch
   return Promise.resolve(
-    // @ts-expect-error ouch2
     traverseAst((v) => {
-      if (isFunction<Op<T, R>>(v)) {
+      if (typeof v === "function") {
         return v(scope);
       }
       return v;
@@ -71,21 +70,19 @@ export async function evalInScope<T, R>(
 }
 
 export abstract class BaseOpFactory<S extends ZodType, R>
-  implements Factory<unknown, OpOrVal<Scope<unknown>, R>>
+  implements Factory<unknown, OpOrVal<Scope<R>, R>>
 {
   abstract readonly schema: S;
-  abstract Create(config: unknown): OpOrVal<Scope<unknown>, R>;
+  abstract Create(config: unknown): OpOrVal<Scope<R>, R>;
 }
 
 export abstract class FlowOpFactory<S extends ZodType, R> extends BaseOpFactory<
   S,
   R
 > {
-  protected abstract create(
-    config: TypeOf<this["schema"]>
-  ): Op<Scope<unknown>, R>;
+  protected abstract create(config: TypeOf<this["schema"]>): ScopedOp<R>;
 
-  Create(config: unknown): OpOrVal<Scope<unknown>, R> {
+  Create(config: unknown): OpOrVal<Scope<R>, R> {
     return this.create(this.schema.parse(config));
   }
 }
@@ -96,7 +93,7 @@ export abstract class TaskOpFactory<S extends ZodType, R> extends BaseOpFactory<
 > {
   protected abstract execute(config: TypeOf<this["schema"]>): R;
 
-  Create(config: unknown): OpOrVal<Scope<unknown>, R> {
+  Create(config: unknown): OpOrVal<Scope<R>, R> {
     return async (scope) => {
       const resolvedConfig = await evalInScope(config, scope);
       return this.execute(this.schema.parse(resolvedConfig));
