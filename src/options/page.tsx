@@ -1,7 +1,9 @@
 import { useContext, useState } from "react";
 import { Box, Button } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
-import { Editor, StateRefContext } from "./components/editor";
+
+import { Editor, StateRefContext } from "@/components/editor";
+
 import { SendForm } from "./send-form";
 
 interface EditorButtonProps {
@@ -60,7 +62,7 @@ data:
     expression: document.getSelection().toString()
 `
 
-export function App() {
+export function Page() {
   const [value, setValue] = useState(initialValue);
   return (
     <Box p={2} height="100vh" display="flex" flexDirection="column" gap={2}>

@@ -12,8 +12,8 @@ export default defineConfig({
         version: "1.0.0",
         name: "Scraper Extension",
         description: "Companion extension for the Scraper",
-        // action: { default_popup: "index.html" },
         action: {
+          default_popup: "popup.html",
           default_icon: {
             "16": "images/icon-16.png",
             "32": "images/icon-32.png",
@@ -25,6 +25,7 @@ export default defineConfig({
           service_worker: "src/background.ts",
           type: "module",
         },
+        options_page: "options.html",
         optional_permissions: ["tabs"],
         permissions: ["storage", "activeTab", "scripting"],
         host_permissions: ["https://*/*", "http://*/*"],

@@ -8,8 +8,9 @@ import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { Op, OpOrVal, evalOnContext } from "@/lib/operator";
 import { Json } from "@/lib/zod";
 
+import { makeAppOperatorResolver } from "@/shared/operator";
+
 import { configSchema } from "./config";
-import { makeAppOperatorResolver } from "./operator";
 
 interface ConfigFormProps {
   value: Exclude<OpOrVal, Op>;

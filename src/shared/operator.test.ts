@@ -1,7 +1,9 @@
 import { it, expect } from "vitest";
+
+import { OPERATOR_KEY } from "@/lib/operator";
+import { traverseJsonLike } from "@/lib/json-like-traverser";
+
 import { makeAppOperatorResolver } from "./operator";
-import { OPERATOR_KEY } from "./lib/operator";
-import { traverseJsonLike } from "./lib/json-like-traverser";
 
 it("Should evaluate simple operators", () => {
   const resolver = makeAppOperatorResolver();
