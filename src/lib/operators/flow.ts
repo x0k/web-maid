@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  SimpleFactory,
+  FactoryWithValidation,
   type Op,
   evalOnContext,
   type OpOrVal,
@@ -11,7 +11,7 @@ import { get } from "@/lib/object";
 
 const ctxConf = z.any();
 
-export class ContextOpFactory extends SimpleFactory<typeof ctxConf> {
+export class ContextOpFactory extends FactoryWithValidation<typeof ctxConf> {
   readonly schema = ctxConf;
   create(): Op {
     return (context) => context;
@@ -33,7 +33,7 @@ const getConfig = z.object({
   default: z.any().optional(),
 });
 
-export class GetOpFactory extends SimpleFactory<typeof getConfig> {
+export class GetOpFactory extends FactoryWithValidation<typeof getConfig> {
   readonly schema = getConfig;
   create({ key, from, default: defaultValue }: z.TypeOf<this["schema"]>): Op {
     return (context) => {
@@ -52,7 +52,7 @@ const pipeConfig = z.object({
   do: z.array(opConfig),
 });
 
-export class PipeOpFactory extends SimpleFactory<typeof pipeConfig> {
+export class PipeOpFactory extends FactoryWithValidation<typeof pipeConfig> {
   readonly schema = pipeConfig;
   create({ do: operators }: z.TypeOf<this["schema"]>): Op {
     return (context) => {
@@ -69,7 +69,7 @@ const andConfig = z.object({
   conditions: z.array(z.any()),
 });
 
-export class AndOpFactory extends SimpleFactory<typeof andConfig> {
+export class AndOpFactory extends FactoryWithValidation<typeof andConfig> {
   readonly schema = andConfig;
   create({ conditions }: z.TypeOf<this["schema"]>): Op {
     return (context) => {

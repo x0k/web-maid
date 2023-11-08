@@ -1,27 +1,92 @@
 import type { TypeOf, ZodType } from "zod";
 
-import type { Factory } from "@/lib/factory";
-import type { JSONPrimitive } from "@/lib/json";
-import { traverseJsonLike, type JsonLike } from "@/lib/json-like-traverser";
+import { traverseJsonLike } from "@/lib/json-like-traverser";
+import { isFunction, isObject } from "@/lib/guards";
+
+export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
+
+export type ResolvedAst<R> = R | Array<R> | Record<string, R>;
+
+export type AstVisitor<T, R> = (value: T | ResolvedAst<R>) => R;
+
+async function traverseAst<T, R>(visitor: AstVisitor<T, R>, value: Ast<T>) {
+  if (Array.isArray(value)) {
+    const tmp = new Array<Promise<R>>(value.length);
+    for (let i = 0; i < value.length; i++) {
+      tmp[i] = traverseAst(visitor, value[i]);
+    }
+    return visitor(await Promise.all(tmp));
+  }
+  if (isObject(value)) {
+    const keys = Object.keys(value);
+    const promises = new Array<Promise<R>>(keys.length);
+    for (let i = 0; i < keys.length; i++) {
+      promises[i] = traverseAst(visitor, value[keys[i]]);
+    }
+    const values = await Promise.all(promises);
+    const tmp: Record<string, R> = {};
+    for (let i = 0; i < keys.length; i++) {
+      tmp[keys[i]] = values[i];
+    }
+    return visitor(tmp);
+  }
+  return visitor(value);
+}
 
 export const OPERATOR_KEY = "$op";
 
-export type Op = (context: OpOrVal) => OpOrVal;
+export type Result<R> = R | Promise<R>;
 
-export type OpOrVal = JsonLike<JSONPrimitive | Op>;
+export interface ExecutionContext<R> {
+  functions: Record<string, Op<R>>;
+  constants: Record<string, OpOrVal<R>>;
+  value: R;
+  stack: string[];
+}
 
-export type OpFactoryConfig = Record<string, OpOrVal>;
+export type Op<R> = (context: ExecutionContext<R>) => Result<R>;
 
-export interface OpFactory extends Factory<OpFactoryConfig, OpOrVal> {}
+export type OpOrVal<R> = R | Op<R>;
 
-export abstract class SimpleFactory<S extends ZodType> implements OpFactory {
-  abstract readonly schema: S;
+export type OpFactoryConfig<R> = Record<string, OpOrVal<R>>;
 
-  protected abstract create(value: TypeOf<this["schema"]>): Op;
+export async function evalOnContext2<R>(
+  value: Ast<R | Op<R>>,
+  context: ExecutionContext<R>
+) {
+  return traverseAst((v: ResolvedAst<R>) => {
+    if (isFunction(v)) {
+      return v(context);
+    }
+    return v;
+  }, value);
+}
 
-  Create(config: OpFactoryConfig): Op {
-    return this.create(this.schema.parse(config));
-  }
+export type Factory<T, R> = (value: T) => R;
+
+export function withValidation<S extends ZodType, R, T = unknown>(
+  schema: S,
+  factory: Factory<TypeOf<S>, R>
+): Factory<T, R> {
+  return (value) => factory(schema.parse(value));
+}
+
+export type OpFactory<R> = Factory<OpFactoryConfig<R>, Op<R>>;
+
+export type OpExecutorFactory<R> = Factory<OpFactoryConfig<R>, OpExecutor<R>>;
+
+export function withContext<R>(
+  name: string,
+  factory: OpFactory<R>
+): OpExecutorFactory<R> {
+  return (config) => {
+    const op = factory(config);
+    return async (context) => ({
+      ...context,
+      context: await op(context.context),
+      stack: context.stack.concat(name),
+    });
+  };
 }
 
 export function evalOnContext(value: OpOrVal, context: OpOrVal) {

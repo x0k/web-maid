@@ -1,9 +1,9 @@
 import {
-  SimpleFactory,
+  FactoryWithValidation,
   type OpOrVal,
   type Op,
   evalOnContext,
-  type OpFactory,
+  type OpExecutorFactory,
 } from "@/lib/operator";
 import { z, type ZodType } from "zod";
 
@@ -48,7 +48,7 @@ export class RuntimeSystem {
 
 export abstract class RuntimeFactory<
   S extends ZodType
-> extends SimpleFactory<S> {
+> extends FactoryWithValidation<S> {
   constructor(protected readonly system: RuntimeSystem) {
     super();
   }
@@ -128,7 +128,7 @@ export class GetConstOpFactory extends RuntimeFactory<typeof getConfig> {
   }
 }
 
-export function runtimeOperatorsFactories(runtime: RuntimeSystem): Record<string, OpFactory> {
+export function runtimeOperatorsFactories(runtime: RuntimeSystem): Record<string, OpExecutorFactory> {
   return {
     'sys.define': new DefineOpFactory(runtime),
     'sys.call': new CallOpFactory(runtime),
