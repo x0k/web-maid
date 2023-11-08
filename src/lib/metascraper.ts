@@ -1,4 +1,4 @@
-import mt from "metascraper";
+import mt, { type Metadata } from "metascraper";
 import description from "metascraper-description";
 import image from "metascraper-image";
 import feed from "metascraper-feed";
@@ -13,6 +13,8 @@ import instagram from "metascraper-instagram";
 import amazon from "metascraper-amazon";
 import address from "metascraper-address";
 import shopping from "@samirrayani/metascraper-shopping";
+
+export type { Metadata };
 
 export const extractMetadata = mt([
   description(),

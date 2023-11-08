@@ -2,16 +2,17 @@ import { z } from "zod";
 import { Readability } from "@mozilla/readability";
 import Turndown from "turndown";
 
-import { TaskOpFactory, OpFactory, OpOrVal } from "@/lib/operator";
+import { ScopedOpFactory, TaskOpFactory } from "@/lib/operator";
 import { get } from "@/lib/object";
 import { jsonSchema } from "@/lib/zod";
 import { evalInScope } from "@/lib/eval";
 import { neverError } from "@/lib/guards";
-import { extractMetadata } from "../metascraper";
+import { extractMetadata, Metadata } from "@/lib/metascraper";
 
 export abstract class BrowserFactory<
-  Z extends z.ZodType
-> extends TaskOpFactory<Z> {
+  Z extends z.ZodType,
+  R
+> extends TaskOpFactory<Z, R> {
   constructor(
     protected readonly window: Window,
     protected readonly document: Document
@@ -29,13 +30,16 @@ const composedKeyConfig = z.union([
 
 const documentConfig = z.object({
   key: composedKeyConfig,
-  default: z.any().optional(),
+  default: z.unknown().optional(),
 });
 
-export class DocumentOpFactory extends BrowserFactory<typeof documentConfig> {
+export class DocumentOpFactory extends BrowserFactory<
+  typeof documentConfig,
+  unknown
+> {
   readonly schema = documentConfig;
-  exec({ key, default: defaultValue }: z.TypeOf<this["schema"]>): OpOrVal {
-    const value = get(key, this.document);
+  execute({ key, default: defaultValue }: z.TypeOf<this["schema"]>): unknown {
+    const value = get<Document, 1>(key, this.document);
     if (value !== undefined) {
       return jsonSchema.parse(value);
     }
@@ -48,19 +52,22 @@ export class DocumentOpFactory extends BrowserFactory<typeof documentConfig> {
 
 const jsEvalConfig = z.object({
   expression: z.string(),
-  default: z.any().optional(),
+  default: z.unknown().optional(),
 });
 
-export class JsEvalOpFactory extends BrowserFactory<typeof jsEvalConfig> {
+export class JsEvalOpFactory extends BrowserFactory<
+  typeof jsEvalConfig,
+  unknown
+> {
   readonly schema = jsEvalConfig;
   private evalScope = {
     window: this.window,
     document: this.document,
   };
-  exec({
+  execute({
     expression,
     default: defaultValue,
-  }: z.TypeOf<this["schema"]>): OpOrVal {
+  }: z.TypeOf<this["schema"]>): unknown {
     if (defaultValue === undefined) {
       return evalInScope(expression, this.evalScope);
     }
@@ -75,12 +82,15 @@ export class JsEvalOpFactory extends BrowserFactory<typeof jsEvalConfig> {
 
 const selectionConfig = z.object({
   as: z.enum(["text", "html"]).default("text"),
-  default: z.any().default(""),
+  default: z.unknown().default(""),
 });
 
-export class SelectionOpFactory extends BrowserFactory<typeof selectionConfig> {
+export class SelectionOpFactory extends BrowserFactory<
+  typeof selectionConfig,
+  unknown
+> {
   readonly schema = selectionConfig;
-  exec({ as, default: defaultValue }: z.TypeOf<this["schema"]>): OpOrVal {
+  execute({ as, default: defaultValue }: z.TypeOf<this["schema"]>): unknown {
     const selection = this.window.getSelection();
     if (selection === null) {
       return defaultValue;
@@ -103,18 +113,19 @@ export class SelectionOpFactory extends BrowserFactory<typeof selectionConfig> {
 const readabilityConfig = z.object({
   baseUrl: z.string(),
   html: z.string(),
-  default: z.any().default(""),
+  default: z.unknown().default(""),
 });
 
 export class ReadabilityOpFactory extends BrowserFactory<
-  typeof readabilityConfig
+  typeof readabilityConfig,
+  unknown
 > {
   readonly schema = readabilityConfig;
-  exec({
+  execute({
     baseUrl,
     html,
     default: defaultValue,
-  }: z.TypeOf<this["schema"]>): OpOrVal {
+  }: z.TypeOf<this["schema"]>): unknown {
     const tmpDoc = this.document.implementation.createHTMLDocument();
     const base = this.document.createElement("base");
     base.href = baseUrl;
@@ -138,8 +149,8 @@ const html2MarkdownConfig = z.object({
 });
 
 export class SimplifyHtmlOpFactory extends ReadabilityOpFactory {
-  exec(config: z.TypeOf<this["schema"]>): OpOrVal {
-    const result = super.exec(config);
+  execute(config: z.TypeOf<this["schema"]>): unknown {
+    const result = super.execute(config);
     if (typeof result === "object" && result !== null && "content" in result) {
       return result.content;
     }
@@ -148,33 +159,35 @@ export class SimplifyHtmlOpFactory extends ReadabilityOpFactory {
 }
 
 export class Html2MarkdownOpFactory extends BrowserFactory<
-  typeof html2MarkdownConfig
+  typeof html2MarkdownConfig,
+  string
 > {
   readonly schema = html2MarkdownConfig;
-  exec({ html, options }: z.TypeOf<this["schema"]>): OpOrVal {
+  execute({ html, options }: z.TypeOf<this["schema"]>): string {
     const turndown = new Turndown(options);
     return turndown.turndown(html);
   }
 }
 
-// const htmlMetadataConfig = z.object({
-//   html: z.string(),
-//   url: z.string().url().optional(),
-// });
+const htmlMetadataConfig = z.object({
+  html: z.string(),
+  url: z.string().url().optional(),
+});
 
-// export class HtmlMetadataOpFactory extends BrowserFactory<
-//   typeof htmlMetadataConfig
-// > {
-//   readonly schema = htmlMetadataConfig;
-//   exec({ html }: z.TypeOf<this["schema"]>): OpOrVal {
-//     return extractMetadata({ html, url: this.document.location.href });
-//   }
-// }
+export class HtmlMetadataOpFactory extends BrowserFactory<
+  typeof htmlMetadataConfig,
+  Metadata
+> {
+  readonly schema = htmlMetadataConfig;
+  execute({ html }: z.TypeOf<this["schema"]>): Promise<Metadata> {
+    return extractMetadata({ html, url: this.document.location.href });
+  }
+}
 
 export function browserOperatorsFactories(
   window: Window,
   document: Document
-): Record<string, OpFactory> {
+): Record<string, ScopedOpFactory<unknown>> {
   return {
     document: new DocumentOpFactory(window, document),
     jsEval: new JsEvalOpFactory(window, document),
@@ -182,5 +195,6 @@ export function browserOperatorsFactories(
     readability: new ReadabilityOpFactory(window, document),
     simplifyHtml: new SimplifyHtmlOpFactory(window, document),
     html2md: new Html2MarkdownOpFactory(window, document),
+    htmlMetadata: new HtmlMetadataOpFactory(window, document),
   };
 }

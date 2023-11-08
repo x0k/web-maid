@@ -1,11 +1,8 @@
 import { z } from "zod";
 import {
-  FactoryWithValidation,
   type Op,
   evalInScope,
   type OpOrVal,
-  type OpFactory,
-  OpFactoryConfig,
 } from "@/lib/operator";
 import { get } from "@/lib/object";
 

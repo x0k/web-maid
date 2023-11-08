@@ -91,7 +91,7 @@ export abstract class TaskOpFactory<S extends ZodType, R> extends BaseOpFactory<
   S,
   R
 > {
-  protected abstract execute(config: TypeOf<this["schema"]>): R;
+  protected abstract execute(config: TypeOf<this["schema"]>): Result<R>;
 
   Create(config: unknown): OpOrVal<Scope<R>, R> {
     return async (scope) => {

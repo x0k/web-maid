@@ -30,7 +30,7 @@ export function isNumber(value: unknown): value is number {
   return typeof value === 'number'
 }
 
-export function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject<T = unknown>(value: unknown): value is Record<string, T> {
   return typeof value === 'object' && value !== null
 }
 
