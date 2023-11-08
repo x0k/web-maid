@@ -1,6 +1,7 @@
 import { z, type TypeOf, type ZodType } from "zod";
 
 import { isFunction, isObject, isRecord } from "@/lib/guards";
+import { Factory } from "@/lib/factory";
 
 export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
 
@@ -39,51 +40,68 @@ export const OPERATOR_KEY = "$op";
 
 export type Result<R> = R | Promise<R>;
 
-export type Op<T, R> = (input: T) => Result<R>;
+export type Op<T, R> = (context: T) => Result<R>;
 
 export type OpOrVal<T, R> = R | Op<T, R>;
 
-export type Factory<C, R> = (config: C) => R;
+export interface Scope<R> {
+  functions: Record<string, Op<Scope<R>, R>>;
+  constants: Record<string, OpOrVal<Scope<R>, R>>;
+  context: R;
+}
 
-export type OpFactoryConfig<T, R> = Record<string, OpOrVal<T, R>>;
+export type ScopedOp<R> = Op<Scope<R>, R>;
 
-export type OpFactory<C, T, R> = Factory<C, Op<T, R>>;
+export type ScopedOpFactory<R> = Factory<unknown, OpOrVal<Scope<unknown>, R>>;
 
-export async function evalOnContext<T, R>(
+export async function evalInScope<T, R>(
   value: Ast<OpOrVal<T, R>>,
-  context: T
+  scope: T
 ): Promise<R> {
   // @ts-expect-error ouch
   return Promise.resolve(
     // @ts-expect-error ouch2
     traverseAst((v) => {
       if (isFunction<Op<T, R>>(v)) {
-        return v(context);
+        return v(scope);
       }
       return v;
     }, value)
   );
 }
 
-export function withSchema<S extends ZodType, T, R>(
-  schema: S,
-  factory: OpFactory<TypeOf<S>, T, R>
-) {
-  return (value: T) => factory(schema.parse(value));
+export abstract class BaseOpFactory<S extends ZodType, R>
+  implements Factory<unknown, OpOrVal<Scope<unknown>, R>>
+{
+  abstract readonly schema: S;
+  abstract Create(config: unknown): OpOrVal<Scope<unknown>, R>;
 }
 
-export interface Scope<R> {
-  functions: Record<string, Op<Scope<R>, R>>;
-  constants: Record<string, OpOrVal<Scope<R>, R>>;
-  value: R;
+export abstract class FlowOpFactory<S extends ZodType, R> extends BaseOpFactory<
+  S,
+  R
+> {
+  protected abstract create(
+    config: TypeOf<this["schema"]>
+  ): Op<Scope<unknown>, R>;
+
+  Create(config: unknown): OpOrVal<Scope<unknown>, R> {
+    return this.create(this.schema.parse(config));
+  }
 }
 
-function mergeScopes<R>(a: Scope<R>, b: Partial<Scope<R>>): Scope<R> {
-  return {
-    value: a.value,
-    functions: b.functions ? { ...a.functions, ...b.functions } : a.functions,
-    constants: b.constants ? { ...a.constants, ...b.constants } : a.constants,
-  };
+export abstract class TaskOpFactory<S extends ZodType, R> extends BaseOpFactory<
+  S,
+  R
+> {
+  protected abstract execute(config: TypeOf<this["schema"]>): R;
+
+  Create(config: unknown): OpOrVal<Scope<unknown>, R> {
+    return async (scope) => {
+      const resolvedConfig = await evalInScope(config, scope);
+      return this.execute(this.schema.parse(resolvedConfig));
+    };
+  }
 }
 
 const defineConfig = z.object({
@@ -92,24 +110,91 @@ const defineConfig = z.object({
   for: z.unknown(),
 });
 
-export const defineOperatorFactory = withSchema(
-  defineConfig,
-  ({ functions, constants, for: action }) => {
-    return async (context: Scope<unknown>) => {
+export class DefineOpFactory extends FlowOpFactory<
+  typeof defineConfig,
+  unknown
+> {
+  schema = defineConfig;
+  protected create({
+    constants,
+    functions,
+    for: action,
+  }: TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
       let evaluatedConstants: Record<string, unknown> | undefined;
       if (constants) {
-        const data = await evalOnContext(constants, context);
+        const data = await evalInScope(constants, scope);
         if (isRecord(data)) {
           evaluatedConstants = data;
         } else {
           throw new Error("Constants must be an object");
         }
       }
-      const newScope = mergeScopes(context, {
-        functions,
-        constants: evaluatedConstants,
-      });
-      return evalOnContext(action, newScope);
+      const newScope: Scope<unknown> = {
+        context: scope.context,
+        functions: functions
+          ? { ...scope.functions, ...functions }
+          : scope.functions,
+        constants: evaluatedConstants
+          ? { ...scope.constants, ...evaluatedConstants }
+          : scope.constants,
+      };
+      return evalInScope(action, newScope);
     };
   }
-);
+}
+
+const callConfig = z.object({
+  fn: z.unknown(),
+  arg: z.unknown().optional(),
+});
+
+export class CallOpFactory extends FlowOpFactory<typeof callConfig, unknown> {
+  schema = callConfig;
+  protected create({ fn, arg }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      const fnName = await evalInScope(fn, scope);
+      if (typeof fnName !== "string") {
+        throw new Error(`Function name is not a string: ${fnName}`);
+      }
+      const f = scope.functions[fnName];
+      return f(
+        arg ? { ...scope, context: await evalInScope(arg, scope) } : scope
+      );
+    };
+  }
+}
+
+const getConfig = z.object({
+  const: z.unknown(),
+  default: z.unknown().optional(),
+});
+
+export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
+  schema = getConfig;
+  protected create({
+    const: name,
+    default: defaultValue,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      const constName = await evalInScope(name, scope);
+      if (typeof constName !== "string") {
+        throw new Error(`Constant name is not a string: ${constName}`);
+      }
+      const value = scope.constants[constName];
+      if (value !== undefined) {
+        return value;
+      }
+      if (defaultValue !== undefined) {
+        return await evalInScope(defaultValue, scope);
+      }
+      throw new Error(`Constant ${constName} is not defined`);
+    };
+  }
+}
+
+export const sysOpFactories: Record<string, ScopedOpFactory<unknown>> = {
+  "sys.define": new DefineOpFactory(),
+  "sys.call": new CallOpFactory(),
+  "sys.get": new GetOpFactory(),
+};

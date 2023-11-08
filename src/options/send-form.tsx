@@ -5,7 +5,7 @@ import { parse } from "yaml";
 import { fromZodError } from "zod-validation-error";
 
 import { traverseJsonLike } from "@/lib/json-like-traverser";
-import { Op, OpOrVal, evalOnContext } from "@/lib/operator";
+import { Op, OpOrVal, evalInScope } from "@/lib/operator";
 import { Json } from "@/lib/zod";
 
 import { makeAppOperatorResolver } from "@/shared/operator";
@@ -81,7 +81,7 @@ export function SendForm({ config }: SendFormProps) {
   const resolver = makeAppOperatorResolver();
   let value: Exclude<OpOrVal, Op>;
   try {
-    const result = evalOnContext(traverseJsonLike(resolver, data), context);
+    const result = evalInScope(traverseJsonLike(resolver, data), context);
     if (typeof result === "function") {
       throw new Error("Extraction produces a function, expected data");
     }

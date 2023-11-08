@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Readability } from "@mozilla/readability";
 import Turndown from "turndown";
 
-import { AutoFactory, OpFactory, OpOrVal } from "@/lib/operator";
+import { TaskOpFactory, OpFactory, OpOrVal } from "@/lib/operator";
 import { get } from "@/lib/object";
 import { jsonSchema } from "@/lib/zod";
 import { evalInScope } from "@/lib/eval";
@@ -11,7 +11,7 @@ import { extractMetadata } from "../metascraper";
 
 export abstract class BrowserFactory<
   Z extends z.ZodType
-> extends AutoFactory<Z> {
+> extends TaskOpFactory<Z> {
   constructor(
     protected readonly window: Window,
     protected readonly document: Document

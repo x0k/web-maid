@@ -2,7 +2,7 @@ import {
   FactoryWithValidation,
   type OpOrVal,
   type Op,
-  evalOnContext,
+  evalInScope,
   type OpExecutorFactory,
 } from "@/lib/operator";
 import { z, type ZodType } from "zod";
@@ -70,14 +70,14 @@ export class DefineOpFactory extends RuntimeFactory<typeof defineConfig> {
       if (constants) {
         evaluatedConstants = {};
         for (const [key, value] of Object.entries(constants)) {
-          evaluatedConstants[key] = evalOnContext(value, context);
+          evaluatedConstants[key] = evalInScope(value, context);
         }
       }
       this.system.enter({
         constants: evaluatedConstants,
         functions,
       });
-      const result = evalOnContext(scope, context);
+      const result = evalInScope(scope, context);
       this.system.exit();
       return result;
     };
@@ -93,8 +93,8 @@ export class CallOpFactory extends RuntimeFactory<typeof callConfig> {
   readonly schema = callConfig;
   create({ fn, arg }: z.TypeOf<this["schema"]>): Op {
     return (context) => {
-      const evaluatedArg = arg ? evalOnContext(arg, context) : context;
-      const fnName = evalOnContext(fn, context);
+      const evaluatedArg = arg ? evalInScope(arg, context) : context;
+      const fnName = evalInScope(fn, context);
       if (typeof fnName === "string") {
         return this.system.getFunction(fnName)(evaluatedArg);
       }
@@ -112,14 +112,14 @@ export class GetConstOpFactory extends RuntimeFactory<typeof getConfig> {
   readonly schema = getConfig;
   create({ const: name, default: defaultValue }: z.TypeOf<this["schema"]>): Op {
     return (context) => {
-      const constName = evalOnContext(name, context);
+      const constName = evalInScope(name, context);
       if (typeof constName === "string") {
         const value = this.system.getConstant(constName)
         if (value !== undefined) {
           return value;
         }
         if (defaultValue !== undefined) {
-          return evalOnContext(defaultValue, context);
+          return evalInScope(defaultValue, context);
         }
         throw new Error(`Constant ${constName} is not defined`);
       }

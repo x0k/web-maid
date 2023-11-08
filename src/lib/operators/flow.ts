@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   FactoryWithValidation,
   type Op,
-  evalOnContext,
+  evalInScope,
   type OpOrVal,
   type OpFactory,
   OpFactoryConfig,
@@ -37,9 +37,9 @@ export class GetOpFactory extends FactoryWithValidation<typeof getConfig> {
   readonly schema = getConfig;
   create({ key, from, default: defaultValue }: z.TypeOf<this["schema"]>): Op {
     return (context) => {
-      const resolvedKey = evalOnContext(key, context);
+      const resolvedKey = evalInScope(key, context);
       const realKey = composedKeyConfig.parse(resolvedKey);
-      const resolvedFrom = evalOnContext(from ?? context, context);
+      const resolvedFrom = evalInScope(from ?? context, context);
       const realFrom = arrayOrRecordConfig.parse(resolvedFrom);
       return get(realKey, realFrom, defaultValue);
     };
@@ -75,7 +75,7 @@ export class AndOpFactory extends FactoryWithValidation<typeof andConfig> {
     return (context) => {
       let result: OpOrVal = false;
       for (const condition of conditions) {
-        result = evalOnContext(condition, context);
+        result = evalInScope(condition, context);
         if (!result) {
           return result;
         }
@@ -94,7 +94,7 @@ export class EvalOpFactory implements OpFactory {
   readonly schema = evalConfig;
   Create(config: OpFactoryConfig): OpOrVal {
     const { value, context } = this.schema.parse(config);
-    return evalOnContext(value, context);
+    return evalInScope(value, context);
   }
 }
 

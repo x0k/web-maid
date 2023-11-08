@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { AutoFactory, type OpFactory, type OpOrVal } from "@/lib/operator";
+import { TaskOpFactory, type OpFactory, type OpOrVal } from "@/lib/operator";
 
 const notConfig = z.object({
   value: z.any(),
 });
 
-export class NotOpFactory extends AutoFactory<typeof notConfig> {
+export class NotOpFactory extends TaskOpFactory<typeof notConfig> {
   readonly schema = notConfig;
   exec({ value }: z.TypeOf<this["schema"]>): OpOrVal {
     return !value;
@@ -17,7 +17,7 @@ const joinConfig = z.object({
   separator: z.string().default(", "),
 });
 
-export class JoinOpFactory extends AutoFactory<typeof joinConfig> {
+export class JoinOpFactory extends TaskOpFactory<typeof joinConfig> {
   readonly schema = joinConfig;
   exec({ values, separator }: z.TypeOf<this["schema"]>): OpOrVal {
     return values.join(separator);
