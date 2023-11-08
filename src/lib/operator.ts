@@ -154,8 +154,11 @@ export class CallOpFactory extends FlowOpFactory<typeof callConfig, unknown> {
       if (typeof fnName !== "string") {
         throw new Error(`Function name is not a string: ${fnName}`);
       }
-      const f = scope.functions[fnName];
-      return f(
+      const func = scope.functions[fnName];
+      if (!func) {
+        throw new Error(`Function ${fnName} is not defined`);
+      }
+      return func(
         arg ? { ...scope, context: await evalInScope(arg, scope) } : scope
       );
     };
