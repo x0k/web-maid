@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import rawConfig from "./config.yml?raw";
+
 const localSettingsSchema = z.object({
   apiKey: z.string(),
 });
@@ -21,52 +23,17 @@ const partialSyncSettingsSchema = syncSettingsSchema.partial();
 export type SyncSettings = z.infer<typeof syncSettingsSchema>;
 
 export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
-  config: `endpoint: http://localhost:3000
-schema:
-  type: object
-  properties:
-    title:
-      type: string
-    url:
-      type: string
-    html:
-      type: string
-    selection:
-      type: string
-data:
-  title:
-    $op: document
-    key: title
-  url:
-    $op: document
-    key:
-      - location
-      - href
-  html:
-    $op: document
-    key:
-      - documentElement
-      - outerHTML
-  selection:
-    $op: jsEval
-    default: ""
-    expression: document.getSelection().toString()
-`,
+  config: rawConfig,
 };
 
-export async function loadSyncSettings(
-  sync: chrome.storage.SyncStorageArea
-): Promise<SyncSettings> {
-  const settings = await sync.get(DEFAULT_SYNC_SETTINGS);
+export async function loadSyncSettings(): Promise<SyncSettings> {
+  const settings = await chrome.storage.sync.get(DEFAULT_SYNC_SETTINGS);
   return syncSettingsSchema.parse(settings);
 }
 
-export async function saveSyncSettings(
-  sync: chrome.storage.SyncStorageArea,
-  settings: Partial<SyncSettings>
-) {
+export async function saveSyncSettings(settings: Partial<SyncSettings>) {
   const data = partialSyncSettingsSchema.parse(settings);
-  await sync.set(data);
+  await chrome.storage.sync.set(data);
 }
 
 export async function loadLocalSettings(
@@ -116,7 +83,7 @@ async function evalOperator(config: string) {
     evalInScope,
     stringifyError,
   } = window.__SCRAPER_EXTENSION__ ?? {
-    stringifyError: String
+    stringifyError: String,
   };
   try {
     if (config.trim() === "") {
