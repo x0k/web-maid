@@ -1,4 +1,9 @@
+import { parse } from "yaml";
 import { z } from "zod";
+import { configSchema } from "./config";
+import { makeAppOperatorResolver } from "./operator";
+import { evalInScope } from "@/lib/operator";
+import { traverseJsonLike } from "@/lib/json-like-traverser";
 
 const localSettingsSchema = z.object({
   apiKey: z.string(),
@@ -84,6 +89,61 @@ export async function saveLocalSettings(
   await local.set(data);
 }
 
+const tabSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  favIconUrl: z.string().optional(),
+});
+
+const tabsSchema = z.array(tabSchema);
+
+export type Tab = z.infer<typeof tabSchema>;
+
 export function getAllTabs() {
-  return chrome.tabs.query({})
+  return chrome.tabs.query({}).then(tabsSchema.parse);
+}
+
+export const evalResultSchema = z.object({
+  endpoint: z.string(),
+  value: z.unknown(),
+  schema: z.record(z.unknown()).optional(),
+  uiSchema: z.record(z.unknown()).optional(),
+});
+
+export type EvalResult = z.infer<typeof evalResultSchema>;
+
+async function evalOperator(config: string) {
+  if (config.trim() === "") {
+    throw new Error("No config");
+  }
+  const configData = parse(config);
+  const parseResult = configSchema.safeParse(configData);
+  if (!parseResult.success) {
+    throw new Error("Invalid config");
+  }
+  const { data, uiSchema, schema, context, endpoint } = parseResult.data;
+  const resolver = makeAppOperatorResolver(window, document);
+  const value = await evalInScope(traverseJsonLike(resolver, data), {
+    functions: {},
+    constants: {},
+    context,
+  });
+  return {
+    endpoint,
+    value,
+    schema,
+    uiSchema,
+  };
+}
+
+export async function evalForTab(
+  tabId: number,
+  config: string
+): Promise<EvalResult> {
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: evalOperator,
+    args: [config],
+  });
+  return evalResultSchema.parse(result);
 }
