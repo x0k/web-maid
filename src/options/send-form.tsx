@@ -55,7 +55,9 @@ async function evalOperator([config, doc]: [string, string]) {
     throw new Error("Invalid config");
   }
   const { data, uiSchema, schema, context, endpoint } = parseResult.data;
-  const tmpDoc = document.implementation.createHTMLDocument('Scraper test document');
+  const tmpDoc = document.implementation.createHTMLDocument(
+    "Scraper test document"
+  );
   const base = document.createElement("base");
   base.href = document.location.origin;
   tmpDoc.head.appendChild(base);
@@ -82,7 +84,12 @@ export interface SendFormProps {
 export function SendForm({ config, doc }: SendFormProps) {
   const { data, error, isLoading } = useSWR([config, doc], evalOperator);
   return (
-    <Box display="flex" flexDirection="column" gap={2}>
+    <Box
+      display="flex"
+      flexDirection="column"
+      gap={2}
+      overflow={"auto"}
+    >
       {error ? (
         <Alert severity="error">
           <AlertTitle>Error</AlertTitle>

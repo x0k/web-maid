@@ -83,3 +83,7 @@ export async function saveLocalSettings(
   const data = partialLocalSettingsSchema.parse(settings);
   await local.set(data);
 }
+
+export function getAllTabs() {
+  return chrome.tabs.query({})
+}

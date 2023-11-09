@@ -130,6 +130,16 @@ export class ReadabilityOpFactory extends BrowserFactory<
   }
 }
 
+export class SimplifyHtmlOpFactory extends ReadabilityOpFactory {
+  execute(config: z.TypeOf<this["schema"]>): unknown {
+    const result = super.execute(config);
+    if (typeof result === "object" && result !== null && "content" in result) {
+      return result.content;
+    }
+    return result;
+  }
+}
+
 const html2MarkdownConfig = z.object({
   html: z.string(),
   options: z.record(z.string()).default({
@@ -140,16 +150,6 @@ const html2MarkdownConfig = z.object({
     emDelimiter: "*",
   }),
 });
-
-export class SimplifyHtmlOpFactory extends ReadabilityOpFactory {
-  execute(config: z.TypeOf<this["schema"]>): unknown {
-    const result = super.execute(config);
-    if (typeof result === "object" && result !== null && "content" in result) {
-      return result.content;
-    }
-    return result;
-  }
-}
 
 export class Html2MarkdownOpFactory extends BrowserFactory<
   typeof html2MarkdownConfig,
