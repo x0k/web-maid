@@ -126,8 +126,10 @@ export function makeComposedFactory<T extends Record<string, unknown>, R>(
   };
 }
 
-export function makeOperatorResolver<C, R>(factory: Factory<C, R>) {
-  return (context: C) => {
+export function makeOperatorResolver<R>(
+  factory: Factory<Record<string, unknown>, R>
+) {
+  return <C>(context: C) => {
     if (
       typeof context === "object" &&
       context !== null &&

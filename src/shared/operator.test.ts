@@ -1,24 +1,26 @@
 import { it, expect } from "vitest";
 
-import { OPERATOR_KEY } from "@/lib/operator";
+import { OPERATOR_KEY, evalInScope } from "@/lib/operator";
 import { traverseJsonLike } from "@/lib/json-like-traverser";
 
 import { makeAppOperatorResolver } from "./operator";
 
-it("Should evaluate simple operators", () => {
-  const resolver = makeAppOperatorResolver();
+it("Should evaluate simple operators", async () => {
+  const resolver = makeAppOperatorResolver(null as any, null as any);
   const result = resolver({
     [OPERATOR_KEY]: "not",
     value: false,
   });
-  if (typeof result === "function") {
-    expect(result(null)).toBe(true);
-  } else {
-    expect.fail(`Expected function, got ${typeof result}`);
-  }
+  expect(
+    await evalInScope(result, {
+      constants: {},
+      functions: {},
+      context: null,
+    })
+  ).toBe(true);
 });
 
-it.only("Should evaluate nested operators", () => {
+it("Should evaluate nested operators", async () => {
   const resolver = makeAppOperatorResolver();
   const result = traverseJsonLike(resolver, {
     [OPERATOR_KEY]: "sys.define",
@@ -35,7 +37,7 @@ it.only("Should evaluate nested operators", () => {
     functions: {
       sysGet: {
         [OPERATOR_KEY]: "sys.get",
-        const: 'complex',
+        const: "complex",
       },
     },
     for: {
@@ -50,11 +52,13 @@ it.only("Should evaluate nested operators", () => {
       ],
     },
   });
-  if (typeof result === "function") {
-    expect(result(null)).toEqual({
-      inner: true,
-    });
-  } else {
-    expect.fail(`Expected function, got ${typeof result}`);
-  }
+  expect(
+    await evalInScope(result, {
+      constants: {},
+      functions: {},
+      context: null,
+    })
+  ).toEqual({
+    inner: true,
+  });
 });
