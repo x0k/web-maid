@@ -21,7 +21,7 @@ it("Should evaluate simple operators", async () => {
 });
 
 it("Should evaluate nested operators", async () => {
-  const resolver = makeAppOperatorResolver();
+  const resolver = makeAppOperatorResolver(null as any, null as any);
   const result = traverseJsonLike(resolver, {
     [OPERATOR_KEY]: "sys.define",
     constants: {
