@@ -6,7 +6,7 @@ import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { makeAppOperatorResolver } from "./operator";
 
 it("Should evaluate simple operators", async () => {
-  const resolver = makeAppOperatorResolver(null as any, null as any);
+  const resolver = makeAppOperatorResolver({} as Window);
   const result = resolver({
     [OPERATOR_KEY]: "not",
     value: false,
@@ -21,7 +21,7 @@ it("Should evaluate simple operators", async () => {
 });
 
 it("Should evaluate nested operators", async () => {
-  const resolver = makeAppOperatorResolver(null as any, null as any);
+  const resolver = makeAppOperatorResolver({} as Window);
   const result = traverseJsonLike(resolver, {
     [OPERATOR_KEY]: "sys.define",
     constants: {

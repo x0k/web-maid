@@ -4,13 +4,13 @@ import { flowOperatorsFactories } from "@/lib/operators/flow";
 import { stdOperatorsFactories } from "@/lib/operators/std";
 import { sysOperatorsFactories } from "@/lib/operators/sys";
 
-export function makeAppOperatorResolver(window: Window, document: Document) {
+export function makeAppOperatorResolver(window: Window) {
   const factories = {
     ...sysOperatorsFactories(),
     ...stdOperatorsFactories(),
     ...flowOperatorsFactories(),
     ...stdOperatorsFactories(),
-    ...browserOperatorsFactories(window, document),
+    ...browserOperatorsFactories(window),
   };
   const composedFactory = makeComposedFactory(factories);
   return makeOperatorResolver(composedFactory);

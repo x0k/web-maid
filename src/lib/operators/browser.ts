@@ -12,10 +12,7 @@ export abstract class BrowserFactory<
   Z extends z.ZodType,
   R
 > extends TaskOpFactory<Z, R> {
-  constructor(
-    protected readonly window: Window,
-    protected readonly document: Document
-  ) {
+  constructor(protected readonly window: Window) {
     super();
   }
 }
@@ -38,7 +35,7 @@ export class DocumentOpFactory extends BrowserFactory<
 > {
   readonly schema = documentConfig;
   execute({ key, default: defaultValue }: z.TypeOf<this["schema"]>): unknown {
-    const value = get(key, this.document, defaultValue);
+    const value = get(key, this.window.document, defaultValue);
     return jsonSchema.parse(value);
   }
 }
@@ -55,7 +52,7 @@ export class JsEvalOpFactory extends BrowserFactory<
   readonly schema = jsEvalConfig;
   private evalScope = {
     window: this.window,
-    document: this.document,
+    document: this.window.document,
   };
   execute({
     expression,
@@ -93,7 +90,7 @@ export class SelectionOpFactory extends BrowserFactory<
         return selection.toString();
       case "html": {
         const content = selection.getRangeAt(0).cloneContents();
-        const node = this.document.createElement("div");
+        const node = this.window.document.createElement("div");
         node.appendChild(content.cloneNode(true));
         return node.innerHTML;
       }
@@ -119,8 +116,8 @@ export class ReadabilityOpFactory extends BrowserFactory<
     html,
     default: defaultValue,
   }: z.TypeOf<this["schema"]>): unknown {
-    const tmpDoc = this.document.implementation.createHTMLDocument();
-    const base = this.document.createElement("base");
+    const tmpDoc = this.window.document.implementation.createHTMLDocument();
+    const base = this.window.document.createElement("base");
     base.href = baseUrl;
     tmpDoc.head.appendChild(base);
     tmpDoc.body.innerHTML = html;
@@ -162,13 +159,13 @@ export class Html2MarkdownOpFactory extends BrowserFactory<
   }
 }
 
-export function browserOperatorsFactories(window: Window, document: Document) {
+export function browserOperatorsFactories(window: Window) {
   return {
-    document: new DocumentOpFactory(window, document),
-    jsEval: new JsEvalOpFactory(window, document),
-    selection: new SelectionOpFactory(window, document),
-    readability: new ReadabilityOpFactory(window, document),
-    simplifyHtml: new SimplifyHtmlOpFactory(window, document),
-    html2md: new Html2MarkdownOpFactory(window, document),
+    document: new DocumentOpFactory(window),
+    jsEval: new JsEvalOpFactory(window),
+    selection: new SelectionOpFactory(window),
+    readability: new ReadabilityOpFactory(window),
+    simplifyHtml: new SimplifyHtmlOpFactory(window),
+    html2md: new Html2MarkdownOpFactory(window),
   };
 }

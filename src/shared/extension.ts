@@ -95,7 +95,7 @@ async function evalOperator(config: string) {
       throw new Error("Invalid config");
     }
     const { data, uiSchema, schema, context, endpoint } = parseResult.data;
-    const resolver = makeAppOperatorResolver(window, document);
+    const resolver = makeAppOperatorResolver(window);
     const value = await evalInScope(traverseJsonLike(resolver, data), {
       functions: {},
       constants: {},
