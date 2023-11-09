@@ -4,6 +4,7 @@ export enum ActionType {
 }
 
 export interface AbstractAction<T extends ActionType> {
+  id: string;
   type: T;
 }
 
