@@ -1,4 +1,4 @@
-import { Alert, AlertTitle, Button, Typography } from "@mui/material";
+import { Alert, AlertTitle, Box, Button, Typography } from "@mui/material";
 import validator from "@rjsf/validator-ajv8";
 import MuiForm from "@rjsf/mui";
 import { parse } from "yaml";
@@ -42,13 +42,12 @@ function ConfigForm({
   );
 }
 
-export interface SendFormProps {
-  config: string;
-}
-
-async function evalOperator(config: string) {
+async function evalOperator([config, doc]: [string, string]) {
   if (config.trim() === "") {
     throw new Error("No config");
+  }
+  if (doc.trim() === "") {
+    throw new Error("No document");
   }
   const configData = parse(config);
   const parseResult = configSchema.safeParse(configData);
@@ -56,11 +55,17 @@ async function evalOperator(config: string) {
     throw new Error("Invalid config");
   }
   const { data, uiSchema, schema, context, endpoint } = parseResult.data;
-  const resolver = makeAppOperatorResolver(window, document);
-  const value = await evalInScope(traverseJsonLike(resolver, data), context);
-  if (typeof value === "function") {
-    throw new Error("Extraction produces a function, expected data");
-  }
+  const tmpDoc = document.implementation.createHTMLDocument('Scraper test document');
+  const base = document.createElement("base");
+  base.href = document.location.origin;
+  tmpDoc.head.appendChild(base);
+  tmpDoc.body.innerHTML = doc;
+  const resolver = makeAppOperatorResolver(window, tmpDoc);
+  const value = await evalInScope(traverseJsonLike(resolver, data), {
+    functions: {},
+    constants: {},
+    context,
+  });
   return {
     endpoint,
     value,
@@ -69,19 +74,25 @@ async function evalOperator(config: string) {
   };
 }
 
-export function SendForm({ config }: SendFormProps) {
-  const { data, error, isLoading } = useSWR(config, evalOperator);
+export interface SendFormProps {
+  config: string;
+  doc: string;
+}
 
-  if (error) {
-    return (
-      <Alert severity="error">
-        <AlertTitle>Error</AlertTitle>
-        {error instanceof Error ? error.message : String(error)}
-      </Alert>
-    );
-  }
-  if (isLoading || !data) {
-    return <Typography variant="h6">Loading...</Typography>;
-  }
-  return <ConfigForm {...data} />;
+export function SendForm({ config, doc }: SendFormProps) {
+  const { data, error, isLoading } = useSWR([config, doc], evalOperator);
+  return (
+    <Box display="flex" flexDirection="column" gap={2}>
+      {error ? (
+        <Alert severity="error">
+          <AlertTitle>Error</AlertTitle>
+          {error instanceof Error ? error.message : String(error)}
+        </Alert>
+      ) : isLoading || !data ? (
+        <Typography variant="h6">Loading...</Typography>
+      ) : (
+        <ConfigForm {...data} />
+      )}
+    </Box>
+  );
 }

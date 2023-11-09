@@ -1,49 +1,31 @@
-import { monaco } from "@/lib/editor";
+import { useEffect, useRef } from "react";
 import { Box } from "@mui/material";
-import { createContext, useEffect, useRef } from "react";
+
+import { monaco } from "@/lib/monaco";
 
 export interface EditorProps {
-  initialValue: string;
-  prepend?: JSX.Element;
-  append?: JSX.Element;
-}
-
-interface EditorState {
   model: monaco.editor.ITextModel;
-  editor: monaco.editor.IStandaloneCodeEditor;
 }
 
-export const StateRefContext = createContext<{ current: EditorState | undefined }>({
-  current: undefined,
-});
-
-export function Editor({ initialValue, append, prepend }: EditorProps) {
+export function Editor({ model }: EditorProps) {
   const boxRef = useRef<HTMLDivElement>(null);
-  const stateRef = useRef<EditorState>();
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>();
   useEffect(() => {
     if (boxRef.current) {
-      const model = monaco.editor.createModel(initialValue, "yaml");
-      const editor = monaco.editor.create(boxRef.current, {
+      editorRef.current = monaco.editor.create(boxRef.current, {
         minimap: {
           enabled: false,
         },
         automaticLayout: true,
         model,
+        theme: "vs-dark",
       });
-      stateRef.current = { model, editor };
     }
     return () => {
-      if (stateRef.current) {
-        stateRef.current.editor.dispose();
-        stateRef.current.model.dispose();
+      if (editorRef.current) {
+        editorRef.current.dispose();
       }
     };
-  }, []);
-  return (
-    <StateRefContext.Provider value={stateRef}>
-      {prepend}
-      <Box width="auto" flexGrow={1} ref={boxRef} />
-      {append}
-    </StateRefContext.Provider>
-  );
+  }, [model]);
+  return <Box width="auto" flexGrow={1} ref={boxRef} />;
 }

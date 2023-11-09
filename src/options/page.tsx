@@ -1,83 +1,57 @@
-import { useContext, useState } from "react";
-import { Box, Button } from "@mui/material";
-import { enqueueSnackbar } from "notistack";
+import { useState } from "react";
+import { Box, Button, Typography } from "@mui/material";
 
-import { Editor, StateRefContext } from "@/components/editor";
+import { monaco } from "@/lib/monaco";
+import { Editor } from "@/components/editor";
+
+import rawConfig from "./config.yml?raw";
+import rawDocument from "./document.txt?raw";
 
 import { SendForm } from "./send-form";
 
-interface EditorButtonProps {
-  onClick: (value: string) => void;
-}
+const configModel = monaco.editor.createModel(rawConfig, "yaml");
 
-function EditorButton({ onClick }: EditorButtonProps) {
-  const ref = useContext(StateRefContext);
-  return (
-    <Button
-      variant="contained"
-      onClick={() => {
-        const code = ref.current?.model.getValue();
-        if (!code) {
-          enqueueSnackbar({
-            message: "Empty code",
-            variant: "error",
-          });
-          return;
-        }
-        onClick(code);
-      }}
-    >
-      Save
-    </Button>
-  );
-}
-const initialValue = `endpoint: http://localhost:3000
-schema:
-  type: object
-  properties:
-    title:
-      type: string
-    url:
-      type: string
-    html:
-      type: string
-    selection:
-      type: string
-data:
-  title:
-    $op: document
-    key: title
-  url:
-    $op: document
-    key:
-      - location
-      - href
-  html:
-    $op: document
-    key:
-      - documentElement
-      - outerHTML
-  selection:
-    $op: jsEval
-    default: ""
-    expression: document.getSelection().toString()
-`
+const documentModel = monaco.editor.createModel(rawDocument, "html");
 
 export function Page() {
-  const [value, setValue] = useState(initialValue);
+  const [value, setValue] = useState(() => ({
+    config: configModel.getValue(),
+    doc: documentModel.getValue(),
+  }));
   return (
     <Box p={2} height="100vh" display="flex" flexDirection="column" gap={2}>
-      <Box>Title</Box>
-      <Box flexGrow={1} display="grid" gridTemplateColumns={"1fr 1fr"} gap={2}>
-        <Box display="flex" flexDirection="column" gap={2}>
-          <Editor
-            initialValue={value}
-            append={<EditorButton onClick={setValue} />}
-          />
+      <Box display="flex" flexDirection="row" gap={2} alignItems="center">
+        <Typography variant="h6" flexGrow={1}>
+          Scraper
+        </Typography>
+        <Button
+          variant="contained"
+          color="secondary"
+          size="small"
+          onClick={() => {
+            const config = configModel.getValue();
+            const doc = documentModel.getValue();
+            setValue({ config, doc });
+          }}
+        >
+          Test
+        </Button>
+        <Button variant="contained" color="primary" size="small">
+          Save
+        </Button>
+      </Box>
+      <Box
+        flexGrow={1}
+        display="grid"
+        gridTemplateColumns="1fr 1fr"
+        gridTemplateRows="1fr 1fr"
+        gap={2}
+      >
+        <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>
+          <Editor model={configModel} />
         </Box>
-        <Box display="flex" flexDirection="column" gap={2}>
-          <SendForm config={value} />
-        </Box>
+        <Editor model={documentModel} />
+        <SendForm {...value} />
       </Box>
     </Box>
   );

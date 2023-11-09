@@ -38,14 +38,8 @@ export class DocumentOpFactory extends BrowserFactory<
 > {
   readonly schema = documentConfig;
   execute({ key, default: defaultValue }: z.TypeOf<this["schema"]>): unknown {
-    const value = get<Document, 1>(key, this.document);
-    if (value !== undefined) {
-      return jsonSchema.parse(value);
-    }
-    if (defaultValue !== undefined) {
-      return defaultValue;
-    }
-    throw new Error(`Value not found for key "${key}"`);
+    const value = get(key, this.document, defaultValue);
+    return jsonSchema.parse(value);
   }
 }
 

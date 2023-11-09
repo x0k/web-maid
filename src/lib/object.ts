@@ -38,7 +38,7 @@ export function get<T, D extends number = 3>(
         return defaultValue;
       }
       throw new Error(
-        `Invalid container type "${typeof result}: ${result}", expected an array or object`
+        `Invalid container type "${typeof result}: ${result}" for key "${k}", expected an array or object`
       );
     }
     return result as ValuesOf<T, D>;

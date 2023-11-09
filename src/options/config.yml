@@ -1,0 +1,45 @@
+endpoint: http://localhost:3000
+schema:
+  type: object
+  properties:
+    title:
+      type: string
+    url:
+      type: string
+    html:
+      type: string
+    selection:
+      type: string
+    text:
+      type: object
+      properties:
+        content:
+          type: string
+        textContent:
+          type: string
+data:
+  title:
+    $op: document
+    key: title
+  url:
+    $op: document
+    key:
+      - location
+      - href
+    # Tmp document dosn't have location
+    default: "https://example.com"
+  html:
+    $op: document
+    key:
+      - documentElement
+      - outerHTML
+  text:
+    $op: readability
+    baseUrl: "https://example.com"
+    html:
+        $op: document
+        key:
+          - documentElement
+          - outerHTML
+  selection:
+    $op: selection

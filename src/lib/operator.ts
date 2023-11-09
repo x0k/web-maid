@@ -55,8 +55,8 @@ export type ScopedOp<R> = Op<Scope<unknown>, R>;
 export type ScopedOpFactory<R> = Factory<unknown, ScopedOp<R>>;
 
 export async function evalInScope<T, R>(
-  value: Ast<OpOrVal<T, R>>,
-  scope: T
+  value: Ast<OpOrVal<Scope<T>, R>>,
+  scope: Scope<T>
 ): Promise<R> {
   // @ts-expect-error ouch
   return Promise.resolve(
