@@ -1,54 +1,116 @@
-import type { TypeOf, ZodType } from "zod";
+import { type TypeOf, type ZodType } from "zod";
 
-import type { Factory } from "@/lib/factory";
-import type { JSONPrimitive } from "@/lib/json";
-import { traverseJsonLike, type JsonLike } from "@/lib/json-like-traverser";
+import { isObject } from "@/lib/guards";
+import { Factory } from "@/lib/factory";
+
+export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
+
+export type ResolvedAst<R> = R | Array<R> | Record<string, R>;
+
+export type AstVisitor<T, R> = (value: T | ResolvedAst<R>) => Promise<R>;
+
+async function traverseAst<T, R>(
+  visitor: AstVisitor<T, R>,
+  value: Ast<T>
+): Promise<R> {
+  if (Array.isArray(value)) {
+    const tmp = new Array<Promise<R>>(value.length);
+    for (let i = 0; i < value.length; i++) {
+      tmp[i] = traverseAst(visitor, value[i]);
+    }
+    return visitor(await Promise.all(tmp));
+  }
+  if (isObject(value)) {
+    const keys = Object.keys(value);
+    const promises = new Array<Promise<R>>(keys.length);
+    for (let i = 0; i < keys.length; i++) {
+      promises[i] = traverseAst(visitor, value[keys[i]]);
+    }
+    const values = await Promise.all(promises);
+    const tmp: Record<string, R> = {};
+    for (let i = 0; i < keys.length; i++) {
+      tmp[keys[i]] = values[i];
+    }
+    return visitor(tmp);
+  }
+  return visitor(value);
+}
 
 export const OPERATOR_KEY = "$op";
 
-export type Op = (context: OpOrVal) => OpOrVal;
+export type Result<R> = R | Promise<R>;
 
-export type OpOrVal = JsonLike<JSONPrimitive | Op>;
+export type Op<T, R> = (context: T) => Result<R>;
 
-export type OpFactoryConfig = Record<string, OpOrVal>;
+export type OpOrVal<T, R> = R | Op<T, R>;
 
-export interface OpFactory extends Factory<OpFactoryConfig, OpOrVal> {}
+export interface Scope<R> {
+  functions: Record<string, ScopedOp<R>>;
+  constants: Record<string, OpOrVal<Scope<R>, R>>;
+  context: R;
+}
 
-export abstract class SimpleFactory<S extends ZodType> implements OpFactory {
+export type ScopedOp<R> = Op<Scope<unknown>, R>;
+
+export type ScopedOpFactory<R> = Factory<unknown, ScopedOp<R>>;
+
+export async function evalInScope<T, R>(
+  value: Ast<OpOrVal<T, R>>,
+  scope: T
+): Promise<R> {
+  // @ts-expect-error ouch
+  return Promise.resolve(
+    traverseAst((v) => {
+      if (typeof v === "function") {
+        return v(scope);
+      }
+      return v;
+    }, value)
+  );
+}
+
+export abstract class BaseValFactory<S extends ZodType, R>
+  implements Factory<unknown, Result<R>>
+{
   abstract readonly schema: S;
+  abstract Create(config: unknown): Result<R>;
+}
 
-  protected abstract create(value: TypeOf<this["schema"]>): Op;
+export abstract class BaseOpFactory<S extends ZodType, R>
+  implements Factory<unknown, ScopedOp<R>>
+{
+  abstract readonly schema: S;
+  abstract Create(config: unknown): ScopedOp<R>;
+}
 
-  Create(config: OpFactoryConfig): Op {
+export abstract class FlowOpFactory<S extends ZodType, R> extends BaseOpFactory<
+  S,
+  R
+> {
+  protected abstract create(config: TypeOf<this["schema"]>): ScopedOp<R>;
+
+  Create(config: unknown): ScopedOp<R> {
     return this.create(this.schema.parse(config));
   }
 }
 
-export function evalOnContext(value: OpOrVal, context: OpOrVal) {
-  return traverseJsonLike((v: OpOrVal) => {
-    if (typeof v === "function") {
-      return v(context);
-    }
-    return v;
-  }, value);
-}
+export abstract class TaskOpFactory<S extends ZodType, R> extends BaseOpFactory<
+  S,
+  R
+> {
+  protected abstract execute(config: TypeOf<this["schema"]>): Result<R>;
 
-export abstract class AutoFactory<Z extends ZodType> implements OpFactory {
-  abstract readonly schema: Z;
-
-  protected abstract exec(value: TypeOf<this["schema"]>): OpOrVal;
-
-  Create(config: OpFactoryConfig): Op {
-    return (context) => {
-      const resolvedConfig = evalOnContext(config, context);
-      return this.exec(this.schema.parse(resolvedConfig));
+  Create(config: unknown): ScopedOp<R> {
+    return async (scope) => {
+      const resolvedConfig = await evalInScope(config, scope);
+      return this.execute(this.schema.parse(resolvedConfig));
     };
   }
 }
 
-export function composedFactory(
-  factories: Record<string, OpFactory>
-): OpFactory {
+export function makeComposedFactory<T extends Record<string, unknown>, R>(
+  factories: Record<string, Factory<T, R>>
+): Factory<T, R> {
   return {
     Create(value) {
       const name = value[OPERATOR_KEY];
@@ -64,8 +126,10 @@ export function composedFactory(
   };
 }
 
-export function makeOperatorResolver(factory: OpFactory) {
-  return (context: OpOrVal) => {
+export function makeOperatorResolver<R>(
+  factory: Factory<Record<string, unknown>, R>
+) {
+  return <C>(context: C) => {
     if (
       typeof context === "object" &&
       context !== null &&

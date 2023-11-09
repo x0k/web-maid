@@ -2,18 +2,17 @@ import { Alert, AlertTitle, Button, Typography } from "@mui/material";
 import validator from "@rjsf/validator-ajv8";
 import MuiForm from "@rjsf/mui";
 import { parse } from "yaml";
-import { fromZodError } from "zod-validation-error";
 
 import { traverseJsonLike } from "@/lib/json-like-traverser";
-import { Op, OpOrVal, evalOnContext } from "@/lib/operator";
-import { Json } from "@/lib/zod";
+import { evalInScope } from "@/lib/operator";
 
 import { makeAppOperatorResolver } from "@/shared/operator";
 
 import { configSchema } from "./config";
+import useSWR from "swr";
 
 interface ConfigFormProps {
-  value: Exclude<OpOrVal, Op>;
+  value: unknown;
   endpoint: string;
   schema?: Record<string, unknown>;
   uiSchema?: Record<string, unknown>;
@@ -47,59 +46,42 @@ export interface SendFormProps {
   config: string;
 }
 
-export function SendForm({ config }: SendFormProps) {
+async function evalOperator(config: string) {
   if (config.trim() === "") {
-    return (
-      <Alert severity="info">
-        <AlertTitle>Info</AlertTitle>
-        No config
-      </Alert>
-    );
+    throw new Error("No config");
   }
-  let configData: Json;
-  try {
-    configData = parse(config);
-  } catch (e) {
-    return (
-      <Alert severity="error">
-        <AlertTitle>Parsing error</AlertTitle>
-        {String(e)}
-      </Alert>
-    );
-  }
+  const configData = parse(config);
   const parseResult = configSchema.safeParse(configData);
   if (!parseResult.success) {
-    const err = fromZodError(parseResult.error);
-    return (
-      <Alert severity="error">
-        <AlertTitle>Validation error</AlertTitle>
-        {err.message}
-      </Alert>
-    );
+    throw new Error("Invalid config");
   }
   const { data, uiSchema, schema, context, endpoint } = parseResult.data;
-  const resolver = makeAppOperatorResolver();
-  let value: Exclude<OpOrVal, Op>;
-  try {
-    const result = evalOnContext(traverseJsonLike(resolver, data), context);
-    if (typeof result === "function") {
-      throw new Error("Extraction produces a function, expected data");
-    }
-    value = result;
-  } catch (e) {
+  const resolver = makeAppOperatorResolver(window, document);
+  const value = await evalInScope(traverseJsonLike(resolver, data), context);
+  if (typeof value === "function") {
+    throw new Error("Extraction produces a function, expected data");
+  }
+  return {
+    endpoint,
+    value,
+    schema,
+    uiSchema,
+  };
+}
+
+export function SendForm({ config }: SendFormProps) {
+  const { data, error, isLoading } = useSWR(config, evalOperator);
+
+  if (error) {
     return (
       <Alert severity="error">
-        <AlertTitle>Evaluation error</AlertTitle>
-        {e instanceof Error ? e.message : String(e)}
+        <AlertTitle>Error</AlertTitle>
+        {error instanceof Error ? error.message : String(error)}
       </Alert>
     );
   }
-  return (
-    <ConfigForm
-      endpoint={endpoint}
-      value={value}
-      schema={schema}
-      uiSchema={uiSchema}
-    />
-  );
+  if (isLoading || !data) {
+    return <Typography variant="h6">Loading...</Typography>;
+  }
+  return <ConfigForm {...data} />;
 }

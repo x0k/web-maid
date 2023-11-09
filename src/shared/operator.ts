@@ -1,26 +1,17 @@
-import { composedFactory, makeOperatorResolver } from "@/lib/operator";
+import { makeComposedFactory, makeOperatorResolver } from "@/lib/operator";
 import { browserOperatorsFactories } from "@/lib/operators/browser";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
-import {
-  RuntimeSystem,
-  runtimeOperatorsFactories,
-} from "@/lib/operators/runtime";
 import { stdOperatorsFactories } from "@/lib/operators/std";
+import { sysOperatorsFactories } from "@/lib/operators/sys";
 
-export function makeAppOperatorResolver() {
-  const runtime = new RuntimeSystem({
-    constants: {},
-    functions: {},
-  });
-  return makeOperatorResolver(
-    composedFactory(
-      Object.assign(
-        {},
-        flowOperatorsFactories(),
-        stdOperatorsFactories(),
-        runtimeOperatorsFactories(runtime),
-        browserOperatorsFactories(window, document)
-      )
-    )
-  );
+export function makeAppOperatorResolver(window: Window, document: Document) {
+  const factories = {
+    ...sysOperatorsFactories(),
+    ...stdOperatorsFactories(),
+    ...flowOperatorsFactories(),
+    ...stdOperatorsFactories(),
+    ...browserOperatorsFactories(window, document),
+  };
+  const composedFactory = makeComposedFactory(factories);
+  return makeOperatorResolver(composedFactory);
 }

@@ -1,3 +1,3 @@
 export interface Factory<T, R> {
-  Create(value: T): R
+  Create(config: T): R
 }

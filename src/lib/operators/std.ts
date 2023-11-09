@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { AutoFactory, type OpFactory, type OpOrVal } from "@/lib/operator";
+import { TaskOpFactory } from "@/lib/operator";
 
 const notConfig = z.object({
   value: z.any(),
 });
 
-export class NotOpFactory extends AutoFactory<typeof notConfig> {
+export class NotOpFactory extends TaskOpFactory<typeof notConfig, boolean> {
   readonly schema = notConfig;
-  exec({ value }: z.TypeOf<this["schema"]>): OpOrVal {
+  execute({ value }: z.TypeOf<this["schema"]>): boolean {
     return !value;
   }
 }
@@ -17,14 +17,14 @@ const joinConfig = z.object({
   separator: z.string().default(", "),
 });
 
-export class JoinOpFactory extends AutoFactory<typeof joinConfig> {
+export class JoinOpFactory extends TaskOpFactory<typeof joinConfig, string> {
   readonly schema = joinConfig;
-  exec({ values, separator }: z.TypeOf<this["schema"]>): OpOrVal {
+  execute({ values, separator }: z.TypeOf<this["schema"]>): string {
     return values.join(separator);
   }
 }
 
-export function stdOperatorsFactories(): Record<string, OpFactory> {
+export function stdOperatorsFactories() {
   return {
     not: new NotOpFactory(),
     join: new JoinOpFactory(),
