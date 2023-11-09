@@ -43,6 +43,7 @@ export function Page() {
   const [selectedTab, selectTab] = useState<Tab | null>(null);
   const evalMutation = useSWRMutation(selectedTab, runEvalForTab, {});
   useSWR("settings/sync", loadSyncSettings, {
+    revalidateOnFocus: false,
     onSuccess({ config }) {
       configModel.setValue(config);
     },

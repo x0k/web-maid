@@ -1,4 +1,5 @@
 import { parse } from "yaml";
+import Handlebars from "handlebars";
 
 import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { evalInScope } from "@/lib/operator";
@@ -14,6 +15,7 @@ const INJECTED = {
   traverseJsonLike,
   evalInScope,
   stringifyError,
+  hbs: Handlebars.create(),
 };
 
 export type Injected = typeof INJECTED;

@@ -33,8 +33,11 @@ export default defineConfig({
           {
             matches: ["https://*/*", "http://*/*"],
             js: ["src/inject-script.ts"],
-          }
-        ]
+          },
+        ],
+        sandbox: {
+          pages: ["sandbox.html"],
+        },
       },
     }),
   ],

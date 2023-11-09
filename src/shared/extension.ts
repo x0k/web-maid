@@ -1,3 +1,4 @@
+import Handlebars from "handlebars";
 import { z } from "zod";
 
 import rawConfig from "./config.yml?raw";
@@ -11,7 +12,7 @@ const partialLocalSettingsSchema = localSettingsSchema.partial();
 export type LocalSettings = z.infer<typeof localSettingsSchema>;
 
 export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
-  apiKey: "",
+  apiKey: "api-key",
 };
 
 const syncSettingsSchema = z.object({
@@ -36,19 +37,14 @@ export async function saveSyncSettings(settings: Partial<SyncSettings>) {
   await chrome.storage.sync.set(data);
 }
 
-export async function loadLocalSettings(
-  local: chrome.storage.LocalStorageArea
-): Promise<LocalSettings> {
-  const settings = await local.get(DEFAULT_LOCAL_SETTINGS);
+export async function loadLocalSettings(): Promise<LocalSettings> {
+  const settings = await chrome.storage.local.get(DEFAULT_LOCAL_SETTINGS);
   return localSettingsSchema.parse(settings);
 }
 
-export async function saveLocalSettings(
-  local: chrome.storage.LocalStorageArea,
-  settings: Partial<LocalSettings>
-) {
+export async function saveLocalSettings(settings: Partial<LocalSettings>) {
   const data = partialLocalSettingsSchema.parse(settings);
-  await local.set(data);
+  await chrome.storage.local.set(data);
 }
 
 const tabSchema = z.object({
@@ -82,6 +78,7 @@ async function evalOperator(config: string) {
     traverseJsonLike,
     evalInScope,
     stringifyError,
+    hbs,
   } = window.__SCRAPER_EXTENSION__ ?? {
     stringifyError: String,
   };
@@ -95,7 +92,7 @@ async function evalOperator(config: string) {
       throw new Error("Invalid config");
     }
     const { data, uiSchema, schema, context, endpoint } = parseResult.data;
-    const resolver = makeAppOperatorResolver(window);
+    const resolver = makeAppOperatorResolver(window, hbs);
     const value = await evalInScope(traverseJsonLike(resolver, data), {
       functions: {},
       constants: {},
@@ -118,6 +115,8 @@ export async function evalForTab(
   tabId: number,
   config: string
 ): Promise<EvalResult> {
+  // const localConfig = await loadLocalSettings();
+  // const compiledConfig = Handlebars.compile(config)(localConfig);
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
     func: evalOperator,
