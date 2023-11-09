@@ -1,9 +1,4 @@
-import { parse } from "yaml";
 import { z } from "zod";
-import { configSchema } from "./config";
-import { makeAppOperatorResolver } from "./operator";
-import { evalInScope } from "@/lib/operator";
-import { traverseJsonLike } from "@/lib/json-like-traverser";
 
 const localSettingsSchema = z.object({
   apiKey: z.string(),
@@ -113,27 +108,43 @@ export const evalResultSchema = z.object({
 export type EvalResult = z.infer<typeof evalResultSchema>;
 
 async function evalOperator(config: string) {
-  if (config.trim() === "") {
-    throw new Error("No config");
-  }
-  const configData = parse(config);
-  const parseResult = configSchema.safeParse(configData);
-  if (!parseResult.success) {
-    throw new Error("Invalid config");
-  }
-  const { data, uiSchema, schema, context, endpoint } = parseResult.data;
-  const resolver = makeAppOperatorResolver(window, document);
-  const value = await evalInScope(traverseJsonLike(resolver, data), {
-    functions: {},
-    constants: {},
-    context,
-  });
-  return {
-    endpoint,
-    value,
-    schema,
-    uiSchema,
+  const {
+    parse,
+    configSchema,
+    makeAppOperatorResolver,
+    traverseJsonLike,
+    evalInScope,
+    stringifyError,
+  } = window.__SCRAPER_EXTENSION__ ?? {
+    stringifyError: String
   };
+  try {
+    if (config.trim() === "") {
+      throw new Error("No config");
+    }
+    const configData = parse(config);
+    const parseResult = configSchema.safeParse(configData);
+    if (!parseResult.success) {
+      throw new Error("Invalid config");
+    }
+    const { data, uiSchema, schema, context, endpoint } = parseResult.data;
+    const resolver = makeAppOperatorResolver(window, document);
+    const value = await evalInScope(traverseJsonLike(resolver, data), {
+      functions: {},
+      constants: {},
+      context,
+    });
+    return {
+      endpoint,
+      value,
+      schema,
+      uiSchema,
+    };
+  } catch (error) {
+    return {
+      error: stringifyError(error),
+    };
+  }
 }
 
 export async function evalForTab(
@@ -145,5 +156,8 @@ export async function evalForTab(
     func: evalOperator,
     args: [config],
   });
+  if (result.error) {
+    throw new Error(result.error);
+  }
   return evalResultSchema.parse(result);
 }

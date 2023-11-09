@@ -29,6 +29,12 @@ export default defineConfig({
         optional_permissions: ["tabs"],
         permissions: ["storage", "activeTab", "scripting"],
         host_permissions: ["https://*/*", "http://*/*"],
+        content_scripts: [
+          {
+            matches: ["https://*/*", "http://*/*"],
+            js: ["src/inject-script.ts"],
+          }
+        ]
       },
     }),
   ],
