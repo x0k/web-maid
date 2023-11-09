@@ -44,7 +44,7 @@ export function Page() {
         flexGrow={1}
         display="grid"
         gridTemplateColumns="1fr 1fr"
-        gridTemplateRows="1fr 1fr"
+        gridTemplateRows="50vh 1fr"
         gap={2}
       >
         <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>

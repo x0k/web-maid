@@ -10,36 +10,53 @@ schema:
       type: string
     selection:
       type: string
+    content:
+      type: string
     text:
-      type: object
-      properties:
-        content:
-          type: string
-        textContent:
-          type: string
-data:
-  title:
-    $op: document
-    key: title
-  url:
-    $op: document
-    key:
-      - location
-      - href
-    # Tmp document dosn't have location
-    default: "https://example.com"
+      type: string
+uiSchema:
   html:
-    $op: document
-    key:
-      - documentElement
-      - outerHTML
+    ui:widget: textarea
+  selection:
+    ui:widget: textarea
+  content:
+    ui:widget: textarea
   text:
-    $op: readability
-    baseUrl: "https://example.com"
-    html:
+    ui:widget: textarea
+data:
+  $op: pipe
+  do:
+    - title:
+        $op: document
+        key: title
+      url:
+        $op: document
+        key:
+          - location
+          - href
+        # Test document doesn't have location
+        default: "https://example.com"
+      html:
         $op: document
         key:
           - documentElement
           - outerHTML
-  selection:
-    $op: selection
+      selection:
+        $op: selection
+    - $op: update
+      properties:
+        content:
+          $op: simplifyHtml
+          baseUrl:
+            $op: get
+            key: url
+          html:
+            $op: get
+            key: html
+    - $op: update
+      properties:
+        text:
+          $op: html2md
+          html:
+            $op: get
+            key: content
