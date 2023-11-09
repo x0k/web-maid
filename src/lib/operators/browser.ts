@@ -7,7 +7,6 @@ import { get } from "@/lib/object";
 import { jsonSchema } from "@/lib/zod";
 import { evalInScope } from "@/lib/eval";
 import { neverError } from "@/lib/guards";
-import { extractMetadata, Metadata } from "@/lib/metascraper";
 
 export abstract class BrowserFactory<
   Z extends z.ZodType,
@@ -169,25 +168,7 @@ export class Html2MarkdownOpFactory extends BrowserFactory<
   }
 }
 
-const htmlMetadataConfig = z.object({
-  html: z.string(),
-  url: z.string().url().optional(),
-});
-
-export class HtmlMetadataOpFactory extends BrowserFactory<
-  typeof htmlMetadataConfig,
-  Metadata
-> {
-  readonly schema = htmlMetadataConfig;
-  execute({ html }: z.TypeOf<this["schema"]>): Promise<Metadata> {
-    return extractMetadata({ html, url: this.document.location.href });
-  }
-}
-
-export function browserOperatorsFactories(
-  window: Window,
-  document: Document
-) {
+export function browserOperatorsFactories(window: Window, document: Document) {
   return {
     document: new DocumentOpFactory(window, document),
     jsEval: new JsEvalOpFactory(window, document),
@@ -195,6 +176,5 @@ export function browserOperatorsFactories(
     readability: new ReadabilityOpFactory(window, document),
     simplifyHtml: new SimplifyHtmlOpFactory(window, document),
     html2md: new Html2MarkdownOpFactory(window, document),
-    htmlMetadata: new HtmlMetadataOpFactory(window, document),
   };
 }

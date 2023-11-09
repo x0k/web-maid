@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { jsonSchema } from '@/lib/zod';
+import { z } from "zod";
+import { jsonSchema } from "@/lib/zod";
 
 export const configSchema = z.object({
   endpoint: z.string().url(),
@@ -7,4 +7,6 @@ export const configSchema = z.object({
   uiSchema: z.record(z.any()).optional(),
   context: jsonSchema.default(null),
   data: jsonSchema,
-})
+});
+
+export type Config = z.infer<typeof configSchema>;
