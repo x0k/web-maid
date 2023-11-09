@@ -3,8 +3,7 @@ import {
   evalInScope,
   FlowOpFactory,
   ScopedOp,
-  BaseOpFactory,
-  ScopedOpFactory,
+  BaseValFactory,
 } from "@/lib/operator";
 import { get } from "@/lib/object";
 
@@ -101,23 +100,19 @@ const evalConfig = z.object({
     }),
 });
 
-export class EvalOpFactory extends BaseOpFactory<typeof evalConfig, unknown> {
+export class EvalOpFactory extends BaseValFactory<typeof evalConfig, Promise<unknown>> {
   readonly schema = evalConfig;
-  Create(config: unknown): unknown {
+  Create(config: unknown): Promise<unknown> {
     const { value, scope } = this.schema.parse(config);
     return evalInScope(value, scope);
   }
 }
 
-export function flowOperatorsFactories(): Record<
-  string,
-  ScopedOpFactory<unknown>
-> {
+export function flowOperatorsFactories() {
   return {
     ctx: new ContextOpFactory(),
     get: new GetOpFactory(),
     pipe: new PipeOpFactory(),
     and: new AndOpFactory(),
-    eval: new EvalOpFactory(),
   };
 }

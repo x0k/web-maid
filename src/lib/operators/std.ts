@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ScopedOpFactory, TaskOpFactory } from "@/lib/operator";
+import { TaskOpFactory } from "@/lib/operator";
 
 const notConfig = z.object({
   value: z.any(),
@@ -24,10 +24,7 @@ export class JoinOpFactory extends TaskOpFactory<typeof joinConfig, string> {
   }
 }
 
-export function stdOperatorsFactories(): Record<
-  string,
-  ScopedOpFactory<unknown>
-> {
+export function stdOperatorsFactories() {
   return {
     not: new NotOpFactory(),
     join: new JoinOpFactory(),

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Readability } from "@mozilla/readability";
 import Turndown from "turndown";
 
-import { ScopedOpFactory, TaskOpFactory } from "@/lib/operator";
+import { TaskOpFactory } from "@/lib/operator";
 import { get } from "@/lib/object";
 import { jsonSchema } from "@/lib/zod";
 import { evalInScope } from "@/lib/eval";
@@ -187,7 +187,7 @@ export class HtmlMetadataOpFactory extends BrowserFactory<
 export function browserOperatorsFactories(
   window: Window,
   document: Document
-): Record<string, ScopedOpFactory<unknown>> {
+) {
   return {
     document: new DocumentOpFactory(window, document),
     jsEval: new JsEvalOpFactory(window, document),
