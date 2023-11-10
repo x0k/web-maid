@@ -58,15 +58,15 @@ export class JsEvalOpFactory extends BrowserFactory<
     super(window);
   }
 
-  execute({
+  async execute({
     expression,
     default: defaultValue,
-  }: z.TypeOf<this["schema"]>): unknown {
+  }: z.TypeOf<this["schema"]>): Promise<unknown> {
     if (defaultValue === undefined) {
       return this.evaluator.Create(expression);
     }
     try {
-      return this.evaluator.Create(expression);
+      return await this.evaluator.Create(expression);
     } catch (e) {
       console.error(e);
       return defaultValue;
