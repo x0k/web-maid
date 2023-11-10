@@ -1,22 +1,22 @@
 import { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
-import useSWR from "swr";
+import { enqueueSnackbar } from "notistack";
 import useSWRMutation from "swr/mutation";
+import useSWR from "swr";
 
 import { monaco } from "@/lib/monaco";
+import { stringifyError } from "@/lib/error";
 import { Editor } from "@/components/editor";
 import {
   Tab,
-  evalForTab,
   getAllTabs,
   loadSyncSettings,
   saveSyncSettings,
 } from "@/shared/extension";
 
+import { api } from "./api";
 import { SendForm } from "./send-form";
 import { TabsSelector } from "./tabs-selector";
-import { enqueueSnackbar } from "notistack";
-import { stringifyError } from "@/lib/error";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
@@ -24,7 +24,7 @@ async function runEvalForTab(tab: Tab | null, { arg }: { arg: string }) {
   if (!tab) {
     throw new Error("Tab not selected");
   }
-  return evalForTab(tab.id, arg);
+  return api.evalForTab(tab.id, arg);
 }
 
 async function saveConfig(_: string, { arg }: { arg: string }) {

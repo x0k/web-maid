@@ -1,12 +1,17 @@
-import type Handlebars from "handlebars";
 import { z } from "zod";
 
 import { FlowOpFactory, ScopedOp, evalInScope } from "@/lib/operator";
+import { AsyncFactory } from "@/lib/factory";
 
 const templateConfig = z.object({
   template: z.unknown(),
   data: z.unknown().optional(),
 });
+
+export interface TemplateRendererData {
+  template: string;
+  data: unknown;
+}
 
 export class TemplateFactory extends FlowOpFactory<
   typeof templateConfig,
@@ -14,30 +19,30 @@ export class TemplateFactory extends FlowOpFactory<
 > {
   readonly schema = templateConfig;
 
-  constructor(private readonly hbs: typeof Handlebars) {
+  constructor(
+    private readonly hbs: AsyncFactory<TemplateRendererData, string>
+  ) {
     super();
   }
 
   create({ template, data }: z.TypeOf<this["schema"]>): ScopedOp<string> {
-    if (typeof template !== "string") {
-      return async (scope) => {
-        const resolvedTemplate = await evalInScope(template, scope);
-        if (typeof resolvedTemplate !== "string") {
-          throw new Error(`Template is not a string: ${resolvedTemplate}`);
-        }
-        const resolvedData = await evalInScope(data ?? scope.context, scope);
-        return this.hbs.compile(resolvedTemplate)(resolvedData);
-      };
-    }
-    const compiled = this.hbs.compile(template);
     return async (scope) => {
+      const resolvedTemplate = await evalInScope(template, scope);
+      if (typeof resolvedTemplate !== "string") {
+        throw new Error(`Template is not a string: ${resolvedTemplate}`);
+      }
       const resolvedData = await evalInScope(data ?? scope.context, scope);
-      return compiled(resolvedData);
+      return this.hbs.Create({
+        template: resolvedTemplate,
+        data: resolvedData,
+      });
     };
   }
 }
 
-export function extOperatorsFactories(hbs: typeof Handlebars) {
+export function extOperatorsFactories(
+  hbs: AsyncFactory<TemplateRendererData, string>
+) {
   return {
     template: new TemplateFactory(hbs),
   };
