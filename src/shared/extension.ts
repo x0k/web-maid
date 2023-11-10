@@ -30,7 +30,7 @@ const DEFAULT_SYNC_SETTINGS: SyncSettings = {
 
 const tabSchema = z.object({
   id: z.number(),
-  title: z.string(),
+  title: z.string().default('Untitled'),
   favIconUrl: z.string().optional(),
 });
 

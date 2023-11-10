@@ -21,10 +21,10 @@ export default defineConfig({
             "128": "images/icon-128.png",
           },
         },
-        background: {
-          service_worker: "src/background.ts",
-          type: "module",
-        },
+        // background: {
+        //   service_worker: "src/background.ts",
+        //   type: "module",
+        // },
         options_page: "options.html",
         optional_permissions: ["tabs"],
         permissions: ["storage", "activeTab", "scripting"],
@@ -38,6 +38,12 @@ export default defineConfig({
         sandbox: {
           pages: ["sandbox.html"],
         },
+        web_accessible_resources: [
+          {
+            resources: ["sandbox.html"],
+            matches: ["<all_urls>"],
+          },
+        ]
       },
     }),
   ],
