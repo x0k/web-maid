@@ -32,7 +32,7 @@ export default defineConfig({
         content_scripts: [
           {
             matches: ["https://*/*", "http://*/*"],
-            js: ["src/inject-script.ts"],
+            js: ["src/inject/index.ts"],
           },
         ],
         sandbox: {
@@ -43,7 +43,7 @@ export default defineConfig({
             resources: ["sandbox.html"],
             matches: ["<all_urls>"],
           },
-        ]
+        ],
       },
     }),
   ],

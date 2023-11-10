@@ -7,12 +7,33 @@ import { IRemoteActor, RemoteActor } from "@/lib/actor";
 
 import { configSchema } from "@/shared/config";
 import { makeAppOperatorResolver } from "@/shared/operator";
-import { Action, ActionResults, Evaluator, Renderer } from "@/shared/rpc";
+import { Action, ActionResults } from "@/shared/rpc";
 
-let sandbox: IRemoteActor<Action, ActionResults>;
+import { Evaluator, Renderer } from "./impl";
+
+function inject(sandbox: IRemoteActor<Action, ActionResults>) {
+  const INJECTED = {
+    parse,
+    configSchema,
+    traverseJsonLike,
+    evalInScope,
+    stringifyError,
+    resolver: makeAppOperatorResolver(
+      window,
+      new Evaluator(sandbox),
+      new Renderer(sandbox)
+    ),
+  };
+  window.__SCRAPER_EXTENSION__ = INJECTED;
+  return INJECTED;
+}
+
+export type Injected = ReturnType<typeof inject>;
+
 if (import.meta.env.DEV) {
-  const { DevSandbox } = await import("@/shared/dev-sandbox");
-  sandbox = new DevSandbox();
+  import("@/shared/dev-sandbox")
+    .then(({ DevSandbox }) => new DevSandbox())
+    .then(inject);
 } else {
   const src = chrome.runtime.getURL("sandbox.html");
   const iFrame = new DOMParser().parseFromString(
@@ -22,22 +43,5 @@ if (import.meta.env.DEV) {
   document.body.append(iFrame);
   const actor = new RemoteActor<Action, ActionResults, string>(iFrame);
   actor.listen(window);
-  sandbox = actor;
+  inject(actor);
 }
-
-const INJECTED = {
-  parse,
-  configSchema,
-  traverseJsonLike,
-  evalInScope,
-  stringifyError,
-  resolver: makeAppOperatorResolver(
-    window,
-    new Evaluator(sandbox),
-    new Renderer(sandbox)
-  ),
-};
-
-export type Injected = typeof INJECTED;
-
-window.__SCRAPER_EXTENSION__ = INJECTED;

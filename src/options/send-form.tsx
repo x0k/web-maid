@@ -36,9 +36,7 @@ export function SendForm({ result }: SendFormProps) {
         <ErrorAlert error={result.error} />
       ) : result.isMutating ? (
         <Typography>Loading...</Typography>
-      ) : !result.data ? (
-        <Typography>Choose the tab and click on "Test" button</Typography>
-      ) : (
+      ) : !result.data ? null : (
         <ConfigForm {...result.data} />
       )}
     </Box>

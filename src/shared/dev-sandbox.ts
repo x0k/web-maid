@@ -1,6 +1,6 @@
 import Mustache from "mustache";
 
-import { IRemoteActor } from "@/lib/actor";
+import type { IRemoteActor } from "@/lib/actor";
 
 import { Action, ActionResults, ActionType } from "./rpc";
 
