@@ -3,24 +3,27 @@ import { parse } from "yaml";
 import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { evalInScope } from "@/lib/operator";
 import { stringifyError } from "@/lib/error";
-import { RemoteActor } from "@/lib/actor";
+import { IRemoteActor, RemoteActor } from "@/lib/actor";
 
 import { configSchema } from "@/shared/config";
 import { makeAppOperatorResolver } from "@/shared/operator";
-import { Evaluator, Renderer } from "@/shared/rpc";
+import { Action, ActionResults, Evaluator, Renderer } from "@/shared/rpc";
 
-const src = chrome.runtime.getURL("sandbox.html");
-const sandboxIFrame = new DOMParser().parseFromString(
-  `<iframe src="${src}" hidden></iframe>`,
-  "text/html"
-).body.firstElementChild;
-if (!(sandboxIFrame instanceof HTMLIFrameElement)) {
-  throw new Error("Failed to create sandbox iframe");
+let sandbox: IRemoteActor<Action, ActionResults>;
+if (import.meta.env.DEV) {
+  const { DevSandbox } = await import("@/shared/dev-sandbox");
+  sandbox = new DevSandbox();
+} else {
+  const src = chrome.runtime.getURL("sandbox.html");
+  const iFrame = new DOMParser().parseFromString(
+    `<iframe src="${src}" hidden></iframe>`,
+    "text/html"
+  ).body.firstElementChild as HTMLIFrameElement;
+  document.body.append(iFrame);
+  const actor = new RemoteActor<Action, ActionResults, string>(iFrame);
+  actor.listen(window);
+  sandbox = actor;
 }
-document.body.append(sandboxIFrame);
-
-const sandbox = new RemoteActor(sandboxIFrame);
-sandbox.listen(window);
 
 const INJECTED = {
   parse,

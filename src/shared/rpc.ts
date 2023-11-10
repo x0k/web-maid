@@ -52,7 +52,7 @@ export class Renderer implements AsyncFactory<TemplateRendererData, string> {
       type: ActionType.RenderTemplate,
       template: config.template,
       data: config.data,
-    }) as Promise<string>;
+    });
   }
 }
 
@@ -66,6 +66,6 @@ export class ConfigRendered
       type: ActionType.RenderTemplate,
       template: config.configTemplate,
       data: config.configData,
-    }) as Promise<string>;
+    });
   }
 }
