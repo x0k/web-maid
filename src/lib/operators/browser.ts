@@ -5,8 +5,8 @@ import Turndown from "turndown";
 import { TaskOpFactory } from "@/lib/operator";
 import { get } from "@/lib/object";
 import { jsonSchema } from "@/lib/zod";
-import { evalInScope } from "@/lib/eval";
 import { neverError } from "@/lib/guards";
+import { AsyncFactory } from "@/lib/factory";
 
 export abstract class BrowserFactory<
   Z extends z.ZodType,
@@ -50,19 +50,23 @@ export class JsEvalOpFactory extends BrowserFactory<
   unknown
 > {
   readonly schema = jsEvalConfig;
-  private evalScope = {
-    window: this.window,
-    document: this.window.document,
-  };
-  execute({
+
+  constructor(
+    window: Window,
+    private readonly evaluator: AsyncFactory<string, unknown>
+  ) {
+    super(window);
+  }
+
+  async execute({
     expression,
     default: defaultValue,
-  }: z.TypeOf<this["schema"]>): unknown {
+  }: z.TypeOf<this["schema"]>): Promise<unknown> {
     if (defaultValue === undefined) {
-      return evalInScope(expression, this.evalScope);
+      return this.evaluator.Create(expression);
     }
     try {
-      return evalInScope(expression, this.evalScope);
+      return await this.evaluator.Create(expression);
     } catch (e) {
       console.error(e);
       return defaultValue;
@@ -159,10 +163,13 @@ export class Html2MarkdownOpFactory extends BrowserFactory<
   }
 }
 
-export function browserOperatorsFactories(window: Window) {
+export function browserOperatorsFactories(
+  window: Window,
+  evaluator: AsyncFactory<string, unknown>
+) {
   return {
     document: new DocumentOpFactory(window),
-    jsEval: new JsEvalOpFactory(window),
+    jsEval: new JsEvalOpFactory(window, evaluator),
     selection: new SelectionOpFactory(window),
     readability: new ReadabilityOpFactory(window),
     simplifyHtml: new SimplifyHtmlOpFactory(window),

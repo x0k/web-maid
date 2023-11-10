@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { TaskOpFactory } from "@/lib/operator";
 
 const notConfig = z.object({

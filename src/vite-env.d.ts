@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { Injected } from "./inject-script";
+import type { Injected } from "./inject";
 
 declare global {
   interface Window {

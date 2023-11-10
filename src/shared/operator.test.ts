@@ -1,12 +1,23 @@
-import { it, expect } from "vitest";
+import { it, expect, beforeEach } from "vitest";
 
-import { OPERATOR_KEY, evalInScope } from "@/lib/operator";
+import { OPERATOR_KEY, ScopedOp, evalInScope } from "@/lib/operator";
 import { traverseJsonLike } from "@/lib/json-like-traverser";
+import { AsyncFactory } from "@/lib/factory";
+import { TemplateRendererData } from "@/lib/operators/ext";
 
 import { makeAppOperatorResolver } from "./operator";
 
+let resolver: <C>(context: C) => ScopedOp<unknown> | C;
+
+beforeEach(() => {
+  resolver = makeAppOperatorResolver(
+    {} as Window,
+    {} as AsyncFactory<string, unknown>,
+    {} as AsyncFactory<TemplateRendererData, string>
+  );
+});
+
 it("Should evaluate simple operators", async () => {
-  const resolver = makeAppOperatorResolver({} as Window);
   const result = resolver({
     [OPERATOR_KEY]: "not",
     value: false,
@@ -21,7 +32,6 @@ it("Should evaluate simple operators", async () => {
 });
 
 it("Should evaluate nested operators", async () => {
-  const resolver = makeAppOperatorResolver({} as Window);
   const result = traverseJsonLike(resolver, {
     [OPERATOR_KEY]: "sys.define",
     constants: {

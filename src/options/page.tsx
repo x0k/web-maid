@@ -1,22 +1,22 @@
 import { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
-import useSWR from "swr";
+import { enqueueSnackbar } from "notistack";
 import useSWRMutation from "swr/mutation";
+import useSWR from "swr";
 
 import { monaco } from "@/lib/monaco";
+import { stringifyError } from "@/lib/error";
 import { Editor } from "@/components/editor";
 import {
   Tab,
-  evalForTab,
   getAllTabs,
   loadSyncSettings,
   saveSyncSettings,
 } from "@/shared/extension";
 
+import { api } from "./api";
 import { SendForm } from "./send-form";
 import { TabsSelector } from "./tabs-selector";
-import { enqueueSnackbar } from "notistack";
-import { stringifyError } from "@/lib/error";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
@@ -24,7 +24,7 @@ async function runEvalForTab(tab: Tab | null, { arg }: { arg: string }) {
   if (!tab) {
     throw new Error("Tab not selected");
   }
-  return evalForTab(tab.id, arg);
+  return api.evalForTab(tab.id, arg);
 }
 
 async function saveConfig(_: string, { arg }: { arg: string }) {
@@ -43,6 +43,7 @@ export function Page() {
   const [selectedTab, selectTab] = useState<Tab | null>(null);
   const evalMutation = useSWRMutation(selectedTab, runEvalForTab, {});
   useSWR("settings/sync", loadSyncSettings, {
+    revalidateOnFocus: false,
     onSuccess({ config }) {
       configModel.setValue(config);
     },
@@ -57,27 +58,6 @@ export function Page() {
         <Typography variant="h6" flexGrow={1}>
           Scraper
         </Typography>
-        <Button
-          variant="contained"
-          color="secondary"
-          size="small"
-          onClick={() => {
-            evalMutation.trigger(configModel.getValue());
-          }}
-          disabled={evalMutation.isMutating || !selectedTab}
-        >
-          Test
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          size="small"
-          onClick={() => {
-            configMutation.trigger(configModel.getValue());
-          }}
-        >
-          Save
-        </Button>
       </Box>
       <Box
         flexGrow={1}
@@ -88,13 +68,42 @@ export function Page() {
         gap={2}
       >
         <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>
+          <Box display="flex" flexDirection="row" gap={2} alignItems="center">
+            <Typography flexGrow={1}>Config</Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => {
+                configMutation.trigger(configModel.getValue());
+              }}
+            >
+              Save
+            </Button>
+          </Box>
           <Editor model={configModel} />
         </Box>
-        <TabsSelector
-          tabs={tabs}
-          selectedTab={selectedTab}
-          onSelect={selectTab}
-        />
+        <Box display="flex" flexDirection="column" gap={2}>
+          <Box display="flex" flexDirection="row" gap={2} alignItems="center">
+            <Typography flexGrow={1}>Tabs</Typography>
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              onClick={() => {
+                evalMutation.trigger(configModel.getValue());
+              }}
+              disabled={evalMutation.isMutating || !selectedTab}
+            >
+              Test
+            </Button>
+          </Box>
+          <TabsSelector
+            tabs={tabs}
+            selectedTab={selectedTab}
+            onSelect={selectTab}
+          />
+        </Box>
         <SendForm result={evalMutation} />
       </Box>
     </Box>

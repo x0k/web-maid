@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { SnackbarProvider } from 'notistack';
+import { SnackbarProvider } from "notistack";
 import { CssBaseline } from "@mui/material";
 
 import { Page } from "./page";
