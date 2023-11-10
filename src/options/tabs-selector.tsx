@@ -1,11 +1,9 @@
-import { SWRResponse } from "swr";
 import { Autocomplete, Box, TextField } from "@mui/material";
 
 import { Tab } from "@/shared/extension";
-import { ErrorAlert } from "@/components/error-alert";
 
 export interface TabsSelectorProps {
-  tabs: SWRResponse<Tab[]>;
+  tabs: Tab[];
   selectedTab: Tab | null;
   onSelect: (tab: Tab | null) => void;
 }
@@ -15,18 +13,15 @@ export function TabsSelector({
   selectedTab,
   onSelect,
 }: TabsSelectorProps) {
-  return tabs.error ? (
-    <ErrorAlert error={tabs.error} />
-  ) : (
+  return (
     <Autocomplete
       id="tabs"
       value={selectedTab}
-      options={tabs.data ?? []}
+      options={tabs}
       getOptionLabel={(o) => o.title ?? 'Permission "tabs" not granted'}
       autoHighlight
       autoSelect
       openOnFocus
-      loading={tabs.isLoading}
       onChange={(_, value) => onSelect(value)}
       isOptionEqualToValue={(a, b) => a.id === b.id}
       renderOption={(props, option) => (

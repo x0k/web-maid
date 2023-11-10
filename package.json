@@ -28,6 +28,7 @@
     "notistack": "^3.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-markdown": "^9.0.0",
     "swr": "^2.2.4",
     "turndown": "^7.1.2",
     "yaml": "^2.3.4",

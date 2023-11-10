@@ -7,6 +7,8 @@ import useSWR from "swr";
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { Editor } from "@/components/editor";
+import { ErrorAlert } from "@/components/error-alert";
+
 import {
   Tab,
   getAllTabs,
@@ -17,6 +19,7 @@ import {
 import { api } from "./api";
 import { SendForm } from "./send-form";
 import { TabsSelector } from "./tabs-selector";
+import { Readme } from "./readme";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
@@ -38,8 +41,12 @@ function showError(err: unknown) {
   });
 }
 
+const initialTabs: Tab[] = [];
+
 export function Page() {
-  const tabs = useSWR("tabs", getAllTabs);
+  const tabs = useSWR("tabs", getAllTabs, {
+    fallbackData: initialTabs,
+  });
   const [selectedTab, selectTab] = useState<Tab | null>(null);
   const evalMutation = useSWRMutation(selectedTab, runEvalForTab, {});
   useSWR("settings/sync", loadSyncSettings, {
@@ -53,59 +60,67 @@ export function Page() {
     onError: showError,
   });
   return (
-    <Box p={2} height="100vh" display="flex" flexDirection="column" gap={2}>
-      <Box display="flex" flexDirection="row" gap={2} alignItems="center">
-        <Typography variant="h6" flexGrow={1}>
-          Scraper
-        </Typography>
-      </Box>
-      <Box
-        flexGrow={1}
-        display="grid"
-        gridTemplateColumns="1fr 1fr"
-        gridTemplateRows="auto 1fr"
-        overflow={"hidden"}
-        gap={2}
-      >
-        <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>
-          <Box display="flex" flexDirection="row" gap={2} alignItems="center">
-            <Typography flexGrow={1}>Config</Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              onClick={() => {
-                configMutation.trigger(configModel.getValue());
-              }}
-            >
-              Save
-            </Button>
-          </Box>
-          <Editor model={configModel} />
+    <Box
+      height="100vh"
+      display="grid"
+      gridTemplateColumns="1fr 1fr"
+      gridTemplateRows="auto 1fr"
+      overflow={"hidden"}
+      gap={2}
+      p={2}
+    >
+      <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>
+        <Box display="flex" flexDirection="row" gap={2} alignItems="center">
+          <Typography flexGrow={1}>Config</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={() => {
+              configMutation.trigger(configModel.getValue());
+            }}
+          >
+            Save
+          </Button>
         </Box>
-        <Box display="flex" flexDirection="column" gap={2}>
-          <Box display="flex" flexDirection="row" gap={2} alignItems="center">
-            <Typography flexGrow={1}>Tabs</Typography>
-            <Button
-              variant="contained"
-              color="secondary"
-              size="small"
-              onClick={() => {
-                evalMutation.trigger(configModel.getValue());
-              }}
-              disabled={evalMutation.isMutating || !selectedTab}
-            >
-              Test
-            </Button>
-          </Box>
+        <Editor model={configModel} />
+      </Box>
+      <Box display="flex" flexDirection="column" gap={2}>
+        <Box display="flex" flexDirection="row" gap={2} alignItems="center">
+          <Typography flexGrow={1}>Tabs</Typography>
+          <Button
+            variant="contained"
+            color="secondary"
+            size="small"
+            onClick={() => {
+              evalMutation.trigger(configModel.getValue());
+            }}
+            disabled={evalMutation.isMutating || !selectedTab}
+          >
+            Test
+          </Button>
+        </Box>
+        {tabs.error ? (
+          <ErrorAlert error={tabs.error} />
+        ) : (
           <TabsSelector
-            tabs={tabs}
+            tabs={tabs.data}
             selectedTab={selectedTab}
             onSelect={selectTab}
           />
-        </Box>
-        <SendForm result={evalMutation} />
+        )}
       </Box>
+      {evalMutation.error ? (
+        <ErrorAlert error={evalMutation.error} />
+      ) : evalMutation.isMutating ? (
+        <Typography>Loading...</Typography>
+      ) : !evalMutation.data ? (
+        <Box overflow={"auto"}>
+          <Readme />
+        </Box>
+      ) : (
+        <SendForm result={evalMutation.data} />
+      )}
     </Box>
   );
 }
