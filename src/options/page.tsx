@@ -11,12 +11,12 @@ import { ErrorAlert } from "@/components/error-alert";
 
 import {
   Tab,
+  evalForTab,
   getAllTabs,
   loadSyncSettings,
   saveSyncSettings,
 } from "@/shared/extension";
 
-import { api } from "./api";
 import { SendForm } from "./send-form";
 import { TabsSelector } from "./tabs-selector";
 import { Readme } from "./readme";
@@ -27,7 +27,7 @@ async function runEvalForTab(tab: Tab | null, { arg }: { arg: string }) {
   if (!tab) {
     throw new Error("Tab not selected");
   }
-  return api.evalForTab(tab.id, arg);
+  return evalForTab(tab.id, arg);
 }
 
 async function saveConfig(_: string, { arg }: { arg: string }) {

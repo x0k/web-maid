@@ -1,62 +1,68 @@
-endpoint: http://localhost:3000
-schema:
-  type: object
-  properties:
-    title:
-      type: string
-    url:
-      type: string
-    html:
-      type: string
-    selection:
-      type: string
-    content:
-      type: string
-    text:
-      type: string
-uiSchema:
-  html:
-    ui:widget: textarea
-  selection:
-    ui:widget: textarea
-  content:
-    ui:widget: textarea
-  text:
-    ui:widget: textarea
-data:
-  $op: pipe
-  do:
-    - title:
-        $op: document
-        key: title
-      url:
-        $op: document
-        key:
-          - location
-          - href
-        # Test document doesn't have location
-        default: "https://example.com"
-      html:
-        $op: document
-        key:
-          - documentElement
-          - outerHTML
-      selection:
-        $op: selection
-    - $op: update
+- active: true
+  method: POST
+  url: http://localhost:3000/notes
+  headers:
+    Content-Type: application/json
+    Authorization:
+      $op: get
+      key: token
+  body:
+    schema:
+      type: object
       properties:
+        title:
+          type: string
+        url:
+          type: string
+        html:
+          type: string
+        selection:
+          type: string
         content:
-          $op: simplifyHtml
-          baseUrl:
-            $op: get
-            key: url
-          html:
-            $op: get
-            key: html
-    - $op: update
-      properties:
+          type: string
         text:
-          $op: html2md
+          type: string
+    uiSchema:
+      html:
+        ui:widget: textarea
+      selection:
+        ui:widget: textarea
+      content:
+        ui:widget: textarea
+      text:
+        ui:widget: textarea
+    content:
+      $op: pipe
+      do:
+        - title:
+            $op: document
+            key: title
+          url:
+            $op: document
+            key:
+              - location
+              - href
           html:
-            $op: get
-            key: content
+            $op: document
+            key:
+              - documentElement
+              - outerHTML
+          selection:
+            $op: selection
+        - $op: update
+          properties:
+            content:
+              $op: simplifyHtml
+              baseUrl:
+                $op: get
+                key: url
+              html:
+                $op: get
+                key: html
+        - $op: update
+          properties:
+            text:
+              $op: html2md
+              html:
+                $op: get
+                key: content
