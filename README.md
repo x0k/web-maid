@@ -1,27 +1,67 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Scraper Extension
 
-Currently, two official plugins are available:
+Extension to scrape data from web pages in free form.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Config
 
-## Expanding the ESLint configuration
+The `config` describes the receiving endpoints and the shape of data to send.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Example:
 
-- Configure the top-level `parserOptions` property like this:
-
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
+```yaml
+- method: POST
+  url: https://api.example.com/notes
+  headers:
+    Content-Type: application/json
+    Authorization:
+      $op: get
+      key: token
+  body:
+    content:
+      title:
+        $op: document
+        key: title
+      url:
+        $op: document
+        key:
+          - location
+          - href
+      html:
+        $op: document
+        key:
+          - documentElement
+          - outerHTML
+      selection:
+        $op: selection
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+The entire `config` is a program that is computed using the following rules:
+
+- If an object contains the key `$op`, it is interpreted as an `operator`, the other keys of this object are parameters of the `operator`
+- Operators transform the `context` according to their logic and specified parameters
+- Rest values interprets as is
+- Calculation is a depth-first search
+- Initial `context` is a `secrets` data
+
+## Secrets
+
+The data which contains sensitive information and stored locally.
+
+Secrets data from [config](#config) section.
+
+```yaml
+token: secret
+```
+
+## Operators
+
+Operators are functions with the following signature
+
+```typescript
+type Operator<C, R> = (config: C) => (context: unknown) => R
+```
+
+## Additional
+
+You can define `schema` and `uiSchema` in the `body` section to validate, supplement, or edit the information to sent.
