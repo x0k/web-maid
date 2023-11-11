@@ -8,6 +8,11 @@ do:
       key:
         - location
         - href
+    hostname:
+      $op: doc.get
+      key:
+        - location
+        - hostname
     selection:
       $op: doc.selection
   - $op: ctx.update
@@ -35,10 +40,14 @@ do:
       $op: template.render
       template: |
         ---
-        title: {{ title }}
-        url: {{ url }}
+        page-title: {{{json title}}}
+        url: {{url}}
+        hostname: {{hostname}}
+        reviewed: false
         ---
 
-        {{ selection }}
+        {{#if selection}}
+        {{quote selection}}
 
-        {{ text }}
+        {{/if}}
+        {{text}}

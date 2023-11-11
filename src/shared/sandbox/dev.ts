@@ -1,8 +1,11 @@
 import Mustache from "mustache";
 
 import type { IRemoteActor, Request } from "@/lib/actor";
+import { identity } from "@/lib/function";
 
 import { Action, ActionResults, ActionType } from "@/shared/rpc";
+
+Mustache.escape = identity;
 
 const handlers: {
   [K in ActionType]: (msg: Extract<Action, Request<K>>) => ActionResults[K];
