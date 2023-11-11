@@ -1,68 +1,44 @@
-- active: true
-  method: POST
-  url: http://localhost:3000/notes
-  headers:
-    Content-Type: application/json
-    Authorization:
-      $op: ctx.get
-      key: token
-  body:
-    schema:
-      type: object
-      properties:
-        title:
-          type: string
-        url:
-          type: string
-        html:
-          type: string
-        selection:
-          type: string
-        content:
-          type: string
-        text:
-          type: string
-    uiSchema:
-      html:
-        ui:widget: textarea
-      selection:
-        ui:widget: textarea
-      content:
-        ui:widget: textarea
+$op: pipe
+do:
+  - title:
+      $op: doc.get
+      key: title
+    url:
+      $op: doc.get
+      key:
+        - location
+        - href
+    selection:
+      $op: doc.selection
+  - $op: ctx.update
+    properties:
       text:
-        ui:widget: textarea
-    content:
-      $op: pipe
-      do:
-        - title:
-            $op: doc.get
-            key: title
-          url:
-            $op: doc.get
-            key:
-              - location
-              - href
+        $op: html.markdown
+        html:
+          $op: html.simplify
+          baseUrl:
+            $op: ctx.get
+            key: url
           html:
             $op: doc.get
             key:
               - documentElement
               - outerHTML
-          selection:
-            $op: doc.selection
-        - $op: ctx.update
-          properties:
-            content:
-              $op: html.simplify
-              baseUrl:
-                $op: ctx.get
-                key: url
-              html:
-                $op: ctx.get
-                key: html
-        - $op: ctx.update
-          properties:
-            text:
-              $op: html.markdown
-              html:
-                $op: ctx.get
-                key: content
+  - $op: fs.saveFile
+    filename:
+      $op: str.join
+      values:
+        - $op: ctx.get
+          key: title
+        - ".md"
+    content:
+      $op: template.render
+      template: |
+        ---
+        title: {{ title }}
+        url: {{ url }}
+        ---
+
+        {{ selection }}
+
+        {{ text }}

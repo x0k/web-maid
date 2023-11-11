@@ -5,7 +5,7 @@ import { fileOpen, fileSave } from "browser-fs-access";
 import { TaskOpFactory } from "@/lib/operator";
 
 const saveConfig = z.object({
-  fileName: z.string(),
+  filename: z.string(),
   content: z.string(),
 });
 
@@ -15,15 +15,17 @@ export class SaveFileOpFactory extends TaskOpFactory<
 > {
   readonly schema = saveConfig;
   protected async execute({
-    fileName,
+    filename,
     content,
   }: z.TypeOf<this["schema"]>): Promise<string> {
-    const type = lookup(fileName);
+    const type = lookup(filename);
     if (!type) {
-      throw new Error(`Could not determine mime type for ${fileName}`);
+      throw new Error(`Could not determine mime type for ${filename}`);
     }
-    await fileSave(new Blob([content], { type }));
-    return fileName;
+    await fileSave(new Blob([content], { type }), {
+      fileName: filename,
+    });
+    return filename;
   }
 }
 
