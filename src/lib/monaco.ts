@@ -1,7 +1,9 @@
 import * as monaco from "monaco-editor";
+import { configureMonacoYaml } from "monaco-yaml";
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import HtmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
-import { configureMonacoYaml } from "monaco-yaml";
+import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+
 import YamlWorker from "@/lib/yaml.worker?worker";
 
 self.MonacoEnvironment = {
@@ -9,6 +11,8 @@ self.MonacoEnvironment = {
     switch (label) {
       case "yaml":
         return new YamlWorker();
+      case "json":
+        return new JsonWorker();
       case "html":
       case "handlebars":
       case "razor":

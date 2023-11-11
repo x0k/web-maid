@@ -1,6 +1,7 @@
 export enum ActionType {
   RenderTemplate = "template::render",
   RunEval = "eval::run",
+  ValidateSchema = "schema::validate",
 }
 
 export interface AbstractAction<T extends ActionType> {
@@ -18,9 +19,15 @@ export interface RunEvalAction extends AbstractAction<ActionType.RunEval> {
   expression: string;
 }
 
-export type Action = RenderTemplateAction | RunEvalAction;
+export interface ValidateSchema
+  extends AbstractAction<ActionType.ValidateSchema> {
+  schema: Record<string, unknown>;
+}
+
+export type Action = RenderTemplateAction | RunEvalAction | ValidateSchema;
 
 export interface ActionResults {
   [ActionType.RenderTemplate]: string;
+  [ActionType.ValidateSchema]: boolean;
   [ActionType.RunEval]: unknown;
 }

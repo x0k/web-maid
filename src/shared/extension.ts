@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { JSONSchema7 } from "json-schema";
 
 import { Json } from "@/lib/zod";
 
@@ -24,7 +23,7 @@ export interface LocalSettings {
 
 export interface SyncSettings {
   config: string;
-  secretsSchema: JSONSchema7;
+  secretsSchema: string;
 }
 
 const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
@@ -33,13 +32,13 @@ const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
 
 const DEFAULT_SYNC_SETTINGS: z.infer<typeof syncSettingsSchema> = {
   config: rawConfig,
-  secretsSchema: JSON.stringify({
-    type: "object",
-    properties: {
-      token: { type: "string" },
-    },
-    required: ["token"],
-  }),
+  secretsSchema: `type: object
+properties:
+  token:
+    type: string
+required:
+  - token
+`,
 };
 
 const tabSchema = z.object({
@@ -92,21 +91,11 @@ async function evalOperator(config: string, secrets: Json) {
 
 export async function loadSyncSettings(): Promise<SyncSettings> {
   const settings = await chrome.storage.sync.get(DEFAULT_SYNC_SETTINGS);
-  const { secretsSchema, ...rest } = syncSettingsSchema.parse(settings);
-  return {
-    ...rest,
-    secretsSchema: JSON.parse(secretsSchema),
-  };
+  return syncSettingsSchema.parse(settings);
 }
 
-export async function saveSyncSettings({
-  secretsSchema,
-  ...rest
-}: Partial<SyncSettings>) {
-  const data = partialSyncSettingsSchema.parse({
-    ...rest,
-    secretsSchema: JSON.stringify(secretsSchema),
-  });
+export async function saveSyncSettings(settings: Partial<SyncSettings>) {
+  const data = partialSyncSettingsSchema.parse(settings);
   await chrome.storage.sync.set(data);
 }
 

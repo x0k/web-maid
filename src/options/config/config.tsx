@@ -23,6 +23,13 @@ import { Readme } from "./readme";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
+function showError(err: unknown) {
+  enqueueSnackbar({
+    variant: "error",
+    message: stringifyError(err),
+  });
+}
+
 async function runEvalForTab(tab: Tab | null, { arg }: { arg: string }) {
   if (!tab) {
     throw new Error("Tab not selected");
@@ -34,16 +41,9 @@ async function saveConfig(_: string, { arg }: { arg: string }) {
   await saveSyncSettings({ config: arg });
 }
 
-function showError(err: unknown) {
-  enqueueSnackbar({
-    variant: "error",
-    message: stringifyError(err),
-  });
-}
-
 const initialTabs: Tab[] = [];
 
-export function Page() {
+export function Config() {
   const tabs = useSWR("tabs", getAllTabs, {
     fallbackData: initialTabs,
   });
@@ -59,15 +59,15 @@ export function Page() {
   const configMutation = useSWRMutation("settings/sync", saveConfig, {
     onError: showError,
   });
+
   return (
     <Box
-      height="100vh"
+      flexGrow={1}
       display="grid"
       gridTemplateColumns="1fr 1fr"
       gridTemplateRows="auto 1fr"
       overflow={"hidden"}
       gap={2}
-      p={2}
     >
       <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>
         <Box display="flex" flexDirection="row" gap={2} alignItems="center">
@@ -90,7 +90,7 @@ export function Page() {
           <Typography flexGrow={1}>Tabs</Typography>
           <Button
             variant="contained"
-            color="secondary"
+            color="warning"
             size="small"
             onClick={() => {
               evalMutation.trigger(configModel.getValue());
@@ -110,17 +110,17 @@ export function Page() {
           />
         )}
       </Box>
-      {evalMutation.error ? (
-        <ErrorAlert error={evalMutation.error} />
-      ) : evalMutation.isMutating ? (
-        <Typography>Loading...</Typography>
-      ) : !evalMutation.data ? (
-        <Box overflow={"auto"}>
+      <Box overflow={"auto"}>
+        {evalMutation.error ? (
+          <ErrorAlert error={evalMutation.error} />
+        ) : evalMutation.isMutating ? (
+          <Typography>Loading...</Typography>
+        ) : !evalMutation.data ? (
           <Readme />
-        </Box>
-      ) : (
-        <SendForm result={evalMutation.data} />
-      )}
+        ) : (
+          <SendForm result={evalMutation.data} />
+        )}
+      </Box>
     </Box>
   );
 }
