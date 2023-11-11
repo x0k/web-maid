@@ -4,6 +4,7 @@ import { ScopedOpFactory } from "@/lib/operator";
 import { contextOperatorsFactories } from "@/lib/operators/context";
 import { documentOperatorsFactories } from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
+import { fsOperatorsFactories } from "@/lib/operators/fs";
 import { htmlOperatorsFactories } from "@/lib/operators/html";
 import { stringsOperatorsFactories } from "@/lib/operators/strings";
 import { sysOperatorsFactories } from "@/lib/operators/sys";
@@ -41,5 +42,6 @@ export function compileOperatorFactories({
   assignWithPrefix("ctx.", factories, contextOperatorsFactories());
   assignWithPrefix("html.", factories, htmlOperatorsFactories(window));
   assignWithPrefix("str.", factories, stringsOperatorsFactories());
+  assignWithPrefix("fs.", factories, fsOperatorsFactories());
   return factories;
 }

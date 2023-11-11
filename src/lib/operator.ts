@@ -77,7 +77,7 @@ export abstract class BaseValFactory<S extends ZodType, R>
 }
 
 export abstract class BaseOpFactory<S extends ZodType, R>
-  implements Factory<unknown, ScopedOp<R>>
+  implements ScopedOpFactory<R>
 {
   abstract readonly schema: S;
   abstract Create(config: unknown): ScopedOp<R>;
