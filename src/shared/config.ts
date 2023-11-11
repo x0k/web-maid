@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const requestSchema = z.object({
+const requestSchema = z.object({
   active: z.boolean().default(true),
   method: z
     .enum(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
@@ -16,5 +16,3 @@ export const requestSchema = z.object({
 });
 
 export const configSchema = z.array(requestSchema);
-
-export type Config = z.infer<typeof configSchema>;

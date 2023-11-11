@@ -1,8 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
-import MuiForm from "@rjsf/mui";
-import validator from "@rjsf/validator-ajv8";
 import useSWRMutation from "swr/mutation";
 import useSWR from "swr";
 import { parse } from "yaml";
@@ -13,6 +11,7 @@ import { monaco } from "@/lib/monaco";
 import { Json } from "@/lib/zod";
 import { ErrorAlert } from "@/components/error-alert";
 import { Row } from "@/components/row";
+import { Form } from "@/components/form";
 
 import {
   loadLocalSettings,
@@ -20,6 +19,8 @@ import {
   saveLocalSettings,
   saveSyncSettings,
 } from "@/shared/extension";
+import { useSandbox } from "@/shared/react";
+import { FormDataValidator } from "@/shared/form-data-validator";
 
 const secretsSchemaModel = monaco.editor.createModel("", "yaml");
 
@@ -32,6 +33,7 @@ function showError(err: unknown) {
 
 async function saveSecrets(_: string, { arg }: { arg: Json }) {
   await saveLocalSettings({ secrets: arg });
+  return arg;
 }
 
 async function saveSecretsSchema(_: string, { arg }: { arg: string }) {
@@ -39,17 +41,30 @@ async function saveSecretsSchema(_: string, { arg }: { arg: string }) {
 }
 
 export function Secrets() {
+  const sandbox = useSandbox();
+  const asyncValidator = useMemo(
+    () => new FormDataValidator(sandbox),
+    [sandbox]
+  );
   const local = useSWR("settings/local", loadLocalSettings, {
     revalidateOnFocus: false,
   });
-  const secretsMutation = useSWRMutation("settings/local", saveSecrets, {
-    onError: showError,
+  const secretsMutation = useSWRMutation(
+    "settings/local/secrets",
+    saveSecrets,
+    {
+      onSuccess: (secrets) => {
+        local.mutate({ secrets });
+      },
+      onError: showError,
+    }
+  );
+  const sync = useSWR("settings/sync", loadSyncSettings, {
+    revalidateOnFocus: false,
   });
-  const sync = useSWR("settings/sync/secrets-schema", loadSyncSettings, {
-    onSuccess({ secretsSchema }) {
-      secretsSchemaModel.setValue(secretsSchema);
-    },
-  });
+  useEffect(() => {
+    secretsSchemaModel.setValue(sync.data?.secretsSchema || "");
+  }, [sync.data?.secretsSchema]);
   const secretsSchemaMutation = useSWRMutation(
     "settings/sync/secrets-schema",
     saveSecretsSchema,
@@ -91,11 +106,12 @@ export function Secrets() {
       {local.error ? (
         <ErrorAlert error={local.error} />
       ) : (
-        <MuiForm
+        <Form
+          id="secrets"
           schema={secretsSchema}
-          validator={validator}
-          formData={local.data}
+          formData={local.data?.secrets}
           omitExtraData
+          asyncValidator={asyncValidator}
           onSubmit={({ formData }) => {
             secretsMutation.trigger(formData);
           }}
@@ -103,7 +119,7 @@ export function Secrets() {
           <Button type="submit" variant="contained" color="success" fullWidth>
             Save
           </Button>
-        </MuiForm>
+        </Form>
       )}
     </Box>
   );
