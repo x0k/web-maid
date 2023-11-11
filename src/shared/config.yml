@@ -1,62 +1,35 @@
-endpoint: http://localhost:3000
-schema:
-  type: object
-  properties:
-    title:
-      type: string
+$op: pipe
+do:
+  - title:
+      $op: doc.get
+      key: title
     url:
-      type: string
-    html:
-      type: string
-    selection:
-      type: string
-    content:
-      type: string
+      $op: doc.get
+      key:
+        - location
+        - href
     text:
-      type: string
-uiSchema:
-  html:
-    ui:widget: textarea
-  selection:
-    ui:widget: textarea
-  content:
-    ui:widget: textarea
-  text:
-    ui:widget: textarea
-data:
-  $op: pipe
-  do:
-    - title:
-        $op: document
-        key: title
-      url:
-        $op: document
-        key:
-          - location
-          - href
-        # Test document doesn't have location
-        default: "https://example.com"
+      $op: html.markdown
       html:
-        $op: document
-        key:
-          - documentElement
-          - outerHTML
-      selection:
-        $op: selection
-    - $op: update
-      properties:
-        content:
-          $op: simplifyHtml
-          baseUrl:
-            $op: get
-            key: url
-          html:
-            $op: get
-            key: html
-    - $op: update
-      properties:
-        text:
-          $op: html2md
-          html:
-            $op: get
-            key: content
+        $op: html.simplify
+        html:
+          $op: doc.get
+          key:
+            - documentElement
+            - outerHTML
+  - $op: fs.saveFile
+    filename:
+      $op: str.join
+      values:
+        - $op: ctx.get
+          key: title
+        - ".md"
+    content:
+      $op: template.render
+      template: |
+        ---
+        title: {{title}}
+        url: {{url}}
+        ---
+
+        {{text}}

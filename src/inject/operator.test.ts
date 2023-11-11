@@ -1,19 +1,29 @@
 import { it, expect, beforeEach } from "vitest";
 
-import { OPERATOR_KEY, ScopedOp, evalInScope } from "@/lib/operator";
+import {
+  OPERATOR_KEY,
+  ScopedOp,
+  evalInScope,
+  makeComposedFactory,
+  makeOperatorResolver,
+} from "@/lib/operator";
 import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { AsyncFactory } from "@/lib/factory";
-import { TemplateRendererData } from "@/lib/operators/ext";
+import { TemplateRendererData } from "@/lib/operators/template";
 
-import { makeAppOperatorResolver } from "./operator";
+import { compileOperatorFactories } from "./operator";
 
 let resolver: <C>(context: C) => ScopedOp<unknown> | C;
 
 beforeEach(() => {
-  resolver = makeAppOperatorResolver(
-    {} as Window,
-    {} as AsyncFactory<string, unknown>,
-    {} as AsyncFactory<TemplateRendererData, string>
+  resolver = makeOperatorResolver(
+    makeComposedFactory(
+      compileOperatorFactories({
+        window: {} as Window,
+        evaluator: {} as AsyncFactory<string, unknown>,
+        rendered: {} as AsyncFactory<TemplateRendererData, string>,
+      })
+    )
   );
 });
 
@@ -39,7 +49,7 @@ it("Should evaluate nested operators", async () => {
         inner: {
           [OPERATOR_KEY]: "not",
           value: {
-            [OPERATOR_KEY]: "ctx",
+            [OPERATOR_KEY]: "ctx.get",
           },
         },
       },

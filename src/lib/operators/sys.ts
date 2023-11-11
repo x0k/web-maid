@@ -97,8 +97,8 @@ export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
 
 export function sysOperatorsFactories() {
   return {
-    "sys.define": new DefineOpFactory(),
-    "sys.call": new CallOpFactory(),
-    "sys.get": new GetOpFactory(),
+    define: new DefineOpFactory(),
+    call: new CallOpFactory(),
+    get: new GetOpFactory(),
   };
 }

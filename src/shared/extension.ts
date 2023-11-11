@@ -1,36 +1,50 @@
 import { z } from "zod";
 
-import { AsyncFactory } from "@/lib/factory";
+import { Json } from "@/lib/zod";
+import { isObject } from "@/lib/guards";
 
 import rawConfig from "./config.yml?raw";
 
 const localSettingsSchema = z.object({
-  apiKey: z.string(),
+  secrets: z.string(),
 });
 
 const partialLocalSettingsSchema = localSettingsSchema.partial();
 
-export type LocalSettings = z.infer<typeof localSettingsSchema>;
-
 const syncSettingsSchema = z.object({
   config: z.string(),
+  secretsSchema: z.string(),
 });
 
 const partialSyncSettingsSchema = syncSettingsSchema.partial();
 
-export type SyncSettings = z.infer<typeof syncSettingsSchema>;
+export interface LocalSettings {
+  secrets: Json;
+}
 
-const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
-  apiKey: "api-key",
+export interface SyncSettings {
+  config: string;
+  secretsSchema: string;
+}
+
+const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
+  secrets: JSON.stringify({ token: "" }),
 };
 
-const DEFAULT_SYNC_SETTINGS: SyncSettings = {
+const DEFAULT_SYNC_SETTINGS: z.infer<typeof syncSettingsSchema> = {
   config: rawConfig,
+  secretsSchema: `type: object
+properties:
+  token:
+    type: string
+required:
+  - token
+`,
 };
 
 const tabSchema = z.object({
   id: z.number(),
-  title: z.string().default('Untitled'),
+  title: z.string().default("Untitled"),
   favIconUrl: z.string().optional(),
 });
 
@@ -38,47 +52,21 @@ const tabsSchema = z.array(tabSchema);
 
 export type Tab = z.infer<typeof tabSchema>;
 
-const evalResultSchema = z.object({
-  endpoint: z.string(),
-  value: z.unknown(),
-  schema: z.record(z.unknown()).optional(),
-  uiSchema: z.record(z.unknown()).optional(),
-});
-
-export type EvalResult = z.infer<typeof evalResultSchema>;
-
-async function evalOperator(config: string) {
-  const {
-    parse,
-    configSchema,
-    traverseJsonLike,
-    evalInScope,
-    stringifyError,
-    resolver,
-  } = window.__SCRAPER_EXTENSION__ ?? {
-    stringifyError: String,
-  };
+async function evalOperator(config: string, secrets: Json) {
+  const { parse, traverseJsonLike, evalInScope, stringifyError, resolver } =
+    window.__SCRAPER_EXTENSION__ ?? {
+      stringifyError: String,
+    };
   try {
-    if (config.trim() === "") {
-      throw new Error("No config");
-    }
     const configData = parse(config);
-    const { data, uiSchema, schema, context, endpoint } =
-      configSchema.parse(configData);
-    const value = await evalInScope(traverseJsonLike(resolver, data), {
+    return await evalInScope(traverseJsonLike(resolver, configData), {
       functions: {},
       constants: {},
-      context,
+      context: secrets,
     });
-    return {
-      endpoint,
-      value,
-      schema,
-      uiSchema,
-    };
   } catch (error) {
     return {
-      error: stringifyError(error),
+      __error: stringifyError(error),
     };
   }
 }
@@ -95,11 +83,21 @@ export async function saveSyncSettings(settings: Partial<SyncSettings>) {
 
 export async function loadLocalSettings(): Promise<LocalSettings> {
   const settings = await chrome.storage.local.get(DEFAULT_LOCAL_SETTINGS);
-  return localSettingsSchema.parse(settings);
+  const { secrets, ...rest } = localSettingsSchema.parse(settings);
+  return {
+    ...rest,
+    secrets: JSON.parse(secrets),
+  };
 }
 
-export async function saveLocalSettings(settings: Partial<LocalSettings>) {
-  const data = partialLocalSettingsSchema.parse(settings);
+export async function saveLocalSettings({
+  secrets,
+  ...rest
+}: Partial<LocalSettings>) {
+  const data = partialLocalSettingsSchema.parse({
+    ...rest,
+    secrets: JSON.stringify(secrets),
+  });
   await chrome.storage.local.set(data);
 }
 
@@ -112,25 +110,22 @@ export interface ConfigRenderedData {
   configData: LocalSettings;
 }
 
-export class Extension {
-  constructor(
-    private readonly renderer: AsyncFactory<ConfigRenderedData, string>
-  ) {}
-
-  async evalForTab(tabId: number, config: string): Promise<EvalResult> {
-    const localConfig = await loadLocalSettings();
-    const compiledConfig = await this.renderer.Create({
-      configTemplate: config,
-      configData: localConfig,
-    });
-    const [{ result }] = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: evalOperator,
-      args: [compiledConfig],
-    });
-    if (result.error) {
-      throw new Error(result.error);
-    }
-    return evalResultSchema.parse(result);
+export async function evalForTab(
+  tabId: number,
+  config: string
+): Promise<unknown> {
+  const localConfig = await loadLocalSettings();
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: evalOperator,
+    args: [config, localConfig.secrets],
+  });
+  if (
+    isObject(result) &&
+    "__error" in result &&
+    typeof result.__error === "string"
+  ) {
+    throw new Error(result.__error);
   }
+  return result;
 }

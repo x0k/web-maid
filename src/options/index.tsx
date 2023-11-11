@@ -3,12 +3,28 @@ import ReactDOM from "react-dom/client";
 import { SnackbarProvider } from "notistack";
 import { CssBaseline } from "@mui/material";
 
-import { Page } from "./page";
+import { ErrorAlert } from "@/components/error-alert";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <CssBaseline />
-    <Page />
-    <SnackbarProvider />
-  </React.StrictMode>
-);
+import { createSandbox, findAndBindIFrame } from "@/shared/sandbox";
+import { SandboxContext } from "@/shared/react";
+
+import { OptionsPage } from "./options";
+
+const root = document.getElementById("root")!;
+
+createSandbox("sandbox.html", findAndBindIFrame("sandbox"))
+  .then(
+    (sandbox) => (
+      <React.StrictMode>
+        <CssBaseline />
+        <SandboxContext.Provider value={sandbox}>
+          <OptionsPage />
+        </SandboxContext.Provider>
+        <SnackbarProvider
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        />
+      </React.StrictMode>
+    ),
+    (error) => <ErrorAlert error={error} />
+  )
+  .then((content) => ReactDOM.createRoot(root).render(content));

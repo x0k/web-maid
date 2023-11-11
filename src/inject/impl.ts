@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 
 import { IRemoteActor } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";
-import { TemplateRendererData } from "@/lib/operators/ext";
+import { TemplateRendererData } from "@/lib/operators/template";
 
 import { Action, ActionResults, ActionType } from "@/shared/rpc";
 

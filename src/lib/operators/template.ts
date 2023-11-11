@@ -40,10 +40,10 @@ export class TemplateFactory extends FlowOpFactory<
   }
 }
 
-export function extOperatorsFactories(
+export function templateOperatorsFactories(
   hbs: AsyncFactory<TemplateRendererData, string>
 ) {
   return {
-    template: new TemplateFactory(hbs),
+    render: new TemplateFactory(hbs),
   };
 }

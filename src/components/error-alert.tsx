@@ -3,7 +3,7 @@ import { Alert, AlertTitle } from "@mui/material";
 import { stringifyError } from "@/lib/error";
 
 export interface ErrorProps {
-  title?: JSX.Element | string;
+  title?: React.ReactNode
   error: unknown;
 }
 
