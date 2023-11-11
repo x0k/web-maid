@@ -5,8 +5,8 @@ import { z } from "zod";
 import { BrowserFactory } from "./shared/browser-factory";
 
 const readabilityConfig = z.object({
-  baseUrl: z.string(),
   html: z.string(),
+  baseUrl: z.string().optional(),
   default: z.unknown().default(""),
 });
 
@@ -16,13 +16,13 @@ export class ReadabilityOpFactory extends BrowserFactory<
 > {
   readonly schema = readabilityConfig;
   execute({
-    baseUrl,
     html,
+    baseUrl,
     default: defaultValue,
   }: z.TypeOf<this["schema"]>): unknown {
     const tmpDoc = this.window.document.implementation.createHTMLDocument();
     const base = this.window.document.createElement("base");
-    base.href = baseUrl;
+    base.href = baseUrl ?? this.window.location.href;
     tmpDoc.head.appendChild(base);
     tmpDoc.body.innerHTML = html;
     const reader = new Readability(tmpDoc);
