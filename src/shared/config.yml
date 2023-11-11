@@ -8,25 +8,15 @@ do:
       key:
         - location
         - href
-    hostname:
-      $op: doc.get
-      key:
-        - location
-        - hostname
-  - $op: ctx.update
-    properties:
-      text:
-        $op: html.markdown
+    text:
+      $op: html.markdown
+      html:
+        $op: html.simplify
         html:
-          $op: html.simplify
-          baseUrl:
-            $op: ctx.get
-            key: url
-          html:
-            $op: doc.get
-            key:
-              - documentElement
-              - outerHTML
+          $op: doc.get
+          key:
+            - documentElement
+            - outerHTML
   - $op: fs.saveFile
     filename:
       $op: str.join
@@ -40,7 +30,6 @@ do:
         ---
         title: {{title}}
         url: {{url}}
-        hostname: {{hostname}}
         ---
 
         {{text}}
