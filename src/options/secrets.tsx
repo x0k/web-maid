@@ -31,6 +31,13 @@ function showError(err: unknown) {
   });
 }
 
+function showSuccess(message: string) {
+  enqueueSnackbar({
+    variant: "success",
+    message,
+  });
+}
+
 async function saveSecrets(_: string, { arg }: { arg: Json }) {
   await saveLocalSettings({ secrets: arg });
   return arg;
@@ -55,6 +62,7 @@ export function Secrets() {
     {
       onSuccess: (secrets) => {
         local.mutate({ secrets });
+        showSuccess("Secrets saved");
       },
       onError: showError,
     }
@@ -69,6 +77,9 @@ export function Secrets() {
     "settings/sync/secrets-schema",
     saveSecretsSchema,
     {
+      onSuccess: () => {
+        showSuccess("Secrets schema saved");
+      },
       onError: showError,
     }
   );
