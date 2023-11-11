@@ -1,21 +1,11 @@
 import { z } from "zod";
-import { Readability } from "@mozilla/readability";
-import Turndown from "turndown";
 
-import { TaskOpFactory } from "@/lib/operator";
 import { get } from "@/lib/object";
 import { jsonSchema } from "@/lib/zod";
 import { neverError } from "@/lib/guards";
 import { AsyncFactory } from "@/lib/factory";
 
-export abstract class BrowserFactory<
-  Z extends z.ZodType,
-  R
-> extends TaskOpFactory<Z, R> {
-  constructor(protected readonly window: Window) {
-    super();
-  }
-}
+import { BrowserFactory } from "./shared/browser-factory";
 
 const primitiveKeyConfig = z.union([z.string(), z.number().int()]);
 
@@ -104,75 +94,13 @@ export class SelectionOpFactory extends BrowserFactory<
   }
 }
 
-const readabilityConfig = z.object({
-  baseUrl: z.string(),
-  html: z.string(),
-  default: z.unknown().default(""),
-});
-
-export class ReadabilityOpFactory extends BrowserFactory<
-  typeof readabilityConfig,
-  unknown
-> {
-  readonly schema = readabilityConfig;
-  execute({
-    baseUrl,
-    html,
-    default: defaultValue,
-  }: z.TypeOf<this["schema"]>): unknown {
-    const tmpDoc = this.window.document.implementation.createHTMLDocument();
-    const base = this.window.document.createElement("base");
-    base.href = baseUrl;
-    tmpDoc.head.appendChild(base);
-    tmpDoc.body.innerHTML = html;
-    const reader = new Readability(tmpDoc);
-    const article = reader.parse();
-    return article === null ? defaultValue : article;
-  }
-}
-
-export class SimplifyHtmlOpFactory extends ReadabilityOpFactory {
-  execute(config: z.TypeOf<this["schema"]>): unknown {
-    const result = super.execute(config);
-    if (typeof result === "object" && result !== null && "content" in result) {
-      return result.content;
-    }
-    return result;
-  }
-}
-
-const html2MarkdownConfig = z.object({
-  html: z.string(),
-  options: z.record(z.string()).default({
-    headingStyle: "atx",
-    hr: "---",
-    bulletListMarker: "-",
-    codeBlockStyle: "fenced",
-    emDelimiter: "*",
-  }),
-});
-
-export class Html2MarkdownOpFactory extends BrowserFactory<
-  typeof html2MarkdownConfig,
-  string
-> {
-  readonly schema = html2MarkdownConfig;
-  execute({ html, options }: z.TypeOf<this["schema"]>): string {
-    const turndown = new Turndown(options);
-    return turndown.turndown(html);
-  }
-}
-
-export function browserOperatorsFactories(
+export function documentOperatorsFactories(
   window: Window,
   evaluator: AsyncFactory<string, unknown>
 ) {
   return {
-    document: new DocumentOpFactory(window),
-    jsEval: new JsEvalOpFactory(window, evaluator),
+    get: new DocumentOpFactory(window),
+    eval: new JsEvalOpFactory(window, evaluator),
     selection: new SelectionOpFactory(window),
-    readability: new ReadabilityOpFactory(window),
-    simplifyHtml: new SimplifyHtmlOpFactory(window),
-    html2md: new Html2MarkdownOpFactory(window),
   };
 }

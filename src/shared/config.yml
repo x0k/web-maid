@@ -4,7 +4,7 @@
   headers:
     Content-Type: application/json
     Authorization:
-      $op: get
+      $op: ctx.get
       key: token
   body:
     schema:
@@ -35,34 +35,34 @@
       $op: pipe
       do:
         - title:
-            $op: document
+            $op: doc.get
             key: title
           url:
-            $op: document
+            $op: doc.get
             key:
               - location
               - href
           html:
-            $op: document
+            $op: doc.get
             key:
               - documentElement
               - outerHTML
           selection:
-            $op: selection
-        - $op: update
+            $op: doc.selection
+        - $op: ctx.update
           properties:
             content:
-              $op: simplifyHtml
+              $op: html.simplify
               baseUrl:
-                $op: get
+                $op: ctx.get
                 key: url
               html:
-                $op: get
+                $op: ctx.get
                 key: html
-        - $op: update
+        - $op: ctx.update
           properties:
             text:
-              $op: html2md
+              $op: html.markdown
               html:
-                $op: get
+                $op: ctx.get
                 key: content

@@ -20,7 +20,9 @@ createSandbox("sandbox.html", findAndBindIFrame("sandbox"))
         <SandboxContext.Provider value={sandbox}>
           <OptionsPage />
         </SandboxContext.Provider>
-        <SnackbarProvider />
+        <SnackbarProvider
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        />
       </React.StrictMode>
     ),
     (error) => <ErrorAlert error={error} />

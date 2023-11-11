@@ -17,9 +17,9 @@ import {
   saveSyncSettings,
 } from "@/shared/extension";
 
-import { SendForm } from "./send-form";
 import { TabsSelector } from "./tabs-selector";
 import { Readme } from "./readme";
+import { stringify } from "yaml";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
@@ -118,7 +118,9 @@ export function Config() {
         ) : !evalMutation.data ? (
           <Readme />
         ) : (
-          <SendForm result={evalMutation.data} />
+          <pre>
+            <code>{stringify(evalMutation.data)}</code>
+          </pre>
         )}
       </Box>
     </Box>

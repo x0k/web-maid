@@ -1,28 +1,34 @@
 import { parse } from "yaml";
 
 import { traverseJsonLike } from "@/lib/json-like-traverser";
-import { evalInScope } from "@/lib/operator";
+import {
+  evalInScope,
+  makeComposedFactory,
+  makeOperatorResolver,
+} from "@/lib/operator";
 import { stringifyError } from "@/lib/error";
 import { IRemoteActor } from "@/lib/actor";
 
-import { configSchema } from "@/shared/config";
-import { makeAppOperatorResolver } from "@/shared/operator";
 import { Action, ActionResults } from "@/shared/rpc";
 import { createAndMountIFrame, createSandbox } from "@/shared/sandbox";
 
 import { Evaluator, Renderer } from "./impl";
+import { compileOperatorFactories } from "./operator";
 
 function inject(sandbox: IRemoteActor<Action, ActionResults>) {
   const INJECTED = {
     parse,
-    configSchema,
     traverseJsonLike,
     evalInScope,
     stringifyError,
-    resolver: makeAppOperatorResolver(
-      window,
-      new Evaluator(sandbox),
-      new Renderer(sandbox)
+    resolver: makeOperatorResolver(
+      makeComposedFactory(
+        compileOperatorFactories({
+          window,
+          evaluator: new Evaluator(sandbox),
+          rendered: new Renderer(sandbox),
+        })
+      )
     ),
   };
   window.__SCRAPER_EXTENSION__ = INJECTED;

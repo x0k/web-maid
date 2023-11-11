@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { Json } from "@/lib/zod";
+import { isObject } from "@/lib/guards";
 
 import rawConfig from "./config.yml?raw";
 
@@ -51,40 +52,21 @@ const tabsSchema = z.array(tabSchema);
 
 export type Tab = z.infer<typeof tabSchema>;
 
-const evalResultSchema = z.object({
-  endpoint: z.string(),
-  value: z.unknown(),
-  schema: z.record(z.unknown()).optional(),
-  uiSchema: z.record(z.unknown()).optional(),
-});
-
-export type EvalResult = z.infer<typeof evalResultSchema>;
-
 async function evalOperator(config: string, secrets: Json) {
-  const {
-    parse,
-    configSchema,
-    traverseJsonLike,
-    evalInScope,
-    stringifyError,
-    resolver,
-  } = window.__SCRAPER_EXTENSION__ ?? {
-    stringifyError: String,
-  };
+  const { parse, traverseJsonLike, evalInScope, stringifyError, resolver } =
+    window.__SCRAPER_EXTENSION__ ?? {
+      stringifyError: String,
+    };
   try {
-    if (config.trim() === "") {
-      throw new Error("No config");
-    }
     const configData = parse(config);
-    const value = await evalInScope(traverseJsonLike(resolver, configData), {
+    return await evalInScope(traverseJsonLike(resolver, configData), {
       functions: {},
       constants: {},
       context: secrets,
     });
-    return configSchema.parse(value);
   } catch (error) {
     return {
-      error: stringifyError(error),
+      __error: stringifyError(error),
     };
   }
 }
@@ -131,15 +113,19 @@ export interface ConfigRenderedData {
 export async function evalForTab(
   tabId: number,
   config: string
-): Promise<EvalResult> {
+): Promise<unknown> {
   const localConfig = await loadLocalSettings();
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
     func: evalOperator,
     args: [config, localConfig.secrets],
   });
-  if ("error" in result) {
-    throw new Error(result.error);
+  if (
+    isObject(result) &&
+    "__error" in result &&
+    typeof result.__error === "string"
+  ) {
+    throw new Error(result.__error);
   }
-  return evalResultSchema.parse(result);
+  return result;
 }

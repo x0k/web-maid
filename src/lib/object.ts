@@ -54,3 +54,14 @@ export function get<T, D extends number = 3>(
   }
   throw new Error(`Value not found for key "${key}"`);
 }
+
+export function assignWithPrefix<V>(
+  prefix: string,
+  target: Record<string, V>,
+  source: Record<string, V>
+): Record<string, V> {
+  for (const [key, value] of Object.entries(source)) {
+    target[`${prefix}${key}`] = value;
+  }
+  return target;
+}
