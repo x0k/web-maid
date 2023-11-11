@@ -6,6 +6,7 @@ import { documentOperatorsFactories } from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
 import { fsOperatorsFactories } from "@/lib/operators/fs";
 import { htmlOperatorsFactories } from "@/lib/operators/html";
+import { jsonOperatorsFactories } from "@/lib/operators/json";
 import { stringsOperatorsFactories } from "@/lib/operators/strings";
 import { sysOperatorsFactories } from "@/lib/operators/sys";
 import {
@@ -43,5 +44,6 @@ export function compileOperatorFactories({
   assignWithPrefix("html.", factories, htmlOperatorsFactories(window));
   assignWithPrefix("str.", factories, stringsOperatorsFactories());
   assignWithPrefix("fs.", factories, fsOperatorsFactories());
+  assignWithPrefix("json.", factories, jsonOperatorsFactories());
   return factories;
 }
