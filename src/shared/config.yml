@@ -13,8 +13,6 @@ do:
       key:
         - location
         - hostname
-    selection:
-      $op: doc.selection
   - $op: ctx.update
     properties:
       text:
@@ -40,14 +38,9 @@ do:
       $op: template.render
       template: |
         ---
-        page-title: {{{json title}}}
+        title: {{title}}
         url: {{url}}
         hostname: {{hostname}}
-        reviewed: false
         ---
 
-        {{#if selection}}
-        {{quote selection}}
-
-        {{/if}}
         {{text}}
