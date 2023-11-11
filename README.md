@@ -1,42 +1,50 @@
-
 # Scraper Extension
 
 Extension to scrape data from web pages in free form.
 
 ## Config
 
-The `config` describes the receiving endpoints and the shape of data to send.
-
 Example:
 
 ```yaml
-- method: POST
-  url: https://api.example.com/notes
-  headers:
-    Content-Type: application/json
-    Authorization:
-      $op: get
-      key: token
-  body:
-    content:
-      title:
-        $op: document
-        key: title
-      url:
-        $op: document
-        key:
-          - location
-          - href
+$op: pipe
+do:
+  - title:
+      $op: doc.get
+      key: title
+    url:
+      $op: doc.get
+      key:
+        - location
+        - href
+    text:
+      $op: html.markdown
       html:
-        $op: document
-        key:
-          - documentElement
-          - outerHTML
-      selection:
-        $op: selection
+        $op: html.simplify
+        html:
+          $op: doc.get
+          key:
+            - documentElement
+            - outerHTML
+  - $op: fs.saveFile
+    filename:
+      $op: str.join
+      values:
+        - $op: ctx.get
+          key: title
+        - ".md"
+    content:
+      $op: template.render
+      template: |
+        ---
+        title: {{title}}
+        url: {{url}}
+        ---
+
+        {{text}}
 ```
 
-The entire `config` is a program that is computed using the following rules:
+The `config` is a program that is computed using the following rules:
 
 - If an object contains the key `$op`, it is interpreted as an `operator`, the other keys of this object are parameters of the `operator`
 - Operators transform the `context` according to their logic and specified parameters
@@ -48,10 +56,10 @@ The entire `config` is a program that is computed using the following rules:
 
 The data which contains sensitive information and stored locally.
 
-Secrets data from [config](#config) section.
+Example of `secrets` data:
 
 ```yaml
-token: secret
+token: Bearer token
 ```
 
 ## Operators
@@ -59,9 +67,5 @@ token: secret
 Operators are functions with the following signature
 
 ```typescript
-type Operator<C, R> = (config: C) => (context: unknown) => R
+type Operator<C, R> = (config: C) => (context: unknown) => R;
 ```
-
-## Additional
-
-You can define `schema` and `uiSchema` in the `body` section to validate, supplement, or edit the information to sent.
