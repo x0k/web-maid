@@ -2,11 +2,11 @@ import React from "react";
 
 import { IRemoteActor } from "@/lib/actor";
 
-import type { Action, ActionResults } from "./action";
+import type { SandboxAction, SandboxActionResults } from "./action";
 
 export const SandboxContext = React.createContext<IRemoteActor<
-  Action,
-  ActionResults
+  SandboxAction,
+  SandboxActionResults
 > | null>(null);
 
 export function useSandbox() {

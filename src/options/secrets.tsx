@@ -22,6 +22,8 @@ import {
 import { useSandbox } from "@/shared/sandbox/context";
 import { FormDataValidator } from "@/shared/sandbox/form-data-validator";
 
+import { sandboxIFrameId } from "./constants";
+
 const secretsSchemaModel = monaco.editor.createModel("", "yaml");
 
 function showError(err: unknown) {
@@ -51,7 +53,7 @@ async function saveSecretsSchema(_: string, { arg }: { arg: string }) {
 export function Secrets() {
   const sandbox = useSandbox();
   const asyncValidator = useMemo(
-    () => new FormDataValidator(sandbox),
+    () => new FormDataValidator(sandboxIFrameId, sandbox),
     [sandbox]
   );
   const local = useSWR("settings/local", loadLocalSettings, {

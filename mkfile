@@ -8,3 +8,6 @@ b:
 
 c:
   bun --bun run check
+
+t:
+  bun --bun run test

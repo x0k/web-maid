@@ -1,6 +1,8 @@
 import type { RJSFSchema, UiSchema, ValidationData } from "@rjsf/utils";
 
-export enum ActionType {
+import type { Request } from "@/lib/actor";
+
+export enum SandboxActionType {
   RenderTemplate = "template::render",
   RunEval = "eval::run",
   Validate = "schema::validate",
@@ -8,50 +10,47 @@ export enum ActionType {
   ValidateFormData = "formData::validate",
 }
 
-export interface AbstractAction<T extends ActionType> {
-  id: string;
-  type: T;
-}
+export interface AbstractSandboxAction<T extends SandboxActionType> extends Request<T> {}
 
 export interface RenderTemplateAction
-  extends AbstractAction<ActionType.RenderTemplate> {
+  extends AbstractSandboxAction<SandboxActionType.RenderTemplate> {
   template: string;
   data: unknown;
 }
 
-export interface RunEvalAction extends AbstractAction<ActionType.RunEval> {
+export interface RunEvalAction extends AbstractSandboxAction<SandboxActionType.RunEval> {
   expression: string;
 }
 
-export interface ValidateAction extends AbstractAction<ActionType.Validate> {
+export interface ValidateAction extends AbstractSandboxAction<SandboxActionType.Validate> {
   schema: Record<string, unknown>;
   data: unknown;
 }
 
 export interface ValidateSchemaAction
-  extends AbstractAction<ActionType.ValidateSchema> {
+  extends AbstractSandboxAction<SandboxActionType.ValidateSchema> {
   schema: Record<string, unknown>;
 }
 
 export interface ValidateFormDataAction<T>
-  extends AbstractAction<ActionType.ValidateFormData> {
+  extends AbstractSandboxAction<SandboxActionType.ValidateFormData> {
   formData: T | undefined;
   schema: RJSFSchema;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiSchema?: UiSchema<T, RJSFSchema, any>;
 }
 
-export type Action<T = unknown> =
+export type SandboxAction<T = unknown> =
   | RenderTemplateAction
   | RunEvalAction
   | ValidateAction
   | ValidateSchemaAction
   | ValidateFormDataAction<T>;
 
-export interface ActionResults<T = unknown> {
-  [ActionType.RenderTemplate]: string;
-  [ActionType.RunEval]: unknown;
-  [ActionType.Validate]: boolean;
-  [ActionType.ValidateSchema]: boolean;
-  [ActionType.ValidateFormData]: ValidationData<T>;
+export interface SandboxActionResults<T = unknown> {
+  [SandboxActionType.RenderTemplate]: string;
+  [SandboxActionType.RunEval]: unknown;
+  [SandboxActionType.Validate]: boolean;
+  [SandboxActionType.ValidateSchema]: boolean;
+  [SandboxActionType.ValidateFormData]: ValidationData<T>;
 }

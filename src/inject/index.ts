@@ -9,7 +9,7 @@ import {
 import { stringifyError } from "@/lib/error";
 import { IRemoteActor } from "@/lib/actor";
 
-import { Action, ActionResults } from "@/shared/sandbox/action";
+import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
 import {
   createAndMountIFrame,
   connectToSandbox,
@@ -18,7 +18,9 @@ import {
 import { Evaluator, Renderer, Validator } from "./impl";
 import { compileOperatorFactories } from "./operator";
 
-function inject(sandbox: IRemoteActor<Action, ActionResults>) {
+const iFrameId = "sandbox";
+
+function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   const INJECTED = {
     parse,
     traverseJsonLike,
@@ -28,14 +30,15 @@ function inject(sandbox: IRemoteActor<Action, ActionResults>) {
       makeComposedFactory(
         compileOperatorFactories({
           window,
-          evaluator: new Evaluator(sandbox),
-          rendered: new Renderer(sandbox),
-          validator: new Validator(sandbox),
+          evaluator: new Evaluator(iFrameId, sandbox),
+          rendered: new Renderer(iFrameId, sandbox),
+          validator: new Validator(iFrameId, sandbox),
           // TODO: Implement form shower
-          formShower: new Validator(sandbox),
+          formShower: new Validator(iFrameId, sandbox),
         })
       )
     ),
+    send: () => chrome.runtime.sendMessage({ type: "inject" }),
   };
   window.__SCRAPER_EXTENSION__ = INJECTED;
   return INJECTED;
@@ -43,4 +46,4 @@ function inject(sandbox: IRemoteActor<Action, ActionResults>) {
 
 export type Injected = ReturnType<typeof inject>;
 
-connectToSandbox("sandbox.html", createAndMountIFrame).then(inject);
+connectToSandbox("sandbox.html", createAndMountIFrame(iFrameId)).then(inject);

@@ -1,3 +1,5 @@
+export type ActorId = string;
+
 export enum MessageType {
   Loaded = "loaded",
   Success = "success",
@@ -8,10 +10,13 @@ export interface AbstractMessage<T extends MessageType> {
   type: T;
 }
 
-export interface LoadedMessage extends AbstractMessage<MessageType.Loaded> {}
+export interface LoadedMessage extends AbstractMessage<MessageType.Loaded> {
+  id: ActorId;
+}
 
 export interface Request<T extends string> {
   id: string;
+  handlerId: ActorId;
   type: T;
 }
 
@@ -34,19 +39,23 @@ export interface ErrorMessage<I extends Request<string>, E>
   error: E;
 }
 
+export type ResponseMessage<
+  I extends Request<string>,
+  R extends Record<string, unknown>,
+  E
+> = SuccessMessage<I, R> | ErrorMessage<I, E>;
+
 export type ActorMessage<
   I extends Request<string>,
   R extends Record<string, unknown>,
   E
-> = LoadedMessage | SuccessMessage<I, R> | ErrorMessage<I, E>;
+> = LoadedMessage | ResponseMessage<I, R, E>;
 
 export interface IActor<
   I extends Request<string>,
-  R extends Record<I["type"], unknown>,
-  E
+  R extends Record<I["type"], unknown>
 > {
   handle<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]>;
-  castError(error: unknown): E;
 }
 
 export interface IRemoteActor<
@@ -56,10 +65,67 @@ export interface IRemoteActor<
   call<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]>;
 }
 
+export function isResponseMessage<
+  I extends Request<string>,
+  R extends Record<string, unknown>,
+  E
+>(msg: ActorMessage<I, R, E>): msg is ResponseMessage<I, R, E> {
+  return msg.type === MessageType.Error || msg.type === MessageType.Success;
+}
+
 type RequestResolver<
   I extends Request<string>,
   R extends Record<I["type"], unknown>
 > = (value: R[I["type"]] | PromiseLike<R[I["type"]]>) => void;
+
+export abstract class AbstractActor<
+  I extends Request<string>,
+  R extends Record<I["type"], unknown>,
+  E
+> implements IActor<I, R>
+{
+  abstract handle<T extends I["type"]>(
+    msg: Extract<I, Request<T>>
+  ): Promise<R[T]>;
+
+  protected abstract listen(): void;
+  protected abstract broadcast(msg: LoadedMessage): void;
+  protected abstract reply<T extends I["type"]>(
+    response: ResponseMessage<Extract<I, Request<T>>, R, E>
+  ): void;
+  protected abstract castError(error: unknown): E;
+
+  protected async handleRequest<T extends I["type"]>(
+    req: Extract<I, Request<T>>
+  ) {
+    if (req.handlerId !== this.id) {
+      return;
+    }
+    try {
+      const result = await this.handle(req);
+      if (result !== undefined) {
+        this.reply({
+          requestId: req.id,
+          type: MessageType.Success,
+          result,
+        });
+      }
+    } catch (e) {
+      this.reply({
+        requestId: req.id,
+        type: MessageType.Error,
+        error: this.castError(e),
+      });
+    }
+  }
+
+  constructor(protected readonly id: ActorId) {}
+
+  start() {
+    this.listen();
+    this.broadcast({ type: MessageType.Loaded, id: this.id });
+  }
+}
 
 export abstract class AbstractRemoteActor<
   I extends Request<string>,
@@ -71,12 +137,6 @@ export abstract class AbstractRemoteActor<
     req: Extract<I, Request<T>>
   ): void;
 
-  private isAllowedMessage(
-    msg: ActorMessage<I, R, E>
-  ): msg is SuccessMessage<I, R> | ErrorMessage<I, E> {
-    return msg.type === MessageType.Success || msg.type === MessageType.Error;
-  }
-
   private readonly callbacks = new Map<
     I["id"],
     {
@@ -86,7 +146,7 @@ export abstract class AbstractRemoteActor<
   >();
 
   protected handleMessage(data: ActorMessage<I, R, E>) {
-    if (!this.isAllowedMessage(data)) {
+    if (!isResponseMessage(data)) {
       return;
     }
     const resolvers = this.callbacks.get(data.requestId);

@@ -8,11 +8,16 @@ import { ErrorAlert } from "@/components/error-alert";
 import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
 import { SandboxContext } from "@/shared/sandbox/context";
 
+import { sandboxIFrameId } from "./constants";
 import { OptionsPage } from "./options";
+
+chrome.runtime.onMessage.addListener((msg) => {
+  console.log(msg);
+});
 
 const root = document.getElementById("root")!;
 
-connectToSandbox("sandbox.html", findAndBindIFrame("sandbox"))
+connectToSandbox("sandbox.html", findAndBindIFrame(sandboxIFrameId))
   .then(
     (sandbox) => (
       <React.StrictMode>

@@ -4,28 +4,28 @@ import { Validator } from "@cfworker/json-schema";
 import type { IRemoteActor, Request } from "@/lib/actor";
 import { identity } from "@/lib/function";
 
-import { Action, ActionResults, ActionType } from "./action";
+import { SandboxAction, SandboxActionResults, SandboxActionType } from "./action";
 
 Mustache.escape = identity;
 
 const handlers: {
-  [K in ActionType]: (msg: Extract<Action, Request<K>>) => ActionResults[K];
+  [K in SandboxActionType]: (msg: Extract<SandboxAction, Request<K>>) => SandboxActionResults[K];
 } = {
-  [ActionType.RenderTemplate]: ({ template, data }) =>
+  [SandboxActionType.RenderTemplate]: ({ template, data }) =>
     Mustache.render(template, data),
-  [ActionType.RunEval]: ({ expression }) => eval(expression),
-  [ActionType.Validate]: ({ schema, data }) =>
+  [SandboxActionType.RunEval]: ({ expression }) => eval(expression),
+  [SandboxActionType.Validate]: ({ schema, data }) =>
     new Validator(schema).validate(data).valid,
-  [ActionType.ValidateSchema]: () => true,
-  [ActionType.ValidateFormData]: () => ({ errors: [], errorSchema: {} }),
+  [SandboxActionType.ValidateSchema]: () => true,
+  [SandboxActionType.ValidateFormData]: () => ({ errors: [], errorSchema: {} }),
 };
 
 export class DevSandbox<T>
-  implements IRemoteActor<Action<T>, ActionResults<T>>
+  implements IRemoteActor<SandboxAction<T>, SandboxActionResults<T>>
 {
-  async call<A extends ActionType>(
-    msg: Extract<Action<T>, Request<A>>
-  ): Promise<ActionResults<T>[A]> {
+  async call<A extends SandboxActionType>(
+    msg: Extract<SandboxAction<T>, Request<A>>
+  ): Promise<SandboxActionResults<T>[A]> {
     return handlers[msg.type](msg as never);
   }
 }

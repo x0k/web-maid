@@ -2,56 +2,56 @@ import {
   Request,
   AbstractRemoteActor,
   MessageType,
-  IActor,
   ActorMessage,
+  ActorId,
+  AbstractActor,
+  ResponseMessage,
 } from "@/lib/actor";
 
 export abstract class AbstractSandboxActor<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
   E
-> implements IActor<I, R, E>
-{
-  abstract handle<T extends I["type"]>(
-    msg: Extract<I, Request<T>>
-  ): Promise<R[T]>;
-  abstract castError(error: unknown): E;
+> extends AbstractActor<I, R, E> {
+  private messageEvents = new Map<I["id"], MessageEvent<I>>();
 
-  private reply(evt: MessageEvent<I>, msg: ActorMessage<I, R, E>) {
-    (evt.source as WindowProxy).postMessage(msg, evt.origin);
+  protected broadcast(msg: ActorMessage<I, R, E>) {
+    this.window.parent.postMessage(msg, "*");
   }
 
-  private broadcast(msg: ActorMessage<I, R, E>) {
-    this.window.parent.postMessage(msg, "*");
+  protected reply<T extends I["type"]>(
+    response: ResponseMessage<Extract<I, Request<T>>, R, E>
+  ): void {
+    const event = this.messageEvents.get(response.requestId);
+    if (event) {
+      (event.source as WindowProxy).postMessage(response, event.origin);
+    } else {
+      throw new Error(`No message event for ${response.requestId}`);
+    }
   }
 
   private async handleMessageEvent<T extends I["type"]>(
     event: MessageEvent<Extract<I, Request<T>>>
   ) {
+    this.messageEvents.set(event.data.id, event);
     try {
-      const result = await this.handle(event.data);
-      if (result !== undefined) {
-        this.reply(event, {
-          requestId: event.data.id,
-          type: MessageType.Success,
-          result,
-        });
-      }
+      await this.handleRequest(event.data);
     } catch (e) {
-      this.reply(event, {
-        requestId: event.data.id,
-        type: MessageType.Error,
-        error: this.castError(e),
-      });
+      console.error(e);
+    } finally {
+      this.messageEvents.delete(event.data.id);
     }
   }
 
-  constructor(protected readonly window: Window) {
+  protected listen() {
     this.window.addEventListener("message", this.handleMessageEvent.bind(this));
   }
 
-  loaded() {
-    this.broadcast({ type: MessageType.Loaded });
+  constructor(
+    protected readonly id: ActorId,
+    protected readonly window: Window
+  ) {
+    super(id);
   }
 }
 
@@ -61,13 +61,14 @@ export class GenSandboxActor<
   E
 > extends AbstractSandboxActor<I, R, E> {
   constructor(
+    id: ActorId,
     window: Window,
     private readonly handlers: {
       [K in I["type"]]: (msg: Extract<I, Request<K>>) => R[K];
     },
     private readonly toError: (e: unknown) => E
   ) {
-    super(window);
+    super(id, window);
   }
 
   async handle<M extends I["type"]>(

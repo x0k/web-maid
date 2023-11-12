@@ -1,23 +1,32 @@
 import { ValidationData } from "@rjsf/utils";
 import { nanoid } from "nanoid";
 
-import { IRemoteActor } from "@/lib/actor";
+import { ActorId, IRemoteActor } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";
 import { FormDataValidatorData } from "@/components/form";
 
-import { Action, ActionResults, ActionType } from "./action";
+import {
+  SandboxAction,
+  SandboxActionResults,
+  SandboxActionType,
+} from "./action";
 
 export class FormDataValidator<T>
   implements AsyncFactory<FormDataValidatorData<T>, ValidationData<T>>
 {
   constructor(
-    private readonly actor: IRemoteActor<Action<T>, ActionResults<T>>
+    private readonly handlerId: ActorId,
+    private readonly actor: IRemoteActor<
+      SandboxAction<T>,
+      SandboxActionResults<T>
+    >
   ) {}
 
   Create(config: FormDataValidatorData<T>): Promise<ValidationData<T>> {
     return this.actor.call({
+      handlerId: this.handlerId,
       id: nanoid(),
-      type: ActionType.ValidateFormData,
+      type: SandboxActionType.ValidateFormData,
       formData: config.formData,
       schema: config.schema,
       uiSchema: config.uiSchema,
