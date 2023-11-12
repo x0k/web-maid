@@ -45,6 +45,7 @@ async function saveSecrets(_: string, { arg }: { arg: Json }) {
 
 async function saveSecretsSchema(_: string, { arg }: { arg: string }) {
   await saveSyncSettings({ secretsSchema: arg });
+  return arg;
 }
 
 export function Secrets() {
@@ -77,7 +78,8 @@ export function Secrets() {
     "settings/sync/secrets-schema",
     saveSecretsSchema,
     {
-      onSuccess: () => {
+      onSuccess: (secretsSchema) => {
+        sync.mutate({ config: "", ...sync.data, secretsSchema });
         showSuccess("Secrets schema saved");
       },
       onError: showError,
