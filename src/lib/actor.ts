@@ -51,11 +51,21 @@ export type ActorMessage<
   E
 > = LoadedMessage | ResponseMessage<I, R, E>;
 
-export interface IActor<
+export interface IActorLogic<
   I extends Request<string>,
-  R extends Record<I["type"], unknown>
+  R extends Record<I["type"], unknown>,
+  E
 > {
   handle<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]>;
+  castError(error: unknown): E;
+}
+
+export interface IActor {
+  start(): void;
+}
+
+export interface IRemoteActorLogic<E> {
+  castError(error: unknown): E;
 }
 
 export interface IRemoteActor<
@@ -73,6 +83,30 @@ export function isResponseMessage<
   return msg.type === MessageType.Error || msg.type === MessageType.Success;
 }
 
+export function makeActorLogic<
+  I extends Request<string>,
+  R extends Record<I["type"], unknown>,
+  E
+>(
+  handlers: { [K in I["type"]]: (msg: Extract<I, Request<K>>) => R[K] },
+  castError: (e: unknown) => E
+): IActorLogic<I, R, E> {
+  return {
+    handle(msg) {
+      return Promise.resolve(handlers[msg.type](msg));
+    },
+    castError,
+  };
+}
+
+export function makeRemoteActorLogic<E>(
+  castError: (e: unknown) => E
+): IRemoteActorLogic<E> {
+  return {
+    castError,
+  };
+}
+
 type RequestResolver<
   I extends Request<string>,
   R extends Record<I["type"], unknown>
@@ -82,44 +116,42 @@ export abstract class AbstractActor<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
   E
-> implements IActor<I, R>
+> implements IActor
 {
-  abstract handle<T extends I["type"]>(
-    msg: Extract<I, Request<T>>
-  ): Promise<R[T]>;
-
   protected abstract listen(): void;
   protected abstract broadcast(msg: LoadedMessage): void;
-  protected abstract reply<T extends I["type"]>(
-    response: ResponseMessage<Extract<I, Request<T>>, R, E>
-  ): void;
-  protected abstract castError(error: unknown): E;
 
   protected async handleRequest<T extends I["type"]>(
-    req: Extract<I, Request<T>>
+    req: Extract<I, Request<T>>,
+    reply: <T extends I["type"]>(
+      response: ResponseMessage<Extract<I, Request<T>>, R, E>
+    ) => void
   ) {
     if (req.handlerId !== this.id) {
       return;
     }
     try {
-      const result = await this.handle(req);
+      const result = await this.logic.handle(req);
       if (result !== undefined) {
-        this.reply({
+        reply({
           requestId: req.id,
           type: MessageType.Success,
           result,
         });
       }
     } catch (e) {
-      this.reply({
+      reply({
         requestId: req.id,
         type: MessageType.Error,
-        error: this.castError(e),
+        error: this.logic.castError(e),
       });
     }
   }
 
-  constructor(protected readonly id: ActorId) {}
+  constructor(
+    protected readonly id: ActorId,
+    protected readonly logic: IActorLogic<I, R, E>
+  ) {}
 
   start() {
     this.listen();
@@ -162,12 +194,12 @@ export abstract class AbstractRemoteActor<
     }
   }
 
-  constructor(protected readonly toError: (e: unknown) => E) {}
+  constructor(protected readonly logic: IRemoteActorLogic<E>) {}
 
   async call<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]> {
     const promise = new Promise<R[T]>((resolve, reject) => {
       if (this.callbacks.has(msg.id)) {
-        reject(this.toError(new Error("Duplicate request id")));
+        reject(this.logic.castError(new Error("Duplicate request id")));
         return;
       }
       this.callbacks.set(msg.id, {

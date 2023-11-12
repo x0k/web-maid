@@ -1,4 +1,4 @@
-import { IRemoteActor } from "@/lib/actor";
+import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
 import { SandboxRemoteActor } from "@/lib/actors/sandbox";
 import { stringifyError } from "@/lib/error";
 
@@ -37,7 +37,7 @@ export async function connectToSandbox<T>(
     SandboxAction<T>,
     SandboxActionResults<T>,
     string
-  >(iFrame, stringifyError);
+  >(makeRemoteActorLogic(stringifyError), iFrame);
   sandbox.listen(window);
   return sandbox;
 }

@@ -2,7 +2,7 @@ import Handlebars from "handlebars";
 import validator from "@rjsf/validator-ajv8";
 import Ajv from "ajv";
 
-import { GenSandboxActor } from "@/lib/actors/sandbox";
+import { SandboxActor } from "@/lib/actors/sandbox";
 import { stringifyError } from "@/lib/error";
 
 import {
@@ -10,6 +10,7 @@ import {
   SandboxActionResults,
   SandboxActionType,
 } from "@/shared/sandbox/action";
+import { makeActorLogic } from "@/lib/actor";
 
 const ajv = new Ajv();
 
@@ -21,34 +22,36 @@ Handlebars.registerHelper("quote", (data) =>
 const frameId = window.frameElement?.id;
 
 if (frameId) {
-  const sandbox = new GenSandboxActor<
-    SandboxAction,
-    SandboxActionResults,
-    string
-  >(
+  const sandbox = new SandboxActor<SandboxAction, SandboxActionResults, string>(
     frameId,
-    window,
-    {
-      [SandboxActionType.RenderTemplate]: ({ template, data }) =>
-        Handlebars.compile(template, {
-          noEscape: true,
-        })(data),
-      [SandboxActionType.RunEval]: ({ expression }) => eval(expression),
-      // https://ajv.js.org/api.html#ajv-validateschema-schema-object-boolean
-      [SandboxActionType.ValidateSchema]: ({ schema }) =>
-        ajv.validateSchema(schema) as boolean,
-      [SandboxActionType.Validate]: ({ schema, data }) =>
-        ajv.validate(schema, data),
-      [SandboxActionType.ValidateFormData]: ({ formData, schema, uiSchema }) =>
-        validator.validateFormData(
+    makeActorLogic(
+      {
+        [SandboxActionType.RenderTemplate]: ({ template, data }) =>
+          Handlebars.compile(template, {
+            noEscape: true,
+          })(data),
+        [SandboxActionType.RunEval]: ({ expression }) => eval(expression),
+        // https://ajv.js.org/api.html#ajv-validateschema-schema-object-boolean
+        [SandboxActionType.ValidateSchema]: ({ schema }) =>
+          ajv.validateSchema(schema) as boolean,
+        [SandboxActionType.Validate]: ({ schema, data }) =>
+          ajv.validate(schema, data),
+        [SandboxActionType.ValidateFormData]: ({
           formData,
           schema,
-          undefined,
-          undefined,
-          uiSchema
-        ),
-    },
-    stringifyError
+          uiSchema,
+        }) =>
+          validator.validateFormData(
+            formData,
+            schema,
+            undefined,
+            undefined,
+            uiSchema
+          ),
+      },
+      stringifyError
+    ),
+    window
   );
   sandbox.start();
 } else {
