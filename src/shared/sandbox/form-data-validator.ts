@@ -5,7 +5,7 @@ import { IRemoteActor } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";
 import { FormDataValidatorData } from "@/components/form";
 
-import { Action, ActionResults, ActionType } from "@/shared/rpc";
+import { Action, ActionResults, ActionType } from "./action";
 
 export class FormDataValidator<T>
   implements AsyncFactory<FormDataValidatorData<T>, ValidationData<T>>

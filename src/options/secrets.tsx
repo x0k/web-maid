@@ -19,8 +19,8 @@ import {
   saveLocalSettings,
   saveSyncSettings,
 } from "@/shared/extension";
-import { useSandbox } from "@/shared/react";
-import { FormDataValidator } from "@/shared/form-data-validator";
+import { useSandbox } from "@/shared/sandbox/context";
+import { FormDataValidator } from "@/shared/sandbox/form-data-validator";
 
 const secretsSchemaModel = monaco.editor.createModel("", "yaml");
 

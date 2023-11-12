@@ -3,9 +3,9 @@ import { nanoid } from "nanoid";
 import { IRemoteActor } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";
 import { TemplateRendererData } from "@/lib/operators/template";
-
-import { Action, ActionResults, ActionType } from "@/shared/rpc";
 import { AsyncValidatorData } from "@/lib/operators/json-schema";
+
+import { Action, ActionResults, ActionType } from "@/shared/sandbox/action";
 
 export class Evaluator implements AsyncFactory<string, unknown> {
   constructor(private readonly actor: IRemoteActor<Action, ActionResults>) {}

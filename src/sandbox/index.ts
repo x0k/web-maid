@@ -2,10 +2,10 @@ import Handlebars from "handlebars";
 import validator from "@rjsf/validator-ajv8";
 import Ajv from "ajv";
 
-import { GenSandboxActor } from "@/lib/actor";
+import { GenSandboxActor } from "@/lib/actors/sandbox";
 import { stringifyError } from "@/lib/error";
 
-import { Action, ActionResults, ActionType } from "@/shared/rpc";
+import { Action, ActionResults, ActionType } from "@/shared/sandbox/action";
 
 const ajv = new Ajv();
 
@@ -14,7 +14,7 @@ Handlebars.registerHelper("quote", (data) =>
   typeof data === "string" ? `> ${data.split("\n").join("\n> ")}` : data
 );
 
-const actor = new GenSandboxActor<Action, ActionResults, string>(
+const sandbox = new GenSandboxActor<Action, ActionResults, string>(
   window,
   {
     [ActionType.RenderTemplate]: ({ template, data }) =>
@@ -37,5 +37,4 @@ const actor = new GenSandboxActor<Action, ActionResults, string>(
   },
   stringifyError
 );
-
-actor.loaded();
+sandbox.loaded();

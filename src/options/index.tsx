@@ -5,14 +5,14 @@ import { CssBaseline } from "@mui/material";
 
 import { ErrorAlert } from "@/components/error-alert";
 
-import { createSandbox, findAndBindIFrame } from "@/shared/sandbox";
-import { SandboxContext } from "@/shared/react";
+import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
+import { SandboxContext } from "@/shared/sandbox/context";
 
 import { OptionsPage } from "./options";
 
 const root = document.getElementById("root")!;
 
-createSandbox("sandbox.html", findAndBindIFrame("sandbox"))
+connectToSandbox("sandbox.html", findAndBindIFrame("sandbox"))
   .then(
     (sandbox) => (
       <React.StrictMode>

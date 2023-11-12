@@ -5,3 +5,6 @@ d:
 
 b:
   bun --bun run build
+
+c:
+  bun --bun run check

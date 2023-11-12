@@ -9,6 +9,7 @@ import { htmlOperatorsFactories } from "@/lib/operators/html";
 import { jsonOperatorsFactories } from "@/lib/operators/json";
 import {
   AsyncValidatorData,
+  ShowFormData,
   jsonSchemaOperatorsFactories,
 } from "@/lib/operators/json-schema";
 import { stringsOperatorsFactories } from "@/lib/operators/strings";
@@ -23,6 +24,7 @@ export interface OperatorFactoryConfig {
   evaluator: AsyncFactory<string, unknown>;
   rendered: AsyncFactory<TemplateRendererData, string>;
   validator: AsyncFactory<AsyncValidatorData, boolean>;
+  formShower: AsyncFactory<ShowFormData, unknown>;
 }
 
 export function compileOperatorFactories({
@@ -30,6 +32,7 @@ export function compileOperatorFactories({
   evaluator,
   rendered,
   validator,
+  formShower,
 }: OperatorFactoryConfig) {
   const factories: Record<
     string,
@@ -54,7 +57,7 @@ export function compileOperatorFactories({
   assignWithPrefix(
     "jsonSchema.",
     factories,
-    jsonSchemaOperatorsFactories(validator)
+    jsonSchemaOperatorsFactories(validator, formShower)
   );
   return factories;
 }

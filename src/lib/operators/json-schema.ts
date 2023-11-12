@@ -33,10 +33,33 @@ export class ValidateOpFactory extends TaskOpFactory<
   }
 }
 
+const formConfig = z.object({
+  schema: z.record(z.unknown()),
+  uiSchema: z.record(z.unknown()).optional(),
+  data: z.unknown().optional(),
+  omitExtraData: z.boolean().optional(),
+});
+
+export type ShowFormData = z.infer<typeof formConfig>;
+
+export class FormOpFactory extends TaskOpFactory<typeof formConfig, unknown> {
+  schema = formConfig;
+  constructor(
+    private readonly formShower: AsyncFactory<ShowFormData, unknown>
+  ) {
+    super();
+  }
+  protected execute(config: z.TypeOf<this["schema"]>): Promise<unknown> {
+    return this.formShower.Create(config);
+  }
+}
+
 export function jsonSchemaOperatorsFactories(
-  asyncValidator: AsyncFactory<AsyncValidatorData, boolean>
+  asyncValidator: AsyncFactory<AsyncValidatorData, boolean>,
+  formShower: AsyncFactory<ShowFormData, unknown>
 ) {
   return {
     validate: new ValidateOpFactory(asyncValidator),
+    form: new FormOpFactory(formShower),
   };
 }

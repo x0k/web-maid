@@ -2,7 +2,7 @@ import React from "react";
 
 import { IRemoteActor } from "@/lib/actor";
 
-import type { Action, ActionResults } from "@/shared/rpc";
+import type { Action, ActionResults } from "./action";
 
 export const SandboxContext = React.createContext<IRemoteActor<
   Action,

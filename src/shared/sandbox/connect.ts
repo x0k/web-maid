@@ -1,6 +1,8 @@
-import { IRemoteActor, RemoteActor } from "@/lib/actor";
+import { IRemoteActor } from "@/lib/actor";
+import { SandboxRemoteActor } from "@/lib/actors/sandbox";
+import { stringifyError } from "@/lib/error";
 
-import { Action, ActionResults } from "@/shared/rpc";
+import { Action, ActionResults } from "./action";
 
 export function createAndMountIFrame(src: string) {
   const iFrame = new DOMParser().parseFromString(
@@ -21,7 +23,7 @@ export function findAndBindIFrame(iFrameId: string) {
   };
 }
 
-export async function createSandbox<T>(
+export async function connectToSandbox<T>(
   sandboxPath: string,
   iFrameFactory: (src: string) => HTMLIFrameElement
 ): Promise<IRemoteActor<Action<T>, ActionResults<T>>> {
@@ -29,7 +31,10 @@ export async function createSandbox<T>(
     return import("./dev").then(({ DevSandbox }) => new DevSandbox<T>());
   }
   const iFrame = iFrameFactory(chrome.runtime.getURL(sandboxPath));
-  const actor = new RemoteActor<Action<T>, ActionResults<T>, string>(iFrame);
-  actor.listen(window);
-  return actor;
+  const sandbox = new SandboxRemoteActor<Action<T>, ActionResults<T>, string>(
+    iFrame,
+    stringifyError
+  );
+  sandbox.listen(window);
+  return sandbox;
 }

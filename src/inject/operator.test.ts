@@ -10,7 +10,7 @@ import {
 import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { AsyncFactory } from "@/lib/factory";
 import { TemplateRendererData } from "@/lib/operators/template";
-import { AsyncValidatorData } from "@/lib/operators/json-schema";
+import { AsyncValidatorData, ShowFormData } from "@/lib/operators/json-schema";
 
 import { compileOperatorFactories } from "./operator";
 
@@ -24,6 +24,7 @@ beforeEach(() => {
         evaluator: {} as AsyncFactory<string, unknown>,
         rendered: {} as AsyncFactory<TemplateRendererData, string>,
         validator: {} as AsyncFactory<AsyncValidatorData, boolean>,
+        formShower: {} as AsyncFactory<ShowFormData, unknown>,
       })
     )
   );

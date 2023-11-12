@@ -3,7 +3,7 @@ import Mustache from "mustache";
 import type { IRemoteActor, Request } from "@/lib/actor";
 import { identity } from "@/lib/function";
 
-import { Action, ActionResults, ActionType } from "@/shared/rpc";
+import { Action, ActionResults, ActionType } from "./action";
 
 Mustache.escape = identity;
 
