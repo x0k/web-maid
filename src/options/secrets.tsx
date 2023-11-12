@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import useSWRMutation from "swr/mutation";
@@ -11,7 +11,7 @@ import { monaco } from "@/lib/monaco";
 import { Json } from "@/lib/zod";
 import { ErrorAlert } from "@/components/error-alert";
 import { Row } from "@/components/row";
-import { Form } from "@/components/form";
+import { Form, FormRef } from "@/components/form";
 
 import {
   loadLocalSettings,
@@ -89,6 +89,7 @@ export function Secrets() {
     const schema = sync.data?.secretsSchema;
     return schema ? parse(schema) : {};
   }, [sync.data?.secretsSchema]);
+  const formRef = useRef<FormRef | null>(null);
   return (
     <Box
       flexGrow={1}
@@ -112,7 +113,17 @@ export function Secrets() {
         </Button>
       </Row>
       <Row>
-        <Typography>Secrets values</Typography>
+        <Typography flexGrow={1}>Secrets values</Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
+          onClick={() => {
+            formRef.current?.submit();
+          }}
+        >
+          Save
+        </Button>
       </Row>
       <Editor model={secretsSchemaModel} />
 
@@ -121,6 +132,7 @@ export function Secrets() {
       ) : (
         <Form
           id="secrets"
+          ref={formRef}
           schema={secretsSchema}
           formData={local.data?.secrets}
           omitExtraData
@@ -129,9 +141,7 @@ export function Secrets() {
             secretsMutation.trigger(formData);
           }}
         >
-          <Button type="submit" variant="contained" color="success" fullWidth>
-            Save
-          </Button>
+          <span />
         </Form>
       )}
     </Box>

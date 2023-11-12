@@ -1,5 +1,5 @@
-import { useCallback, useRef } from "react";
-import { IChangeEvent } from "@rjsf/core";
+import { forwardRef, useCallback, useRef } from "react";
+import FormRef, { IChangeEvent } from "@rjsf/core";
 import MuiForm from "@rjsf/mui";
 import { ErrorSchema, RJSFSchema, UiSchema, ValidationData } from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
@@ -27,62 +27,73 @@ export interface FormProps<T> {
 
 const defaultSchema = {};
 
-export function Form<T>({
-  id,
-  schema = defaultSchema,
-  children,
-  formData,
-  omitExtraData,
-  asyncValidator,
-  onSubmit,
-}: FormProps<T>) {
-  const idRef = useRef(Date.now().toString(16));
-  async function runValidation(
-    _: string,
-    { arg }: { arg: IChangeEvent<T> }
-  ): Promise<{ arg: IChangeEvent<T>; errorSchema: ErrorSchema<T> }> {
-    const { formData, schema, uiSchema } = arg;
-    try {
-      const { errorSchema } = await asyncValidator.Create({
-        formData,
-        schema,
-        uiSchema,
-      });
-      return { arg, errorSchema };
-    } catch (e) {
-      return {
-        arg,
-        errorSchema: {
-          __errors: [stringifyError(e)],
-        },
-      };
-    }
-  }
-  const submit = useSWRMutation(idRef.current, runValidation, {
-    onSuccess({ arg, errorSchema }) {
-      if (Object.keys(errorSchema).length > 0) {
-        return;
+export type { FormRef }
+
+export const Form = forwardRef<FormRef<unknown>, FormProps<unknown>>(
+  (
+    {
+      id,
+      schema = defaultSchema,
+      children,
+      formData,
+      omitExtraData,
+      asyncValidator,
+      onSubmit,
+    },
+    ref
+  ) => {
+    const idRef = useRef(Date.now().toString(16));
+    async function runValidation(
+      _: string,
+      { arg }: { arg: IChangeEvent<unknown> }
+    ): Promise<{
+      arg: IChangeEvent<unknown>;
+      errorSchema: ErrorSchema<unknown>;
+    }> {
+      const { formData, schema, uiSchema } = arg;
+      try {
+        const { errorSchema } = await asyncValidator.Create({
+          formData,
+          schema,
+          uiSchema,
+        });
+        return { arg, errorSchema };
+      } catch (e) {
+        return {
+          arg,
+          errorSchema: {
+            __errors: [stringifyError(e)],
+          },
+        };
       }
-      onSubmit?.(arg);
-    },
-  });
-  const formSubmitHandler = useCallback(
-    (event: IChangeEvent<T>) => {
-      submit.trigger(event);
-    },
-    [submit.trigger]
-  );
-  return (
-    <MuiForm
-      id={id}
-      schema={schema}
-      formData={formData}
-      omitExtraData={omitExtraData}
-      children={children}
-      validator={validator}
-      noValidate
-      extraErrors={submit.data?.errorSchema}
-      onSubmit={formSubmitHandler}
-    />
-  );
-}
+    }
+    const submit = useSWRMutation(idRef.current, runValidation, {
+      onSuccess({ arg, errorSchema }) {
+        if (Object.keys(errorSchema).length > 0) {
+          return;
+        }
+        onSubmit?.(arg);
+      },
+    });
+    const formSubmitHandler = useCallback(
+      (event: IChangeEvent<unknown>) => {
+        submit.trigger(event);
+      },
+      [submit.trigger]
+    );
+    return (
+      <MuiForm
+        id={id}
+        ref={ref}
+        schema={schema}
+        formData={formData}
+        omitExtraData={omitExtraData}
+        children={children}
+        validator={validator}
+        noValidate
+        extraErrors={submit.data?.errorSchema}
+        onSubmit={formSubmitHandler}
+      />
+    );
+  }
+);
