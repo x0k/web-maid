@@ -12,7 +12,7 @@ import { IRemoteActor } from "@/lib/actor";
 import { Action, ActionResults } from "@/shared/rpc";
 import { createAndMountIFrame, createSandbox } from "@/shared/sandbox";
 
-import { Evaluator, Renderer } from "./impl";
+import { Evaluator, Renderer, Validator } from "./impl";
 import { compileOperatorFactories } from "./operator";
 
 function inject(sandbox: IRemoteActor<Action, ActionResults>) {
@@ -27,6 +27,7 @@ function inject(sandbox: IRemoteActor<Action, ActionResults>) {
           window,
           evaluator: new Evaluator(sandbox),
           rendered: new Renderer(sandbox),
+          validator: new Validator(sandbox),
         })
       )
     ),

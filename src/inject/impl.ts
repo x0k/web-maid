@@ -5,6 +5,7 @@ import { AsyncFactory } from "@/lib/factory";
 import { TemplateRendererData } from "@/lib/operators/template";
 
 import { Action, ActionResults, ActionType } from "@/shared/rpc";
+import { AsyncValidatorData } from "@/lib/operators/json-schema";
 
 export class Evaluator implements AsyncFactory<string, unknown> {
   constructor(private readonly actor: IRemoteActor<Action, ActionResults>) {}
@@ -24,6 +25,18 @@ export class Renderer implements AsyncFactory<TemplateRendererData, string> {
       id: nanoid(),
       type: ActionType.RenderTemplate,
       template: config.template,
+      data: config.data,
+    });
+  }
+}
+
+export class Validator implements AsyncFactory<AsyncValidatorData, boolean> {
+  constructor(private readonly actor: IRemoteActor<Action, ActionResults>) {}
+  Create(config: AsyncValidatorData): Promise<boolean> {
+    return this.actor.call({
+      id: nanoid(),
+      type: ActionType.Validate,
+      schema: config.schema,
       data: config.data,
     });
   }

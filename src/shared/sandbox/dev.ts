@@ -13,6 +13,7 @@ const handlers: {
   [ActionType.RenderTemplate]: ({ template, data }) =>
     Mustache.render(template, data),
   [ActionType.RunEval]: ({ expression }) => eval(expression),
+  [ActionType.Validate]: () => true,
   [ActionType.ValidateSchema]: () => true,
   [ActionType.ValidateFormData]: () => ({ errors: [], errorSchema: {} }),
 };

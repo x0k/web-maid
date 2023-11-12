@@ -25,6 +25,7 @@ const actor = new GenSandboxActor<Action, ActionResults, string>(
     // https://ajv.js.org/api.html#ajv-validateschema-schema-object-boolean
     [ActionType.ValidateSchema]: ({ schema }) =>
       ajv.validateSchema(schema) as boolean,
+    [ActionType.Validate]: ({ schema, data }) => ajv.validate(schema, data),
     [ActionType.ValidateFormData]: ({ formData, schema, uiSchema }) =>
       validator.validateFormData(
         formData,

@@ -7,6 +7,10 @@ import { flowOperatorsFactories } from "@/lib/operators/flow";
 import { fsOperatorsFactories } from "@/lib/operators/fs";
 import { htmlOperatorsFactories } from "@/lib/operators/html";
 import { jsonOperatorsFactories } from "@/lib/operators/json";
+import {
+  AsyncValidatorData,
+  jsonSchemaOperatorsFactories,
+} from "@/lib/operators/json-schema";
 import { stringsOperatorsFactories } from "@/lib/operators/strings";
 import { sysOperatorsFactories } from "@/lib/operators/sys";
 import {
@@ -18,12 +22,14 @@ export interface OperatorFactoryConfig {
   window: Window;
   evaluator: AsyncFactory<string, unknown>;
   rendered: AsyncFactory<TemplateRendererData, string>;
+  validator: AsyncFactory<AsyncValidatorData, boolean>;
 }
 
 export function compileOperatorFactories({
   window,
   evaluator,
   rendered,
+  validator,
 }: OperatorFactoryConfig) {
   const factories: Record<
     string,
@@ -45,5 +51,10 @@ export function compileOperatorFactories({
   assignWithPrefix("str.", factories, stringsOperatorsFactories());
   assignWithPrefix("fs.", factories, fsOperatorsFactories());
   assignWithPrefix("json.", factories, jsonOperatorsFactories());
+  assignWithPrefix(
+    "jsonSchema.",
+    factories,
+    jsonSchemaOperatorsFactories(validator)
+  );
   return factories;
 }

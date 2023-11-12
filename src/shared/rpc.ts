@@ -3,7 +3,8 @@ import type { RJSFSchema, UiSchema, ValidationData } from "@rjsf/utils";
 export enum ActionType {
   RenderTemplate = "template::render",
   RunEval = "eval::run",
-  ValidateSchema = "schema::validate",
+  Validate = "schema::validate",
+  ValidateSchema = "schema::validateSchema",
   ValidateFormData = "formData::validate",
 }
 
@@ -22,6 +23,11 @@ export interface RunEvalAction extends AbstractAction<ActionType.RunEval> {
   expression: string;
 }
 
+export interface ValidateAction extends AbstractAction<ActionType.Validate> {
+  schema: Record<string, unknown>;
+  data: unknown;
+}
+
 export interface ValidateSchemaAction
   extends AbstractAction<ActionType.ValidateSchema> {
   schema: Record<string, unknown>;
@@ -38,12 +44,14 @@ export interface ValidateFormDataAction<T>
 export type Action<T = unknown> =
   | RenderTemplateAction
   | RunEvalAction
+  | ValidateAction
   | ValidateSchemaAction
   | ValidateFormDataAction<T>;
 
 export interface ActionResults<T = unknown> {
   [ActionType.RenderTemplate]: string;
-  [ActionType.ValidateSchema]: boolean;
   [ActionType.RunEval]: unknown;
+  [ActionType.Validate]: boolean;
+  [ActionType.ValidateSchema]: boolean;
   [ActionType.ValidateFormData]: ValidationData<T>;
 }
