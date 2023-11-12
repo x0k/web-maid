@@ -6,14 +6,10 @@ import { CssBaseline } from "@mui/material";
 import { ErrorAlert } from "@/components/error-alert";
 
 import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
-import { SandboxContext } from "@/shared/sandbox/context";
+import { SandboxContext } from "@/shared/sandbox/react";
 
 import { sandboxIFrameId } from "./constants";
 import { OptionsPage } from "./options";
-
-chrome.runtime.onMessage.addListener((msg) => {
-  console.log(msg);
-});
 
 const root = document.getElementById("root")!;
 

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 import { IRemoteActor } from "@/lib/actor";
 
 import type { SandboxAction, SandboxActionResults } from "./action";
+import { FormDataValidator } from "./form-data-validator";
 
 export const SandboxContext = React.createContext<IRemoteActor<
   SandboxAction,
@@ -15,4 +16,12 @@ export function useSandbox() {
     throw new Error("useSandbox must be used within a SandboxProvider");
   }
   return sandbox;
+}
+
+export function useFormDataValidator(sandboxId: string) {
+  const sandbox = useSandbox();
+  return useMemo(
+    () => new FormDataValidator(sandboxId, sandbox),
+    [sandbox, sandboxId]
+  );
 }

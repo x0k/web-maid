@@ -18,6 +18,8 @@ export interface FormDataValidatorData<T> {
 export interface FormProps<T> {
   id?: string;
   schema?: RJSFSchema;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  uiSchema?: UiSchema<T, RJSFSchema, any>;
   formData?: T;
   omitExtraData?: boolean;
   children?: React.ReactNode;
@@ -27,13 +29,14 @@ export interface FormProps<T> {
 
 const defaultSchema = {};
 
-export type { FormRef }
+export type { FormRef };
 
 export const Form = forwardRef<FormRef<unknown>, FormProps<unknown>>(
   (
     {
       id,
       schema = defaultSchema,
+      uiSchema,
       children,
       formData,
       omitExtraData,
@@ -86,6 +89,7 @@ export const Form = forwardRef<FormRef<unknown>, FormProps<unknown>>(
         id={id}
         ref={ref}
         schema={schema}
+        uiSchema={uiSchema}
         formData={formData}
         omitExtraData={omitExtraData}
         children={children}

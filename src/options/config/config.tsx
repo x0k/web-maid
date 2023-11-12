@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import useSWRMutation from "swr/mutation";
 import useSWR from "swr";
+import { stringify } from "yaml";
 
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
@@ -15,11 +16,13 @@ import {
   getAllTabs,
   loadSyncSettings,
   saveSyncSettings,
-} from "@/shared/extension";
+} from "@/shared/extension/core";
+import { useContextActor } from "@/shared/extension/react";
+import { useFormDataValidator } from "@/shared/sandbox/react";
 
+import { contextId, sandboxIFrameId } from "../constants";
 import { TabsSelector } from "./tabs-selector";
 import { Readme } from "./readme";
-import { stringify } from "yaml";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
@@ -34,7 +37,7 @@ async function runEvalForTab(tab: Tab | null, { arg }: { arg: string }) {
   if (!tab) {
     throw new Error("Tab not selected");
   }
-  return evalForTab(tab.id, arg);
+  return evalForTab(contextId, tab.id, arg);
 }
 
 async function saveConfig(_: string, { arg }: { arg: string }) {
@@ -59,7 +62,15 @@ export function Config() {
   const configMutation = useSWRMutation("settings/sync", saveConfig, {
     onError: showError,
   });
-
+  const rootRef = useRef<HTMLDivElement>(null);
+  const formDataValidator = useFormDataValidator(sandboxIFrameId);
+  const actor = useContextActor(contextId, rootRef, formDataValidator);
+  useEffect(() => {
+    actor.start();
+    return () => {
+      actor.stop();
+    };
+  }, [actor]);
   return (
     <Box
       flexGrow={1}
@@ -111,6 +122,7 @@ export function Config() {
         )}
       </Box>
       <Box overflow={"auto"}>
+        <div ref={rootRef} />
         {evalMutation.error ? (
           <ErrorAlert error={evalMutation.error} />
         ) : evalMutation.isMutating ? (

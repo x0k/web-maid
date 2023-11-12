@@ -27,15 +27,15 @@ export class SandboxActor<
     };
   }
 
-  private handleMessageEvent<T extends I["type"]>(
+  private handleMessageEvent = <T extends I["type"]>(
     event: MessageEvent<Extract<I, Request<T>>>
-  ) {
+  ) => {
     //@ts-expect-error TODO: fix types
     this.handleRequest(event.data, this.makeReply(event));
-  }
+  };
 
   protected listen() {
-    this.window.addEventListener("message", this.handleMessageEvent.bind(this));
+    this.window.addEventListener("message", this.handleMessageEvent);
   }
 
   constructor(
@@ -44,6 +44,10 @@ export class SandboxActor<
     protected readonly window: Window
   ) {
     super(id, logic);
+  }
+
+  stop(): void {
+    this.window.removeEventListener("message", this.handleMessageEvent);
   }
 }
 

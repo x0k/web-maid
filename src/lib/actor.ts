@@ -62,6 +62,7 @@ export interface IActorLogic<
 
 export interface IActor {
   start(): void;
+  stop(): void;
 }
 
 export interface IRemoteActorLogic<E> {
@@ -157,6 +158,8 @@ export abstract class AbstractActor<
     this.listen();
     this.broadcast({ type: MessageType.Loaded, id: this.id });
   }
+  
+  abstract stop(): void;
 }
 
 export abstract class AbstractRemoteActor<

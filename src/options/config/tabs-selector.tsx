@@ -1,6 +1,6 @@
 import { Autocomplete, Box, TextField } from "@mui/material";
 
-import { Tab } from "@/shared/extension";
+import { Tab } from "@/shared/extension/core";
 
 export interface TabsSelectorProps {
   tabs: Tab[];
