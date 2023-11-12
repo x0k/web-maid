@@ -1,4 +1,5 @@
 import Mustache from "mustache";
+import { Validator } from "@cfworker/json-schema";
 
 import type { IRemoteActor, Request } from "@/lib/actor";
 import { identity } from "@/lib/function";
@@ -13,7 +14,8 @@ const handlers: {
   [ActionType.RenderTemplate]: ({ template, data }) =>
     Mustache.render(template, data),
   [ActionType.RunEval]: ({ expression }) => eval(expression),
-  [ActionType.Validate]: () => true,
+  [ActionType.Validate]: ({ schema, data }) =>
+    new Validator(schema).validate(data).valid,
   [ActionType.ValidateSchema]: () => true,
   [ActionType.ValidateFormData]: () => ({ errors: [], errorSchema: {} }),
 };
