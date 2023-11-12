@@ -101,9 +101,14 @@ export function useContextActor<E extends HTMLElement>(
           stringifyError
         ),
         {
-          async sendMessage(message) {
-            const tabs = await getAllTabs();
+          async sendMessage(message, tabId) {
+            if (tabId) {
+              chrome.tabs.sendMessage(tabId, message);
+              return;
+            }
+            chrome.runtime.sendMessage(message).catch(noop);
             // TODO: Is it really needed?
+            const tabs = await getAllTabs();
             for (const tab of tabs) {
               chrome.tabs.sendMessage(tab.id, message).catch(noop);
             }

@@ -72,7 +72,7 @@ export interface IRemoteActorLogic<E> {
 export interface IRemoteActor<
   I extends Request<string>,
   R extends Record<I["type"], unknown>
-> {
+> extends IActor {
   call<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]>;
 }
 
@@ -158,7 +158,7 @@ export abstract class AbstractActor<
     this.listen();
     this.broadcast({ type: MessageType.Loaded, id: this.id });
   }
-  
+
   abstract stop(): void;
 }
 
@@ -213,4 +213,7 @@ export abstract class AbstractRemoteActor<
     this.sendRequest(msg);
     return promise;
   }
+
+  abstract start(): void;
+  abstract stop(): void;
 }

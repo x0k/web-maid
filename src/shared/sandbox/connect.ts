@@ -33,11 +33,9 @@ export async function connectToSandbox<T>(
     return import("./dev").then(({ DevSandbox }) => new DevSandbox<T>());
   }
   const iFrame = iFrameFactory(chrome.runtime.getURL(sandboxPath));
-  const sandbox = new SandboxRemoteActor<
+  return new SandboxRemoteActor<
     SandboxAction<T>,
     SandboxActionResults<T>,
     string
   >(makeRemoteActorLogic(stringifyError), iFrame);
-  sandbox.listen(window);
-  return sandbox;
 }

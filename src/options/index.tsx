@@ -14,6 +14,10 @@ import { OptionsPage } from "./options";
 const root = document.getElementById("root")!;
 
 connectToSandbox("sandbox.html", findAndBindIFrame(sandboxIFrameId))
+  .then((sandbox) => {
+    sandbox.start();
+    return sandbox;
+  })
   .then(
     (sandbox) => (
       <React.StrictMode>

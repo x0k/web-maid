@@ -3,10 +3,8 @@ import {
   AbstractRemoteActor,
   MessageType,
   ActorMessage,
-  ActorId,
   AbstractActor,
   ResponseMessage,
-  IActorLogic,
   IRemoteActorLogic,
 } from "@/lib/actor";
 
@@ -16,7 +14,7 @@ export class SandboxActor<
   E
 > extends AbstractActor<I, R, E> {
   protected broadcast(msg: ActorMessage<I, R, E>) {
-    this.window.parent.postMessage(msg, "*");
+    window.parent.postMessage(msg, "*");
   }
 
   private makeReply<T extends I["type"]>(
@@ -35,19 +33,11 @@ export class SandboxActor<
   };
 
   protected listen() {
-    this.window.addEventListener("message", this.handleMessageEvent);
-  }
-
-  constructor(
-    id: ActorId,
-    logic: IActorLogic<I, R, E>,
-    protected readonly window: Window
-  ) {
-    super(id, logic);
+    window.addEventListener("message", this.handleMessageEvent);
   }
 
   stop(): void {
-    this.window.removeEventListener("message", this.handleMessageEvent);
+    window.removeEventListener("message", this.handleMessageEvent);
   }
 }
 
@@ -71,18 +61,23 @@ export class SandboxRemoteActor<
     cw.postMessage(req, "*");
   }
 
-  private handleMessageEvent({ data }: MessageEvent<ActorMessage<I, R, E>>) {
+  private handleMessageEvent = ({
+    data,
+  }: MessageEvent<ActorMessage<I, R, E>>) => {
     this.handleMessage(data);
-  }
+  };
 
   constructor(
     logic: IRemoteActorLogic<E>,
-    protected readonly sandbox: HTMLIFrameElement
+    private readonly sandbox: HTMLIFrameElement
   ) {
     super(logic);
   }
 
-  listen(window: Window) {
-    window.addEventListener("message", this.handleMessageEvent.bind(this));
+  start(): void {
+    window.addEventListener("message", this.handleMessageEvent);
+  }
+  stop(): void {
+    window.removeEventListener("message", this.handleMessageEvent);
   }
 }

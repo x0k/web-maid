@@ -50,8 +50,7 @@ if (frameId) {
           ),
       },
       stringifyError
-    ),
-    window
+    )
   );
   sandbox.start();
 } else {

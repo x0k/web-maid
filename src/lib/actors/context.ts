@@ -6,18 +6,19 @@ import {
   ResponseMessage,
   IActorLogic,
   IRemoteActorLogic,
-  IRemoteActor,
   ActorMessage,
-  MessageType,
+  AbstractRemoteActor,
 } from "@/lib/actor";
-import { neverError } from "@/lib/guards";
 
 export interface IContextActorMessageSender<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
   E
 > {
-  sendMessage(message: ActorMessage<I, R, E>): unknown;
+  sendMessage(
+    message: ActorMessage<I, R, E>,
+    tabId?: number
+  ): void | Promise<void>;
 }
 
 export class ContextActor<
@@ -30,11 +31,14 @@ export class ContextActor<
   }
 
   private handleMessage = <T extends I["type"]>(
-    msg: Extract<I, Request<T>>,
-    _: chrome.runtime.MessageSender,
-    sendResponse: (response: ResponseMessage<I, R, E>) => void
+    req: Extract<I, Request<T>>,
+    sender: chrome.runtime.MessageSender
+    // sendResponse: (data: ResponseMessage<Extract<I, Request<T>>, R, E>) => void
   ) => {
-    this.handleRequest(msg, sendResponse);
+    // I haven't figured out why `sendResponse` doesn't work
+    this.handleRequest(req, (response) => {
+      this.sender.sendMessage(response, sender.tab?.id);
+    });
   };
 
   protected listen(): void {
@@ -68,27 +72,27 @@ export class ContextRemoteActor<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
   E
-> implements IRemoteActor<I, R>
-{
-  constructor(
-    private readonly logic: IRemoteActorLogic<E>,
-    private readonly sender: IContextRequestSender<I, R, E>
-  ) {}
+> extends AbstractRemoteActor<I, R, E> {
+  protected sendRequest<T extends I["type"]>(
+    req: Extract<I, Request<T>>
+  ): void {
+    this.sender.sendMessage(req);
+  }
 
-  async call<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]> {
-    try {
-      const response = await this.sender.sendMessage(msg);
-      console.log("Response", response);
-      switch (response.type) {
-        case MessageType.Success:
-          return response.result;
-        case MessageType.Error:
-          throw response.error;
-        default:
-          throw neverError(response, "Unknown response type");
-      }
-    } catch (e) {
-      throw this.logic.castError(e);
-    }
+  private handleContextMessage = this.handleMessage.bind(this);
+
+  constructor(
+    logic: IRemoteActorLogic<E>,
+    private readonly sender: IContextRequestSender<I, R, E>
+  ) {
+    super(logic);
+  }
+
+  start(): void {
+    chrome.runtime.onMessage.addListener(this.handleContextMessage);
+  }
+
+  stop(): void {
+    chrome.runtime.onMessage.removeListener(this.handleContextMessage);
   }
 }

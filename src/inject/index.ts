@@ -8,22 +8,21 @@ import {
 } from "@/lib/operator";
 import { stringifyError } from "@/lib/error";
 import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
+import { ContextRemoteActor } from "@/lib/actors/context";
 
 import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
 import {
   createAndMountIFrame,
   connectToSandbox,
 } from "@/shared/sandbox/connect";
-
-import { Evaluator, FormShower, Renderer, Validator } from "./impl";
-import { compileOperatorFactories } from "./operator";
-import { ContextRemoteActor } from "@/lib/actors/context";
 import {
   ExtensionAction,
   ExtensionActionResults,
 } from "@/shared/extension/action";
 
-const iFrameId = "sandbox";
+import { Evaluator, FormShower, Renderer, Validator } from "./impl";
+import { compileOperatorFactories } from "./operator";
+import { iFrameId } from './constants';
 
 const extension = new ContextRemoteActor<
   ExtensionAction,
@@ -50,9 +49,10 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
         )
       );
     },
-    send: () => chrome.runtime.sendMessage({ type: "inject" }),
   };
   window.__SCRAPER_EXTENSION__ = INJECTED;
+  sandbox.start();
+  extension.start();
   return INJECTED;
 }
 

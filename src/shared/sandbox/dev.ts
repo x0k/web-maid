@@ -4,12 +4,18 @@ import { Validator } from "@cfworker/json-schema";
 import type { IRemoteActor, Request } from "@/lib/actor";
 import { identity } from "@/lib/function";
 
-import { SandboxAction, SandboxActionResults, SandboxActionType } from "./action";
+import {
+  SandboxAction,
+  SandboxActionResults,
+  SandboxActionType,
+} from "./action";
 
 Mustache.escape = identity;
 
 const handlers: {
-  [K in SandboxActionType]: (msg: Extract<SandboxAction, Request<K>>) => SandboxActionResults[K];
+  [K in SandboxActionType]: (
+    msg: Extract<SandboxAction, Request<K>>
+  ) => SandboxActionResults[K];
 } = {
   [SandboxActionType.RenderTemplate]: ({ template, data }) =>
     Mustache.render(template, data),
@@ -27,5 +33,11 @@ export class DevSandbox<T>
     msg: Extract<SandboxAction<T>, Request<A>>
   ): Promise<SandboxActionResults<T>[A]> {
     return handlers[msg.type](msg as never);
+  }
+  start(): void {
+    console.log("Starting dev sandbox");
+  }
+  stop(): void {
+    console.log("Stopping dev sandbox");
   }
 }
