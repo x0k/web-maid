@@ -146,20 +146,55 @@ export function makeDebugFactory<T extends Record<string, unknown>, R>(
   factory: Factory<T, R>,
   logger: ILogger
 ): Factory<T, R> {
+  let counter = 0;
   return {
     Create(config) {
-      const result = factory.Create(config);
-      if (typeof result !== "function") {
-        return result;
+      const factoryResult = factory.Create(config);
+      if (typeof factoryResult !== "function") {
+        return factoryResult;
       }
-      return ((...args: unknown[]) => {
+      const operator = `${config[OPERATOR_KEY]}#${counter++}`;
+      const fn = function (...args: unknown[]) {
         logger.log({
-          executing: config[OPERATOR_KEY],
+          executing: operator,
           config,
-          args,
+          scope: args[0],
         });
-        return result(...args);
-      }) as R;
+        try {
+          const returns = factoryResult(...args);
+          if (returns instanceof Promise) {
+            return returns.then(
+              (returns) => {
+                logger.log({
+                  operator,
+                  returns,
+                });
+                return returns;
+              },
+              (error) => {
+                logger.log({
+                  operator,
+                  error,
+                });
+                return Promise.reject(error);
+              }
+            );
+          }
+          logger.log({
+            operator,
+            returns,
+          });
+          return returns;
+        } catch (error) {
+          logger.log({
+            operator,
+            error,
+          });
+          throw error;
+        }
+      };
+      fn.toString = () => `<${operator}>`;
+      return fn as R;
     },
   };
 }

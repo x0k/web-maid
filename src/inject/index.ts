@@ -10,6 +10,7 @@ import {
 import { stringifyError } from "@/lib/error";
 import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
 import { ContextRemoteActor } from "@/lib/actors/context";
+import { prepareForSending } from "@/lib/serialization";
 
 import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
 import {
@@ -35,7 +36,11 @@ const extension = new ContextRemoteActor<
   ExtensionAction,
   ExtensionActionResults,
   string
->(makeRemoteActorLogic(stringifyError), chrome.runtime);
+>(makeRemoteActorLogic(stringifyError), {
+  sendMessage(msg) {
+    return chrome.runtime.sendMessage(prepareForSending(msg));
+  },
+});
 
 function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   const INJECTED = {

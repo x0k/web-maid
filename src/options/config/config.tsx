@@ -75,11 +75,12 @@ export function Config() {
   });
   const rootRef = useRef<HTMLDivElement>(null);
   const formDataValidator = useFormDataValidator(sandboxIFrameId);
+  const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
   const actor = useContextActor(
     contextId,
     rootRef,
     formDataValidator,
-    logsModel
+    logsEditorRef
   );
   useEffect(() => {
     actor.start();
@@ -174,7 +175,7 @@ export function Config() {
         {debug &&
         (evalMutation.isMutating || evalMutation.data || evalMutation.error) ? (
           <Box height="100%" display="flex" flexDirection="column">
-            <Editor model={logsModel} />
+            <Editor ref={logsEditorRef} model={logsModel} />
           </Box>
         ) : (
           <Readme />

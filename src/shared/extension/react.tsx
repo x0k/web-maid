@@ -1,8 +1,9 @@
-import { MutableRefObject, useMemo } from "react";
+import { RefObject, useMemo } from "react";
 import { Root } from "react-dom/client";
 import { IChangeEvent } from "@rjsf/core";
 import { ValidationData } from "@rjsf/utils";
 import { Box, Button } from "@mui/material";
+import { stringify } from "yaml";
 
 import { AsyncFactory, Factory } from "@/lib/factory";
 import { ContextActor } from "@/lib/actors/context";
@@ -11,7 +12,6 @@ import { stringifyError } from "@/lib/error";
 import { noop } from "@/lib/function";
 import { Form, FormDataValidatorData } from "@/components/form";
 import { monaco } from "@/lib/monaco";
-import { stringify } from "yaml";
 
 import { getAllTabs } from "./core";
 import {
@@ -22,19 +22,19 @@ import {
 import { RootFactory } from "./root-factory";
 
 export function useRootFactory<E extends HTMLElement>(
-  rootRef: MutableRefObject<E | null>
+  rootRef: RefObject<E>
 ): Factory<void, Root> {
   return useMemo(() => new RootFactory(rootRef), []);
 }
 
 export function useContextActor<E extends HTMLElement>(
   contextId: string,
-  rootRef: MutableRefObject<E | null>,
+  rootRef: RefObject<E>,
   asyncValidator: AsyncFactory<
     FormDataValidatorData<unknown>,
     ValidationData<unknown>
   >,
-  logsModel: monaco.editor.ITextModel
+  logsEditorRef: RefObject<monaco.editor.IStandaloneCodeEditor>
 ) {
   const rootFactory = useRootFactory(rootRef);
   return useMemo(
@@ -44,9 +44,16 @@ export function useContextActor<E extends HTMLElement>(
         makeActorLogic(
           {
             [ExtensionActionType.AppendLog]: ({ log }) => {
-              // TODO: Use editor and fold log
-              const lc = logsModel.getLineCount();
-              logsModel.applyEdits([
+              const { current: editor } = logsEditorRef;
+              if (!editor) {
+                return;
+              }
+              const model = editor.getModel();
+              if (!model) {
+                return;
+              }
+              const lc = model.getLineCount();
+              model.applyEdits([
                 {
                   range: {
                     startLineNumber: lc,
@@ -59,6 +66,8 @@ export function useContextActor<E extends HTMLElement>(
                   })}`,
                 },
               ]);
+              editor.trigger("fold", "editor.foldLevel2", {});
+              editor.revealLine(lc + 1);
             },
             [ExtensionActionType.ShowFrom]: async ({
               schema,
@@ -107,7 +116,7 @@ export function useContextActor<E extends HTMLElement>(
                           color="primary"
                           size="small"
                         >
-                          Save
+                          Submit
                         </Button>
                       </Box>
                     </Form>
@@ -135,6 +144,6 @@ export function useContextActor<E extends HTMLElement>(
           },
         }
       ),
-    [contextId, rootFactory, asyncValidator, logsModel]
+    [contextId, rootFactory, asyncValidator, logsEditorRef]
   );
 }
