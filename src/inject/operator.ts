@@ -8,6 +8,7 @@ import { documentOperatorsFactories } from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
 import { fsOperatorsFactories } from "@/lib/operators/fs";
 import { htmlOperatorsFactories } from "@/lib/operators/html";
+import { httpOperatorsFactories } from "@/lib/operators/http";
 import { jsonOperatorsFactories } from "@/lib/operators/json";
 import {
   AsyncValidatorData,
@@ -64,5 +65,6 @@ export function compileOperatorFactories({
     jsonSchemaOperatorsFactories(validator, formShower)
   );
   assignWithPrefix("dbg.", factories, debugOperatorsFactories(logger));
+  assignWithPrefix("http.", factories, httpOperatorsFactories());
   return factories;
 }

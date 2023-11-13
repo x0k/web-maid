@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { lookup } from "mrmime";
+import mime from "mime/lite";
 import { fileOpen, fileSave } from "browser-fs-access";
 
 import { TaskOpFactory } from "@/lib/operator";
@@ -7,6 +7,7 @@ import { TaskOpFactory } from "@/lib/operator";
 const saveConfig = z.object({
   filename: z.string(),
   content: z.string(),
+  mimeType: z.string().optional(),
 });
 
 export class SaveFileOpFactory extends TaskOpFactory<
@@ -17,8 +18,9 @@ export class SaveFileOpFactory extends TaskOpFactory<
   protected async execute({
     filename,
     content,
+    mimeType,
   }: z.TypeOf<this["schema"]>): Promise<string> {
-    const type = lookup(filename);
+    const type = mimeType ?? mime.getType(filename);
     if (!type) {
       throw new Error(`Could not determine mime type for ${filename}`);
     }
