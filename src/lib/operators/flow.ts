@@ -55,10 +55,61 @@ export class NotOpFactory extends TaskOpFactory<typeof notConfig, boolean> {
   }
 }
 
+const ifConfig = z.object({
+  condition: z.unknown(),
+  then: z.unknown(),
+  else: z.unknown().default(null),
+});
+
+export class IfOpFactory extends FlowOpFactory<typeof ifConfig, unknown> {
+  readonly schema = ifConfig;
+  create({
+    condition,
+    then,
+    else: otherwise,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      const result = await evalInScope(condition, scope);
+      if (result) {
+        return evalInScope(then, scope);
+      }
+      return evalInScope(otherwise, scope);
+    };
+  }
+}
+
+const condConfig = z.object({
+  cases: z.array(z.tuple([z.unknown(), z.unknown()])),
+  default: z.unknown().optional(),
+});
+
+export class CondOpFactory extends FlowOpFactory<typeof condConfig, unknown> {
+  readonly schema = condConfig;
+  create({
+    cases,
+    default: otherwise,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      for (const [condition, then] of cases) {
+        const result = await evalInScope(condition, scope);
+        if (result) {
+          return evalInScope(then, scope);
+        }
+      }
+      if (otherwise === undefined) {
+        throw new Error("No case matched");
+      }
+      return evalInScope(otherwise, scope);
+    };
+  }
+}
+
 export function flowOperatorsFactories() {
   return {
     pipe: new PipeOpFactory(),
     and: new AndOpFactory(),
     not: new NotOpFactory(),
+    if: new IfOpFactory(),
+    cond: new CondOpFactory(),
   };
 }
