@@ -87,3 +87,61 @@ it("Should evaluate nested operators", async () => {
     inner: true,
   });
 });
+
+it("Should support recursion", async () => {
+  const result = traverseJsonLike(resolver, {
+    [OPERATOR_KEY]: "sys.define",
+    functions: {
+      fib: {
+        [OPERATOR_KEY]: "if",
+        condition: {
+          [OPERATOR_KEY]: "lte",
+          left: {
+            [OPERATOR_KEY]: "ctx.get",
+          },
+          right: 1,
+        },
+        then: {
+          [OPERATOR_KEY]: "ctx.get",
+        },
+        else: {
+          [OPERATOR_KEY]: "plus",
+          left: {
+            [OPERATOR_KEY]: "sys.call",
+            fn: "fib",
+            arg: {
+              [OPERATOR_KEY]: "minus",
+              left: {
+                [OPERATOR_KEY]: "ctx.get",
+              },
+              right: 1,
+            },
+          },
+          right: {
+            [OPERATOR_KEY]: "sys.call",
+            fn: "fib",
+            arg: {
+              [OPERATOR_KEY]: "minus",
+              left: {
+                [OPERATOR_KEY]: "ctx.get",
+              },
+              right: 2,
+            },
+          },
+        },
+      },
+    },
+    for: {
+      [OPERATOR_KEY]: "sys.call",
+      fn: "fib",
+    },
+  });
+
+  expect(
+    await evalInScope(result, {
+      constants: {},
+      functions: {},
+      context: 9,
+    })
+  ).toBe(34);
+});
