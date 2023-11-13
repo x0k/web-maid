@@ -120,12 +120,15 @@ export function Config() {
           >
             Test
           </Button>
-          {Boolean(evalMutation.data) && (
+          {Boolean(evalMutation.data || evalMutation.error) && (
             <Button
               variant="contained"
               color="error"
               size="small"
-              onClick={evalMutation.reset}
+              onClick={() => {
+                evalMutation.reset();
+                logsModel.setValue("");
+              }}
             >
               Reset
             </Button>
