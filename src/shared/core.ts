@@ -2,8 +2,11 @@ import { z } from "zod";
 
 import { Json } from "@/lib/zod";
 import { isObject } from "@/lib/guards";
+import { evalConfig } from "@/lib/config/eval";
 
 import rawConfig from "./config.yml?raw";
+import { removeEvalConfig } from "./remote-eval-config";
+import { OperatorFactoryConfig } from "@/lib/config/operator";
 
 const localSettingsSchema = z.object({
   secrets: z.string(),
@@ -52,33 +55,6 @@ const tabsSchema = z.array(tabSchema);
 
 export type Tab = z.infer<typeof tabSchema>;
 
-async function evalOperator(
-  contextId: string,
-  config: string,
-  secrets: Json,
-  debug: boolean
-) {
-  const { parse, traverseJsonLike, evalInScope, stringifyError, makeResolver } =
-    window.__SCRAPER_EXTENSION__ ?? {
-      stringifyError: String,
-    };
-  try {
-    const configData = parse(config);
-    return await evalInScope(
-      traverseJsonLike(makeResolver(contextId, debug), configData),
-      {
-        functions: {},
-        constants: {},
-        context: secrets,
-      }
-    );
-  } catch (error) {
-    return {
-      __error: stringifyError(error),
-    };
-  }
-}
-
 export async function loadSyncSettings(): Promise<SyncSettings> {
   const settings = await chrome.storage.sync.get(DEFAULT_SYNC_SETTINGS);
   return syncSettingsSchema.parse(settings);
@@ -118,17 +94,17 @@ export interface ConfigRenderedData {
   configData: LocalSettings;
 }
 
-export async function evalForTab(
+async function evalConfigInTab(
   contextId: string,
-  tabId: number,
+  debug: boolean,
   config: string,
-  debug: boolean
+  tabId: number,
+  secrets: Json
 ): Promise<unknown> {
-  const localConfig = await loadLocalSettings();
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
-    func: evalOperator,
-    args: [contextId, config, localConfig.secrets, debug],
+    func: removeEvalConfig,
+    args: [contextId, config, secrets, debug],
   });
   if (
     isObject(result) &&
@@ -138,4 +114,25 @@ export async function evalForTab(
     throw new Error(result.__error);
   }
   return result;
+}
+
+export function makeIsomorphicConfigEval(
+  operatorFactoryConfig: OperatorFactoryConfig
+) {
+  return async (
+    contextId: string,
+    debug: boolean,
+    config: string,
+    tabId?: number
+  ) => {
+    const localConfig = await loadLocalSettings();
+    return tabId
+      ? evalConfigInTab(contextId, debug, config, tabId, localConfig.secrets)
+      : evalConfig({
+          config,
+          debug,
+          secrets: localConfig.secrets,
+          operatorFactoryConfig,
+        });
+  };
 }

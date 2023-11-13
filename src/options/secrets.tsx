@@ -8,6 +8,7 @@ import { parse } from "yaml";
 import { stringifyError } from "@/lib/error";
 import { monaco } from "@/lib/monaco";
 import { Json } from "@/lib/zod";
+import { useFormDataValidator, useSandbox } from "@/lib/sandbox/react";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 import { Row } from "@/components/row";
@@ -18,8 +19,7 @@ import {
   loadSyncSettings,
   saveLocalSettings,
   saveSyncSettings,
-} from "@/shared/extension/core";
-import { useFormDataValidator } from "@/shared/sandbox/react";
+} from "@/shared/core";
 
 import { sandboxIFrameId } from "./constants";
 
@@ -50,7 +50,8 @@ async function saveSecretsSchema(_: string, { arg }: { arg: string }) {
 }
 
 export function Secrets() {
-  const asyncValidator = useFormDataValidator(sandboxIFrameId);
+  const sandbox = useSandbox();
+  const asyncValidator = useFormDataValidator(sandboxIFrameId, sandbox);
   const local = useSWR("settings/local", loadLocalSettings, {
     revalidateOnFocus: false,
   });

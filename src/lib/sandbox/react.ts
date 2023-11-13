@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { IRemoteActor } from "@/lib/actor";
 
 import type { SandboxAction, SandboxActionResults } from "./action";
-import { FormDataValidator } from "./form-data-validator";
+import { RemoteFormDataValidator } from "./form-data-validator";
 
 export const SandboxContext = React.createContext<IRemoteActor<
   SandboxAction,
@@ -18,10 +18,12 @@ export function useSandbox() {
   return sandbox;
 }
 
-export function useFormDataValidator(sandboxId: string) {
-  const sandbox = useSandbox();
+export function useFormDataValidator<T>(
+  sandboxId: string,
+  sandbox: IRemoteActor<SandboxAction<T>, SandboxActionResults<T>>
+) {
   return useMemo(
-    () => new FormDataValidator(sandboxId, sandbox),
+    () => new RemoteFormDataValidator<T>(sandboxId, sandbox),
     [sandbox, sandboxId]
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -14,18 +14,24 @@ import useSWR from "swr";
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
+import { useFormDataValidator, useSandbox } from "@/lib/sandbox/react";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 
 import {
   Tab,
-  evalForTab,
   getAllTabs,
   loadSyncSettings,
   saveSyncSettings,
-} from "@/shared/extension/core";
-import { useContextActor } from "@/shared/extension/react";
-import { useFormDataValidator } from "@/shared/sandbox/react";
+  makeIsomorphicConfigEval,
+} from "@/shared/core";
+import {
+  useContextActor,
+  useExtensionActorLogic,
+  useFormShower,
+  useRootFactory,
+} from "@/shared/react";
+import { Evaluator, Renderer, Validator } from "@/shared/impl";
 
 import { contextId, sandboxIFrameId } from "../constants";
 import { TabsSelector } from "./tabs-selector";
@@ -42,16 +48,6 @@ function showError(err: unknown) {
   });
 }
 
-async function runEvalForTab(
-  tab: Tab | null,
-  { arg }: { arg: { config: string; debug: boolean } }
-) {
-  if (!tab) {
-    throw new Error("Tab not selected");
-  }
-  return evalForTab(contextId, tab.id, arg.config, arg.debug);
-}
-
 async function saveConfig(_: string, { arg }: { arg: string }) {
   await saveSyncSettings({ config: arg });
 }
@@ -59,20 +55,43 @@ async function saveConfig(_: string, { arg }: { arg: string }) {
 const initialTabs: Tab[] = [];
 
 export function Config() {
+  const sandbox = useSandbox();
   const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
   const logger = useMonacoLogger(logsEditorRef);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const rootFactory = useRootFactory(rootRef);
+  const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
+  const formShower = useFormShower(rootFactory, formDataValidator);
+  const evalConfig = useMemo(
+    () =>
+      makeIsomorphicConfigEval({
+        window,
+        evaluator: new Evaluator(sandboxIFrameId, sandbox),
+        rendered: new Renderer(sandboxIFrameId, sandbox),
+        validator: new Validator(sandboxIFrameId, sandbox),
+        logger,
+        formShower,
+      }),
+    [sandbox, logger, formShower]
+  );
+  const [debug, setDebug] = useState(true);
+  const [selectedTab, selectTab] = useState<Tab | null>(null);
+  const evalRunner = useSWRMutation(
+    [debug, selectedTab],
+    ([debug, tab], { arg: config }: { arg: string }) =>
+      evalConfig(contextId, debug, config, tab?.id),
+    {
+      onSuccess(result) {
+        logger.log({ success: result });
+      },
+      onError(error) {
+        logger.log({ error: error });
+      },
+    }
+  );
 
   const tabs = useSWR("tabs", getAllTabs, {
     fallbackData: initialTabs,
-  });
-  const [selectedTab, selectTab] = useState<Tab | null>(null);
-  const evalMutation = useSWRMutation(selectedTab, runEvalForTab, {
-    onSuccess(result) {
-      logger.log({ success: result });
-    },
-    onError(error) {
-      logger.log({ error: error });
-    },
   });
   useSWR("settings/sync", loadSyncSettings, {
     revalidateOnFocus: false,
@@ -84,16 +103,14 @@ export function Config() {
   const configMutation = useSWRMutation("settings/sync", saveConfig, {
     onError: showError,
   });
-  const rootRef = useRef<HTMLDivElement>(null);
-  const formDataValidator = useFormDataValidator(sandboxIFrameId);
-  const actor = useContextActor(contextId, rootRef, formDataValidator, logger);
+  const logic = useExtensionActorLogic(formShower, logger);
+  const actor = useContextActor(contextId, logic);
   useEffect(() => {
     actor.start();
     return () => {
       actor.stop();
     };
   }, [actor]);
-  const [debug, setDebug] = useState(true);
   return (
     <Box
       flexGrow={1}
@@ -124,7 +141,7 @@ export function Config() {
       <Box display="flex" flexDirection="column" gap={2}>
         <Box display="flex" flexDirection="row" gap={2} alignItems="center">
           <Typography flexGrow={1} variant="h6">
-            Tabs
+            Execution
           </Typography>
           <FormControlLabel
             style={{ margin: 0, gap: 4 }}
@@ -138,22 +155,19 @@ export function Config() {
             color="warning"
             size="small"
             onClick={() => {
-              evalMutation.trigger({
-                config: configModel.getValue(),
-                debug,
-              });
+              evalRunner.trigger(configModel.getValue());
             }}
-            disabled={evalMutation.isMutating || !selectedTab}
+            disabled={evalRunner.isMutating}
           >
             Test
           </Button>
-          {Boolean(evalMutation.data || evalMutation.error) && (
+          {Boolean(evalRunner.data || evalRunner.error) && (
             <Button
               variant="contained"
               color="error"
               size="small"
               onClick={() => {
-                evalMutation.reset();
+                evalRunner.reset();
                 logsModel.setValue("");
               }}
             >
@@ -172,12 +186,12 @@ export function Config() {
         )}
       </Box>
       <Box display="flex" flexDirection="column" gap={2} overflow="auto">
-        {evalMutation.isMutating && (
+        {evalRunner.isMutating && (
           <LinearProgress style={{ marginBottom: 16 }} />
         )}
         <div ref={rootRef} />
-        {evalMutation.error && <ErrorAlert error={evalMutation.error} />}
-        {evalMutation.isMutating || evalMutation.data || evalMutation.error ? (
+        {evalRunner.error && <ErrorAlert error={evalRunner.error} />}
+        {evalRunner.isMutating || evalRunner.data || evalRunner.error ? (
           <Box height="100%" display="flex" flexDirection="column">
             <Editor ref={logsEditorRef} model={logsModel} />
           </Box>

@@ -3,10 +3,9 @@ import ReactDOM from "react-dom/client";
 import { SnackbarProvider } from "notistack";
 import { CssBaseline } from "@mui/material";
 
+import { connectToSandbox, findAndBindIFrame } from "@/lib/sandbox/connect";
+import { SandboxContext } from "@/lib/sandbox/react";
 import { ErrorAlert } from "@/components/error-alert";
-
-import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
-import { SandboxContext } from "@/shared/sandbox/react";
 
 import { sandboxIFrameId } from "./constants";
 import { OptionsPage } from "./options";

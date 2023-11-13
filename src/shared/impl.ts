@@ -4,18 +4,18 @@ import { ActorId, IRemoteActor } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";
 import { TemplateRendererData } from "@/lib/operators/template";
 import { AsyncValidatorData, ShowFormData } from "@/lib/operators/json-schema";
+import { ILogger } from "@/lib/logger";
 
 import {
   SandboxAction,
   SandboxActionResults,
   SandboxActionType,
-} from "@/shared/sandbox/action";
+} from "../lib/sandbox/action";
 import {
   ExtensionAction,
   ExtensionActionResults,
   ExtensionActionType,
-} from "@/shared/extension/action";
-import { ILogger } from "@/lib/logger";
+} from "./action";
 
 export class Evaluator implements AsyncFactory<string, unknown> {
   constructor(
@@ -64,7 +64,7 @@ export class Validator implements AsyncFactory<AsyncValidatorData, boolean> {
   }
 }
 
-export class FormShower implements AsyncFactory<ShowFormData, unknown> {
+export class RemoteFormShower implements AsyncFactory<ShowFormData, unknown> {
   constructor(
     private readonly handlerId: ActorId,
     private readonly actor: IRemoteActor<

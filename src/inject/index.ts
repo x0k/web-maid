@@ -1,35 +1,23 @@
-import { parse } from "yaml";
-
-import { traverseJsonLike } from "@/lib/json-like-traverser";
-import {
-  evalInScope,
-  makeComposedFactory,
-  makeDebugFactory,
-  makeOperatorResolver,
-} from "@/lib/operator";
 import { stringifyError } from "@/lib/error";
 import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
 import { ContextRemoteActor } from "@/lib/actors/context";
 import { prepareForSending } from "@/lib/serialization";
 
-import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
+import { SandboxAction, SandboxActionResults } from "@/lib/sandbox/action";
 import {
   createAndMountIFrame,
   connectToSandbox,
-} from "@/shared/sandbox/connect";
-import {
-  ExtensionAction,
-  ExtensionActionResults,
-} from "@/shared/extension/action";
-
+} from "@/lib/sandbox/connect";
+import { ExtensionAction, ExtensionActionResults } from "@/shared/action";
 import {
   RemoteLogger,
   Evaluator,
-  FormShower,
+  RemoteFormShower,
   Renderer,
   Validator,
-} from "./impl";
-import { compileOperatorFactories } from "./operator";
+} from "@/shared/impl";
+import { evalConfig } from "@/lib/config/eval";
+
 import { iFrameId } from "./constants";
 
 const extension = new ContextRemoteActor<
@@ -44,26 +32,15 @@ const extension = new ContextRemoteActor<
 
 function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   const INJECTED = {
-    parse,
-    traverseJsonLike,
-    evalInScope,
+    evalConfig,
+    evaluator: new Evaluator(iFrameId, sandbox),
+    rendered: new Renderer(iFrameId, sandbox),
+    validator: new Validator(iFrameId, sandbox),
+    makeRemote: (contextId: string) => ({
+      formShower: new RemoteFormShower(contextId, extension),
+      logger: new RemoteLogger(contextId, extension),
+    }),
     stringifyError,
-    makeResolver: (contextId: string, debug: boolean) => {
-      const logger = new RemoteLogger(contextId, extension);
-      const composedFactory = makeComposedFactory(
-        compileOperatorFactories({
-          window,
-          evaluator: new Evaluator(iFrameId, sandbox),
-          rendered: new Renderer(iFrameId, sandbox),
-          validator: new Validator(iFrameId, sandbox),
-          formShower: new FormShower(contextId, extension),
-          logger,
-        })
-      );
-      return makeOperatorResolver(
-        debug ? makeDebugFactory(composedFactory, logger) : composedFactory
-      );
-    },
   };
   window.__SCRAPER_EXTENSION__ = INJECTED;
   sandbox.start();

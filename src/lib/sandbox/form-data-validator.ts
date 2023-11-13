@@ -11,7 +11,7 @@ import {
   SandboxActionType,
 } from "./action";
 
-export class FormDataValidator<T>
+export class RemoteFormDataValidator<T>
   implements AsyncFactory<FormDataValidatorData<T>, ValidationData<T>>
 {
   constructor(

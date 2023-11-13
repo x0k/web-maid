@@ -9,7 +9,7 @@ import {
   SandboxAction,
   SandboxActionResults,
   SandboxActionType,
-} from "@/shared/sandbox/action";
+} from "@/lib/sandbox/action";
 import { makeActorLogic } from "@/lib/actor";
 
 const ajv = new Ajv();

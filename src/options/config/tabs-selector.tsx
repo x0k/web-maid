@@ -1,6 +1,6 @@
 import { Autocomplete, Box, TextField } from "@mui/material";
 
-import { Tab } from "@/shared/extension/core";
+import { Tab } from "@/shared/core";
 
 export interface TabsSelectorProps {
   tabs: Tab[];
@@ -46,7 +46,7 @@ export function TabsSelector({
       renderInput={(params) => (
         <TextField
           {...params}
-          placeholder='Choose the tab and click on "Test" button'
+          placeholder="Select a tab to execute on it"
           fullWidth
         />
       )}
