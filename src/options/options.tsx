@@ -11,9 +11,11 @@ export function OptionsPage() {
   return (
     <Box height="100vh" display="flex" flexDirection="column" gap={2} p={2}>
       <Row>
-        <Typography flexGrow={1}>Scraper</Typography>
+        <Typography flexGrow={1} variant="h5">
+          Scraper
+        </Typography>
         <Button
-          variant="contained"
+          variant="text"
           color="secondary"
           size="small"
           onClick={() => {

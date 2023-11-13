@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, LinearProgress, Typography } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import useSWRMutation from "swr/mutation";
 import useSWR from "swr";
@@ -82,7 +82,9 @@ export function Config() {
     >
       <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>
         <Box display="flex" flexDirection="row" gap={2} alignItems="center">
-          <Typography flexGrow={1}>Config</Typography>
+          <Typography flexGrow={1} variant="h6">
+            Config
+          </Typography>
           <Button
             variant="contained"
             color="primary"
@@ -98,7 +100,9 @@ export function Config() {
       </Box>
       <Box display="flex" flexDirection="column" gap={2}>
         <Box display="flex" flexDirection="row" gap={2} alignItems="center">
-          <Typography flexGrow={1}>Tabs</Typography>
+          <Typography flexGrow={1} variant="h6">
+            Tabs
+          </Typography>
           <Button
             variant="contained"
             color="warning"
@@ -110,6 +114,16 @@ export function Config() {
           >
             Test
           </Button>
+          {Boolean(evalMutation.data) && (
+            <Button
+              variant="contained"
+              color="error"
+              size="small"
+              onClick={evalMutation.reset}
+            >
+              Reset
+            </Button>
+          )}
         </Box>
         {tabs.error ? (
           <ErrorAlert error={tabs.error} />
@@ -122,12 +136,13 @@ export function Config() {
         )}
       </Box>
       <Box overflow={"auto"}>
+        {evalMutation.isMutating && (
+          <LinearProgress style={{ marginBottom: 16 }} />
+        )}
         <div ref={rootRef} />
         {evalMutation.error ? (
           <ErrorAlert error={evalMutation.error} />
-        ) : evalMutation.isMutating ? (
-          <Typography>Loading...</Typography>
-        ) : !evalMutation.data ? (
+        ) : evalMutation.isMutating || !evalMutation.data ? (
           <Readme />
         ) : (
           <pre>

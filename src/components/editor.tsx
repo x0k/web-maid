@@ -19,6 +19,7 @@ export function Editor({ model }: EditorProps) {
         automaticLayout: true,
         model,
         theme: "vs-dark",
+        tabSize: 2,
       });
     }
     return () => {

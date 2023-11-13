@@ -50,7 +50,7 @@ async function saveSecretsSchema(_: string, { arg }: { arg: string }) {
 }
 
 export function Secrets() {
-  const asyncValidator = useFormDataValidator(sandboxIFrameId)
+  const asyncValidator = useFormDataValidator(sandboxIFrameId);
   const local = useSWR("settings/local", loadLocalSettings, {
     revalidateOnFocus: false,
   });
@@ -97,7 +97,9 @@ export function Secrets() {
       gap={2}
     >
       <Row>
-        <Typography flexGrow={1}>Secrets schema</Typography>
+        <Typography flexGrow={1} variant="h6">
+          Secrets schema
+        </Typography>
         <Button
           variant="contained"
           color="primary"
@@ -106,11 +108,13 @@ export function Secrets() {
             secretsSchemaMutation.trigger(secretsSchemaModel.getValue())
           }
         >
-          Update
+          Save
         </Button>
       </Row>
       <Row>
-        <Typography flexGrow={1}>Secrets values</Typography>
+        <Typography flexGrow={1} variant="h6">
+          Secrets values
+        </Typography>
         <Button
           variant="contained"
           color="primary"
