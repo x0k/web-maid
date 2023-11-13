@@ -1,7 +1,9 @@
 import { AsyncFactory } from "@/lib/factory";
+import { ILogger } from "@/lib/logger";
 import { assignWithPrefix } from "@/lib/object";
 import { ScopedOpFactory } from "@/lib/operator";
 import { contextOperatorsFactories } from "@/lib/operators/context";
+import { debugOperatorsFactories } from "@/lib/operators/debug";
 import { documentOperatorsFactories } from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
 import { fsOperatorsFactories } from "@/lib/operators/fs";
@@ -25,6 +27,7 @@ export interface OperatorFactoryConfig {
   rendered: AsyncFactory<TemplateRendererData, string>;
   validator: AsyncFactory<AsyncValidatorData, boolean>;
   formShower: AsyncFactory<ShowFormData, unknown>;
+  logger: ILogger;
 }
 
 export function compileOperatorFactories({
@@ -33,6 +36,7 @@ export function compileOperatorFactories({
   rendered,
   validator,
   formShower,
+  logger,
 }: OperatorFactoryConfig) {
   const factories: Record<
     string,
@@ -59,5 +63,6 @@ export function compileOperatorFactories({
     factories,
     jsonSchemaOperatorsFactories(validator, formShower)
   );
+  assignWithPrefix("dbg.", factories, debugOperatorsFactories(logger));
   return factories;
 }

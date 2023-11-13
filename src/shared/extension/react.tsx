@@ -3,15 +3,14 @@ import { Root } from "react-dom/client";
 import { IChangeEvent } from "@rjsf/core";
 import { ValidationData } from "@rjsf/utils";
 import { Box, Button } from "@mui/material";
-import { stringify } from "yaml";
 
 import { AsyncFactory, Factory } from "@/lib/factory";
 import { ContextActor } from "@/lib/actors/context";
 import { makeActorLogic } from "@/lib/actor";
 import { stringifyError } from "@/lib/error";
 import { noop } from "@/lib/function";
+import { ILogger } from '@/lib/logger';
 import { Form, FormDataValidatorData } from "@/components/form";
-import { monaco } from "@/lib/monaco";
 
 import { getAllTabs } from "./core";
 import {
@@ -34,7 +33,7 @@ export function useContextActor<E extends HTMLElement>(
     FormDataValidatorData<unknown>,
     ValidationData<unknown>
   >,
-  logsEditorRef: RefObject<monaco.editor.IStandaloneCodeEditor>
+  logger: ILogger
 ) {
   const rootFactory = useRootFactory(rootRef);
   return useMemo(
@@ -44,30 +43,7 @@ export function useContextActor<E extends HTMLElement>(
         makeActorLogic(
           {
             [ExtensionActionType.AppendLog]: ({ log }) => {
-              const { current: editor } = logsEditorRef;
-              if (!editor) {
-                return;
-              }
-              const model = editor.getModel();
-              if (!model) {
-                return;
-              }
-              const lc = model.getLineCount();
-              model.applyEdits([
-                {
-                  range: {
-                    startLineNumber: lc,
-                    endLineNumber: lc,
-                    startColumn: 1,
-                    endColumn: 1,
-                  },
-                  text: `---\n${stringify({
-                    [new Date().toISOString()]: log,
-                  })}`,
-                },
-              ]);
-              editor.trigger("fold", "editor.foldLevel2", {});
-              editor.revealLine(lc + 1);
+              logger.log(log);
             },
             [ExtensionActionType.ShowFrom]: async ({
               schema,
@@ -144,6 +120,6 @@ export function useContextActor<E extends HTMLElement>(
           },
         }
       ),
-    [contextId, rootFactory, asyncValidator, logsEditorRef]
+    [contextId, rootFactory, asyncValidator, logger]
   );
 }

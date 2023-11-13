@@ -85,7 +85,7 @@ export class FormShower implements AsyncFactory<ShowFormData, unknown> {
   }
 }
 
-export class DebugLogger implements ILogger {
+export class RemoteLogger implements ILogger {
   constructor(
     private readonly handlerId: ActorId,
     private readonly actor: IRemoteActor<

@@ -23,7 +23,7 @@ import {
 } from "@/shared/extension/action";
 
 import {
-  DebugLogger,
+  RemoteLogger,
   Evaluator,
   FormShower,
   Renderer,
@@ -49,6 +49,7 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
     evalInScope,
     stringifyError,
     makeResolver: (contextId: string, debug: boolean) => {
+      const logger = new RemoteLogger(contextId, extension);
       const composedFactory = makeComposedFactory(
         compileOperatorFactories({
           window,
@@ -56,15 +57,11 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
           rendered: new Renderer(iFrameId, sandbox),
           validator: new Validator(iFrameId, sandbox),
           formShower: new FormShower(contextId, extension),
+          logger,
         })
       );
       return makeOperatorResolver(
-        debug
-          ? makeDebugFactory(
-              composedFactory,
-              new DebugLogger(contextId, extension)
-            )
-          : composedFactory
+        debug ? makeDebugFactory(composedFactory, logger) : composedFactory
       );
     },
   };

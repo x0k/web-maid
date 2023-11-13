@@ -13,6 +13,7 @@ import useSWR from "swr";
 
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
+import { useMonacoLogger } from "@/lib/react-monaco-logger";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 
@@ -58,11 +59,21 @@ async function saveConfig(_: string, { arg }: { arg: string }) {
 const initialTabs: Tab[] = [];
 
 export function Config() {
+  const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
+  const logger = useMonacoLogger(logsEditorRef);
+
   const tabs = useSWR("tabs", getAllTabs, {
     fallbackData: initialTabs,
   });
   const [selectedTab, selectTab] = useState<Tab | null>(null);
-  const evalMutation = useSWRMutation(selectedTab, runEvalForTab, {});
+  const evalMutation = useSWRMutation(selectedTab, runEvalForTab, {
+    onSuccess(result) {
+      logger.log({ success: result });
+    },
+    onError(error) {
+      logger.log({ error: error });
+    },
+  });
   useSWR("settings/sync", loadSyncSettings, {
     revalidateOnFocus: false,
     onSuccess({ config }) {
@@ -75,13 +86,7 @@ export function Config() {
   });
   const rootRef = useRef<HTMLDivElement>(null);
   const formDataValidator = useFormDataValidator(sandboxIFrameId);
-  const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
-  const actor = useContextActor(
-    contextId,
-    rootRef,
-    formDataValidator,
-    logsEditorRef
-  );
+  const actor = useContextActor(contextId, rootRef, formDataValidator, logger);
   useEffect(() => {
     actor.start();
     return () => {
@@ -172,8 +177,7 @@ export function Config() {
         )}
         <div ref={rootRef} />
         {evalMutation.error && <ErrorAlert error={evalMutation.error} />}
-        {debug &&
-        (evalMutation.isMutating || evalMutation.data || evalMutation.error) ? (
+        {evalMutation.isMutating || evalMutation.data || evalMutation.error ? (
           <Box height="100%" display="flex" flexDirection="column">
             <Editor ref={logsEditorRef} model={logsModel} />
           </Box>

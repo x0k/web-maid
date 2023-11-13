@@ -1,4 +1,4 @@
-import { MutableRefObject, ReactNode } from "react";
+import { RefObject, ReactNode } from "react";
 import ReactDOM from "react-dom/client";
 import { Root } from "react-dom/client";
 
@@ -22,7 +22,7 @@ export class RootWrapper implements Root {
 }
 
 export class RootFactory<E extends HTMLElement> implements Factory<void, Root> {
-  constructor(private readonly rootRef: MutableRefObject<E | null>) {}
+  constructor(private readonly rootRef: RefObject<E>) {}
 
   Create(): Root {
     const { current: root } = this.rootRef;
