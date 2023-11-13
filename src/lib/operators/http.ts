@@ -1,5 +1,5 @@
 import { z } from "zod";
-import mime from "mime/lite";
+import mime from "mime";
 
 import { TaskOpFactory } from "@/lib/operator";
 

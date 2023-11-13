@@ -1,5 +1,5 @@
 import { z } from "zod";
-import mime from "mime/lite";
+import mime from "mime";
 import { fileOpen, fileSave } from "browser-fs-access";
 
 import { TaskOpFactory } from "@/lib/operator";
