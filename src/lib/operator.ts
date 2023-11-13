@@ -2,6 +2,7 @@ import { type TypeOf, type ZodType } from "zod";
 
 import { isObject } from "@/lib/guards";
 import { Factory } from "@/lib/factory";
+import { ILogger } from "./logger";
 
 export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
 
@@ -138,5 +139,27 @@ export function makeOperatorResolver<R>(
       return factory.Create(context);
     }
     return context;
+  };
+}
+
+export function makeDebugFactory<T extends Record<string, unknown>, R>(
+  factory: Factory<T, R>,
+  logger: ILogger
+): Factory<T, R> {
+  return {
+    Create(config) {
+      const result = factory.Create(config);
+      if (typeof result !== "function") {
+        return result;
+      }
+      return ((...args: unknown[]) => {
+        logger.log({
+          executing: config[OPERATOR_KEY],
+          config,
+          args,
+        });
+        return result(...args);
+      }) as R;
+    },
   };
 }

@@ -4,6 +4,7 @@ import { traverseJsonLike } from "@/lib/json-like-traverser";
 import {
   evalInScope,
   makeComposedFactory,
+  makeDebugFactory,
   makeOperatorResolver,
 } from "@/lib/operator";
 import { stringifyError } from "@/lib/error";
@@ -20,9 +21,15 @@ import {
   ExtensionActionResults,
 } from "@/shared/extension/action";
 
-import { Evaluator, FormShower, Renderer, Validator } from "./impl";
+import {
+  DebugLogger,
+  Evaluator,
+  FormShower,
+  Renderer,
+  Validator,
+} from "./impl";
 import { compileOperatorFactories } from "./operator";
-import { iFrameId } from './constants';
+import { iFrameId } from "./constants";
 
 const extension = new ContextRemoteActor<
   ExtensionAction,
@@ -36,17 +43,23 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
     traverseJsonLike,
     evalInScope,
     stringifyError,
-    makeResolver: (contextId: string) => {
+    makeResolver: (contextId: string, debug: boolean) => {
+      const composedFactory = makeComposedFactory(
+        compileOperatorFactories({
+          window,
+          evaluator: new Evaluator(iFrameId, sandbox),
+          rendered: new Renderer(iFrameId, sandbox),
+          validator: new Validator(iFrameId, sandbox),
+          formShower: new FormShower(contextId, extension),
+        })
+      );
       return makeOperatorResolver(
-        makeComposedFactory(
-          compileOperatorFactories({
-            window,
-            evaluator: new Evaluator(iFrameId, sandbox),
-            rendered: new Renderer(iFrameId, sandbox),
-            validator: new Validator(iFrameId, sandbox),
-            formShower: new FormShower(contextId, extension),
-          })
-        )
+        debug
+          ? makeDebugFactory(
+              composedFactory,
+              new DebugLogger(contextId, extension)
+            )
+          : composedFactory
       );
     },
   };

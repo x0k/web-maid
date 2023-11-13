@@ -10,6 +10,8 @@ import { makeActorLogic } from "@/lib/actor";
 import { stringifyError } from "@/lib/error";
 import { noop } from "@/lib/function";
 import { Form, FormDataValidatorData } from "@/components/form";
+import { monaco } from "@/lib/monaco";
+import { stringify } from "yaml";
 
 import { getAllTabs } from "./core";
 import {
@@ -31,7 +33,8 @@ export function useContextActor<E extends HTMLElement>(
   asyncValidator: AsyncFactory<
     FormDataValidatorData<unknown>,
     ValidationData<unknown>
-  >
+  >,
+  logsModel: monaco.editor.ITextModel
 ) {
   const rootFactory = useRootFactory(rootRef);
   return useMemo(
@@ -40,6 +43,23 @@ export function useContextActor<E extends HTMLElement>(
         contextId,
         makeActorLogic(
           {
+            [ExtensionActionType.AppendLog]: ({ log }) => {
+              // TODO: Use editor and fold log
+              const lc = logsModel.getLineCount();
+              logsModel.applyEdits([
+                {
+                  range: {
+                    startLineNumber: lc,
+                    endLineNumber: lc,
+                    startColumn: 1,
+                    endColumn: 1,
+                  },
+                  text: `---\n${stringify({
+                    [new Date().toISOString()]: log,
+                  })}`,
+                },
+              ]);
+            },
             [ExtensionActionType.ShowFrom]: async ({
               schema,
               uiSchema,
@@ -115,6 +135,6 @@ export function useContextActor<E extends HTMLElement>(
           },
         }
       ),
-    [contextId, rootFactory, asyncValidator]
+    [contextId, rootFactory, asyncValidator, logsModel]
   );
 }

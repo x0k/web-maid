@@ -2,6 +2,7 @@ import { Request } from "@/lib/actor";
 
 export enum ExtensionActionType {
   ShowFrom = "form::show",
+  AppendLog = "log::append",
 }
 
 export interface AbstractExtensionAction<T extends ExtensionActionType>
@@ -15,8 +16,14 @@ export interface ShowFromAction
   omitExtraData?: boolean;
 }
 
-export type ExtensionAction = ShowFromAction;
+export interface AppendLogAction
+  extends AbstractExtensionAction<ExtensionActionType.AppendLog> {
+  log: unknown;
+}
+
+export type ExtensionAction = ShowFromAction | AppendLogAction;
 
 export interface ExtensionActionResults {
   [ExtensionActionType.ShowFrom]: unknown;
+  [ExtensionActionType.AppendLog]: void;
 }

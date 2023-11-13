@@ -1,4 +1,4 @@
-import { nanoid } from "nanoid";
+import { nanoid } from "nanoid/non-secure";
 
 import { ActorId, IRemoteActor } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";
@@ -15,6 +15,7 @@ import {
   ExtensionActionResults,
   ExtensionActionType,
 } from "@/shared/extension/action";
+import { ILogger } from "@/lib/logger";
 
 export class Evaluator implements AsyncFactory<string, unknown> {
   constructor(
@@ -80,6 +81,25 @@ export class FormShower implements AsyncFactory<ShowFormData, unknown> {
       uiSchema: config.uiSchema,
       data: config.data,
       omitExtraData: config.omitExtraData,
+    });
+  }
+}
+
+export class DebugLogger implements ILogger {
+  constructor(
+    private readonly handlerId: ActorId,
+    private readonly actor: IRemoteActor<
+      ExtensionAction,
+      ExtensionActionResults
+    >
+  ) {}
+
+  log(arg: unknown): void {
+    this.actor.call({
+      id: nanoid(),
+      handlerId: this.handlerId,
+      type: ExtensionActionType.AppendLog,
+      log: arg,
     });
   }
 }

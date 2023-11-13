@@ -3,7 +3,6 @@ import { Box, Button, LinearProgress, Typography } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import useSWRMutation from "swr/mutation";
 import useSWR from "swr";
-import { stringify } from "yaml";
 
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
@@ -26,6 +25,8 @@ import { Readme } from "./readme";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
+const logsModel = monaco.editor.createModel("", "yaml");
+
 function showError(err: unknown) {
   enqueueSnackbar({
     variant: "error",
@@ -37,7 +38,7 @@ async function runEvalForTab(tab: Tab | null, { arg }: { arg: string }) {
   if (!tab) {
     throw new Error("Tab not selected");
   }
-  return evalForTab(contextId, tab.id, arg);
+  return evalForTab(contextId, tab.id, arg, true);
 }
 
 async function saveConfig(_: string, { arg }: { arg: string }) {
@@ -64,7 +65,12 @@ export function Config() {
   });
   const rootRef = useRef<HTMLDivElement>(null);
   const formDataValidator = useFormDataValidator(sandboxIFrameId);
-  const actor = useContextActor(contextId, rootRef, formDataValidator);
+  const actor = useContextActor(
+    contextId,
+    rootRef,
+    formDataValidator,
+    logsModel
+  );
   useEffect(() => {
     actor.start();
     return () => {
@@ -140,14 +146,13 @@ export function Config() {
           <LinearProgress style={{ marginBottom: 16 }} />
         )}
         <div ref={rootRef} />
-        {evalMutation.error ? (
-          <ErrorAlert error={evalMutation.error} />
-        ) : evalMutation.isMutating || !evalMutation.data ? (
-          <Readme />
+        {evalMutation.error && <ErrorAlert error={evalMutation.error} />}
+        {evalMutation.isMutating || evalMutation.data || evalMutation.error ? (
+          <Box height="100%" display="flex" flexDirection="column">
+            <Editor model={logsModel} />
+          </Box>
         ) : (
-          <pre>
-            <code>{stringify(evalMutation.data)}</code>
-          </pre>
+          <Readme />
         )}
       </Box>
     </Box>
