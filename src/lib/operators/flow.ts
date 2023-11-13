@@ -6,6 +6,8 @@ import {
   ScopedOp,
   TaskOpFactory,
 } from "@/lib/operator";
+import { compareJsonValue } from "../json";
+import { jsonSchema } from "../zod";
 
 const pipeConfig = z.object({
   do: z.array(z.unknown()),
@@ -104,6 +106,53 @@ export class CondOpFactory extends FlowOpFactory<typeof condConfig, unknown> {
   }
 }
 
+const binaryConfig = z.object({
+  left: jsonSchema,
+  right: jsonSchema,
+});
+
+export class LtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  readonly schema = binaryConfig;
+  execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
+    return compareJsonValue(left, right) === -1;
+  }
+}
+
+export class LteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  readonly schema = binaryConfig;
+  execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
+    return compareJsonValue(left, right) < 1;
+  }
+}
+
+export class GtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  readonly schema = binaryConfig;
+  execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
+    return compareJsonValue(left, right) === 1;
+  }
+}
+
+export class GteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  readonly schema = binaryConfig;
+  execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
+    return compareJsonValue(left, right) > -1;
+  }
+}
+
+export class EqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  readonly schema = binaryConfig;
+  execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
+    return compareJsonValue(left, right) === 0;
+  }
+}
+
+export class NeqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  readonly schema = binaryConfig;
+  execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
+    return compareJsonValue(left, right) !== 0;
+  }
+}
+
 export function flowOperatorsFactories() {
   return {
     pipe: new PipeOpFactory(),
@@ -111,5 +160,11 @@ export function flowOperatorsFactories() {
     not: new NotOpFactory(),
     if: new IfOpFactory(),
     cond: new CondOpFactory(),
+    lt: new LtOpFactory(),
+    lte: new LteOpFactory(),
+    gt: new GtOpFactory(),
+    gte: new GteOpFactory(),
+    eq: new EqOpFactory(),
+    neq: new NeqOpFactory(),
   };
 }

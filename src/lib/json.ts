@@ -33,7 +33,7 @@ export function compareJsonArray(a: JSONArray, b: JSONArray): CompareResult {
   const len = a.length
   let i = 0
   while (i < len) {
-    const result = compareJsonType(a[i], b[i])
+    const result = compareJsonValue(a[i], b[i])
     if (result !== 0) {
       return result
     }
@@ -56,7 +56,7 @@ export function compareJsonRecords(
   let i = 0
   while (i < len) {
     const key = aKeys[i]
-    const result = compareJsonType(a[key], b[key])
+    const result = compareJsonValue(a[key], b[key])
     if (result !== 0) {
       return result
     }
@@ -75,7 +75,7 @@ export function compareJsonObjects(
   return Array.isArray(b) ? 1 : compareJsonRecords(a, b)
 }
 
-export function compareJsonType(a: JSONValue, b: JSONValue): CompareResult {
+export function compareJsonValue(a: JSONValue, b: JSONValue): CompareResult {
   if (isJsonPrimitive(a)) {
     return isJsonPrimitive(b) ? compareJsonPrimitive(a, b) : -1
   }
