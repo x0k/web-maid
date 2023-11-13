@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, LinearProgress, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  LinearProgress,
+  Typography,
+} from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import useSWRMutation from "swr/mutation";
 import useSWR from "swr";
@@ -34,11 +41,14 @@ function showError(err: unknown) {
   });
 }
 
-async function runEvalForTab(tab: Tab | null, { arg }: { arg: string }) {
+async function runEvalForTab(
+  tab: Tab | null,
+  { arg }: { arg: { config: string; debug: boolean } }
+) {
   if (!tab) {
     throw new Error("Tab not selected");
   }
-  return evalForTab(contextId, tab.id, arg, true);
+  return evalForTab(contextId, tab.id, arg.config, arg.debug);
 }
 
 async function saveConfig(_: string, { arg }: { arg: string }) {
@@ -77,6 +87,7 @@ export function Config() {
       actor.stop();
     };
   }, [actor]);
+  const [debug, setDebug] = useState(true);
   return (
     <Box
       flexGrow={1}
@@ -109,12 +120,22 @@ export function Config() {
           <Typography flexGrow={1} variant="h6">
             Tabs
           </Typography>
+          <FormControlLabel
+            style={{ margin: 0, gap: 4 }}
+            control={<Checkbox style={{ padding: 4 }} />}
+            label="Debug"
+            checked={debug}
+            onChange={(_, v) => setDebug(v)}
+          />
           <Button
             variant="contained"
             color="warning"
             size="small"
             onClick={() => {
-              evalMutation.trigger(configModel.getValue());
+              evalMutation.trigger({
+                config: configModel.getValue(),
+                debug,
+              });
             }}
             disabled={evalMutation.isMutating || !selectedTab}
           >
@@ -144,13 +165,14 @@ export function Config() {
           />
         )}
       </Box>
-      <Box overflow={"auto"}>
+      <Box display="flex" flexDirection="column" gap={2} overflow="auto">
         {evalMutation.isMutating && (
           <LinearProgress style={{ marginBottom: 16 }} />
         )}
         <div ref={rootRef} />
         {evalMutation.error && <ErrorAlert error={evalMutation.error} />}
-        {evalMutation.isMutating || evalMutation.data || evalMutation.error ? (
+        {debug &&
+        (evalMutation.isMutating || evalMutation.data || evalMutation.error) ? (
           <Box height="100%" display="flex" flexDirection="column">
             <Editor model={logsModel} />
           </Box>
