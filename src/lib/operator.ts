@@ -2,6 +2,7 @@ import { type TypeOf, type ZodType } from "zod";
 
 import { isObject } from "@/lib/guards";
 import { Factory } from "@/lib/factory";
+import { ILogger } from "./logger";
 
 export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
 
@@ -138,5 +139,62 @@ export function makeOperatorResolver<R>(
       return factory.Create(context);
     }
     return context;
+  };
+}
+
+export function makeDebugFactory<T extends Record<string, unknown>, R>(
+  factory: Factory<T, R>,
+  logger: ILogger
+): Factory<T, R> {
+  let counter = 0;
+  return {
+    Create(config) {
+      const factoryResult = factory.Create(config);
+      if (typeof factoryResult !== "function") {
+        return factoryResult;
+      }
+      const operator = `${config[OPERATOR_KEY]}#${counter++}`;
+      const fn = function (...args: unknown[]) {
+        logger.log({
+          executing: operator,
+          config,
+          scope: args[0],
+        });
+        try {
+          const returns = factoryResult(...args);
+          if (returns instanceof Promise) {
+            return returns.then(
+              (returns) => {
+                logger.log({
+                  operator,
+                  returns,
+                });
+                return returns;
+              },
+              (error) => {
+                logger.log({
+                  operator,
+                  error,
+                });
+                return Promise.reject(error);
+              }
+            );
+          }
+          logger.log({
+            operator,
+            returns,
+          });
+          return returns;
+        } catch (error) {
+          logger.log({
+            operator,
+            error,
+          });
+          throw error;
+        }
+      };
+      fn.toString = () => `<${operator}>`;
+      return fn as R;
+    },
   };
 }

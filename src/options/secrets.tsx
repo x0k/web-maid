@@ -113,7 +113,7 @@ export function Secrets() {
       </Row>
       <Row>
         <Typography flexGrow={1} variant="h6">
-          Secrets values
+          Secrets
         </Typography>
         <Button
           variant="contained"
@@ -127,7 +127,6 @@ export function Secrets() {
         </Button>
       </Row>
       <Editor model={secretsSchemaModel} />
-
       {local.error ? (
         <ErrorAlert error={local.error} />
       ) : (

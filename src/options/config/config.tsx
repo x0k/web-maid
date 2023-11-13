@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, LinearProgress, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  LinearProgress,
+  Typography,
+} from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import useSWRMutation from "swr/mutation";
 import useSWR from "swr";
-import { stringify } from "yaml";
 
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
+import { useMonacoLogger } from "@/lib/react-monaco-logger";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 
@@ -26,6 +33,8 @@ import { Readme } from "./readme";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
+const logsModel = monaco.editor.createModel("", "yaml");
+
 function showError(err: unknown) {
   enqueueSnackbar({
     variant: "error",
@@ -33,11 +42,14 @@ function showError(err: unknown) {
   });
 }
 
-async function runEvalForTab(tab: Tab | null, { arg }: { arg: string }) {
+async function runEvalForTab(
+  tab: Tab | null,
+  { arg }: { arg: { config: string; debug: boolean } }
+) {
   if (!tab) {
     throw new Error("Tab not selected");
   }
-  return evalForTab(contextId, tab.id, arg);
+  return evalForTab(contextId, tab.id, arg.config, arg.debug);
 }
 
 async function saveConfig(_: string, { arg }: { arg: string }) {
@@ -47,11 +59,21 @@ async function saveConfig(_: string, { arg }: { arg: string }) {
 const initialTabs: Tab[] = [];
 
 export function Config() {
+  const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
+  const logger = useMonacoLogger(logsEditorRef);
+
   const tabs = useSWR("tabs", getAllTabs, {
     fallbackData: initialTabs,
   });
   const [selectedTab, selectTab] = useState<Tab | null>(null);
-  const evalMutation = useSWRMutation(selectedTab, runEvalForTab, {});
+  const evalMutation = useSWRMutation(selectedTab, runEvalForTab, {
+    onSuccess(result) {
+      logger.log({ success: result });
+    },
+    onError(error) {
+      logger.log({ error: error });
+    },
+  });
   useSWR("settings/sync", loadSyncSettings, {
     revalidateOnFocus: false,
     onSuccess({ config }) {
@@ -64,13 +86,14 @@ export function Config() {
   });
   const rootRef = useRef<HTMLDivElement>(null);
   const formDataValidator = useFormDataValidator(sandboxIFrameId);
-  const actor = useContextActor(contextId, rootRef, formDataValidator);
+  const actor = useContextActor(contextId, rootRef, formDataValidator, logger);
   useEffect(() => {
     actor.start();
     return () => {
       actor.stop();
     };
   }, [actor]);
+  const [debug, setDebug] = useState(true);
   return (
     <Box
       flexGrow={1}
@@ -103,23 +126,36 @@ export function Config() {
           <Typography flexGrow={1} variant="h6">
             Tabs
           </Typography>
+          <FormControlLabel
+            style={{ margin: 0, gap: 4 }}
+            control={<Checkbox style={{ padding: 4 }} />}
+            label="Debug"
+            checked={debug}
+            onChange={(_, v) => setDebug(v)}
+          />
           <Button
             variant="contained"
             color="warning"
             size="small"
             onClick={() => {
-              evalMutation.trigger(configModel.getValue());
+              evalMutation.trigger({
+                config: configModel.getValue(),
+                debug,
+              });
             }}
             disabled={evalMutation.isMutating || !selectedTab}
           >
             Test
           </Button>
-          {Boolean(evalMutation.data) && (
+          {Boolean(evalMutation.data || evalMutation.error) && (
             <Button
               variant="contained"
               color="error"
               size="small"
-              onClick={evalMutation.reset}
+              onClick={() => {
+                evalMutation.reset();
+                logsModel.setValue("");
+              }}
             >
               Reset
             </Button>
@@ -135,19 +171,18 @@ export function Config() {
           />
         )}
       </Box>
-      <Box overflow={"auto"}>
+      <Box display="flex" flexDirection="column" gap={2} overflow="auto">
         {evalMutation.isMutating && (
           <LinearProgress style={{ marginBottom: 16 }} />
         )}
         <div ref={rootRef} />
-        {evalMutation.error ? (
-          <ErrorAlert error={evalMutation.error} />
-        ) : evalMutation.isMutating || !evalMutation.data ? (
-          <Readme />
+        {evalMutation.error && <ErrorAlert error={evalMutation.error} />}
+        {evalMutation.isMutating || evalMutation.data || evalMutation.error ? (
+          <Box height="100%" display="flex" flexDirection="column">
+            <Editor ref={logsEditorRef} model={logsModel} />
+          </Box>
         ) : (
-          <pre>
-            <code>{stringify(evalMutation.data)}</code>
-          </pre>
+          <Readme />
         )}
       </Box>
     </Box>

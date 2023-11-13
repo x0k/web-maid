@@ -1,4 +1,4 @@
-import { MutableRefObject, useMemo } from "react";
+import { RefObject, useMemo } from "react";
 import { Root } from "react-dom/client";
 import { IChangeEvent } from "@rjsf/core";
 import { ValidationData } from "@rjsf/utils";
@@ -9,6 +9,7 @@ import { ContextActor } from "@/lib/actors/context";
 import { makeActorLogic } from "@/lib/actor";
 import { stringifyError } from "@/lib/error";
 import { noop } from "@/lib/function";
+import { ILogger } from '@/lib/logger';
 import { Form, FormDataValidatorData } from "@/components/form";
 
 import { getAllTabs } from "./core";
@@ -20,18 +21,19 @@ import {
 import { RootFactory } from "./root-factory";
 
 export function useRootFactory<E extends HTMLElement>(
-  rootRef: MutableRefObject<E | null>
+  rootRef: RefObject<E>
 ): Factory<void, Root> {
   return useMemo(() => new RootFactory(rootRef), []);
 }
 
 export function useContextActor<E extends HTMLElement>(
   contextId: string,
-  rootRef: MutableRefObject<E | null>,
+  rootRef: RefObject<E>,
   asyncValidator: AsyncFactory<
     FormDataValidatorData<unknown>,
     ValidationData<unknown>
-  >
+  >,
+  logger: ILogger
 ) {
   const rootFactory = useRootFactory(rootRef);
   return useMemo(
@@ -40,6 +42,9 @@ export function useContextActor<E extends HTMLElement>(
         contextId,
         makeActorLogic(
           {
+            [ExtensionActionType.AppendLog]: ({ log }) => {
+              logger.log(log);
+            },
             [ExtensionActionType.ShowFrom]: async ({
               schema,
               uiSchema,
@@ -87,7 +92,7 @@ export function useContextActor<E extends HTMLElement>(
                           color="primary"
                           size="small"
                         >
-                          Save
+                          Submit
                         </Button>
                       </Box>
                     </Form>
@@ -115,6 +120,6 @@ export function useContextActor<E extends HTMLElement>(
           },
         }
       ),
-    [contextId, rootFactory, asyncValidator]
+    [contextId, rootFactory, asyncValidator, logger]
   );
 }

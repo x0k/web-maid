@@ -52,7 +52,12 @@ const tabsSchema = z.array(tabSchema);
 
 export type Tab = z.infer<typeof tabSchema>;
 
-async function evalOperator(contextId: string, config: string, secrets: Json) {
+async function evalOperator(
+  contextId: string,
+  config: string,
+  secrets: Json,
+  debug: boolean
+) {
   const { parse, traverseJsonLike, evalInScope, stringifyError, makeResolver } =
     window.__SCRAPER_EXTENSION__ ?? {
       stringifyError: String,
@@ -60,7 +65,7 @@ async function evalOperator(contextId: string, config: string, secrets: Json) {
   try {
     const configData = parse(config);
     return await evalInScope(
-      traverseJsonLike(makeResolver(contextId), configData),
+      traverseJsonLike(makeResolver(contextId, debug), configData),
       {
         functions: {},
         constants: {},
@@ -116,13 +121,14 @@ export interface ConfigRenderedData {
 export async function evalForTab(
   contextId: string,
   tabId: number,
-  config: string
+  config: string,
+  debug: boolean
 ): Promise<unknown> {
   const localConfig = await loadLocalSettings();
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
     func: evalOperator,
-    args: [contextId, config, localConfig.secrets],
+    args: [contextId, config, localConfig.secrets, debug],
   });
   if (
     isObject(result) &&
