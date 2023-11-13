@@ -21,6 +21,7 @@ import {
   templateOperatorsFactories,
   TemplateRendererData,
 } from "@/lib/operators/template";
+import { mathOperatorsFactories } from "@/lib/operators/math";
 
 export interface OperatorFactoryConfig {
   window: Window;
@@ -43,6 +44,7 @@ export function compileOperatorFactories({
     string,
     ScopedOpFactory<unknown>
   > = flowOperatorsFactories();
+  Object.assign(factories, mathOperatorsFactories());
   assignWithPrefix("sys.", factories, sysOperatorsFactories());
   assignWithPrefix(
     "template.",
