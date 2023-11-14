@@ -48,6 +48,7 @@ export type OpOrVal<T, R> = R | Op<T, R>;
 export interface Scope<R> {
   functions: Record<string, ScopedOp<R>>;
   constants: Record<string, OpOrVal<Scope<R>, R>>;
+  error: unknown;
   context: R;
 }
 

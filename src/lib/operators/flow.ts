@@ -6,8 +6,10 @@ import {
   ScopedOp,
   TaskOpFactory,
 } from "@/lib/operator";
-import { compareJsonValue } from "../json";
-import { jsonSchema } from "../zod";
+import { compareJsonValue } from "@/lib/json";
+import { jsonSchema } from "@/lib/zod";
+import { get } from "@/lib/object";
+import { isObject, isRecord } from "@/lib/guards";
 
 const pipeConfig = z.object({
   do: z.array(z.unknown()),
@@ -153,6 +155,128 @@ export class NeqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
   }
 }
 
+const primitiveKeyConfig = z.union([z.string(), z.number().int()]);
+
+const composedKeyConfig = z.union([
+  primitiveKeyConfig,
+  z.array(primitiveKeyConfig),
+]);
+
+const arrayOrRecordConfig = z.array(z.unknown()).or(z.record(z.unknown()));
+
+const getConfig = z.object({
+  key: z.unknown().optional(),
+  from: z.unknown().optional(),
+  default: z.unknown().optional(),
+});
+
+export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
+  readonly schema = getConfig;
+  create({
+    key,
+    from,
+    default: defaultValue,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      if (key === undefined) {
+        return scope.context;
+      }
+      const resolvedKey = await evalInScope(key, scope);
+      const realKey = composedKeyConfig.parse(resolvedKey);
+      const resolvedFrom = await evalInScope(from ?? scope.context, scope);
+      const realFrom = arrayOrRecordConfig.parse(resolvedFrom);
+      return get(realKey, realFrom, defaultValue);
+    };
+  }
+}
+
+const updateConfig = z.object({
+  source: z.unknown(),
+  properties: z.unknown(),
+});
+
+export class UpdateOpFactory extends FlowOpFactory<
+  typeof updateConfig,
+  Record<string, unknown> | Array<unknown>
+> {
+  readonly schema = updateConfig;
+  create({
+    source,
+    properties,
+  }: z.TypeOf<this["schema"]>): ScopedOp<
+    Record<string, unknown> | Array<unknown>
+  > {
+    return async (scope) => {
+      const evaluatedProperties = await evalInScope(properties, scope);
+      if (!isRecord(evaluatedProperties)) {
+        throw new Error("Properties must be an object");
+      }
+      const evaluatedSource = await evalInScope(source ?? scope.context, scope);
+      if (Array.isArray(evaluatedSource)) {
+        return evaluatedSource.map((v, i) => {
+          const idx = i.toString();
+          return idx in evaluatedProperties ? evaluatedProperties[idx] : v;
+        });
+      }
+      if (isObject(evaluatedSource)) {
+        return { ...evaluatedSource, ...evaluatedProperties };
+      }
+      throw new Error("Source must be an object or array");
+    };
+  }
+}
+
+const tryConfig = z.object({
+  do: z.unknown(),
+  catch: z.unknown().optional(),
+  finally: z.unknown().optional(),
+});
+
+export class TryOpFactory extends FlowOpFactory<typeof tryConfig, unknown> {
+  schema = tryConfig;
+  protected create({
+    do: action,
+    catch: rescue,
+    finally: after,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      let errorOcurred = false;
+      let errorHandled = false;
+      const mutableScope = { ...scope };
+      try {
+        mutableScope.context = await evalInScope(action, mutableScope);
+      } catch (error) {
+        errorOcurred = true;
+        mutableScope.error = error;
+        if (rescue !== undefined) {
+          mutableScope.context = await evalInScope(rescue, mutableScope);
+          errorHandled = true;
+        }
+        // Will be executed even if catch block fails
+      } finally {
+        if (after !== undefined) {
+          mutableScope.context = await evalInScope(after, mutableScope);
+        }
+      }
+      if (errorOcurred && !errorHandled) {
+        throw mutableScope.error;
+      }
+      return mutableScope.context;
+    };
+  }
+}
+
+const throwConfig = z.object({
+  error: z.unknown(),
+});
+
+export class ThrowOpFactory extends FlowOpFactory<typeof throwConfig, unknown> {
+  schema = throwConfig;
+  protected create({ error }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return (scope) => evalInScope(error, scope).then(Promise.reject);
+  }
+}
+
 export function flowOperatorsFactories() {
   return {
     pipe: new PipeOpFactory(),
@@ -166,5 +290,9 @@ export function flowOperatorsFactories() {
     gte: new GteOpFactory(),
     eq: new EqOpFactory(),
     neq: new NeqOpFactory(),
+    get: new GetOpFactory(),
+    update: new UpdateOpFactory(),
+    try: new TryOpFactory(),
+    throw: new ThrowOpFactory(),
   };
 }

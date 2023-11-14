@@ -39,7 +39,7 @@ export class DefineOpFactory extends FlowOpFactory<
         }
       }
       const newScope: Scope<unknown> = {
-        context: scope.context,
+        ...scope,
         functions: functions
           ? { ...scope.functions, ...functions }
           : scope.functions,
@@ -168,6 +168,15 @@ export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
   }
 }
 
+const errorConfig = z.unknown();
+
+export class ErrorOpFactory extends FlowOpFactory<typeof errorConfig, unknown> {
+  schema = errorConfig;
+  protected create(): ScopedOp<unknown> {
+    return (scope) => scope.error;
+  }
+}
+
 export function sysOperatorsFactories(
   operatorsFactory: ScopedOpFactory<unknown>,
   operatorResolver: Factory<unknown, unknown>
@@ -178,5 +187,6 @@ export function sysOperatorsFactories(
     get: new GetOpFactory(),
     exec: new ExecOpFactory(operatorsFactory),
     eval: new EvalOpFactory(operatorResolver),
+    err: new ErrorOpFactory(),
   };
 }

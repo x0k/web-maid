@@ -2,7 +2,6 @@ import { AsyncFactory, Factory } from "@/lib/factory";
 import { ILogger } from "@/lib/logger";
 import { assignWithPrefix } from "@/lib/object";
 import { ScopedOpFactory } from "@/lib/operator";
-import { contextOperatorsFactories } from "@/lib/operators/context";
 import { debugOperatorsFactories } from "@/lib/operators/debug";
 import { documentOperatorsFactories } from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
@@ -64,7 +63,6 @@ export function compileOperatorFactories({
     factories,
     documentOperatorsFactories(window, evaluator)
   );
-  assignWithPrefix("ctx.", factories, contextOperatorsFactories());
   assignWithPrefix("html.", factories, htmlOperatorsFactories(window));
   assignWithPrefix("str.", factories, stringsOperatorsFactories());
   assignWithPrefix("fs.", factories, fsOperatorsFactories());
