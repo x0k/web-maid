@@ -11,6 +11,7 @@ import {
 import { isRecord } from "@/lib/guards";
 import { Factory } from "@/lib/factory";
 import { traverseJsonLike } from "@/lib/json-like-traverser";
+import { stringifyError } from "@/lib/error";
 
 const defineConfig = z.object({
   functions: z.record(z.function()).optional(),
@@ -173,7 +174,7 @@ const errorConfig = z.unknown();
 export class ErrorOpFactory extends FlowOpFactory<typeof errorConfig, unknown> {
   schema = errorConfig;
   protected create(): ScopedOp<unknown> {
-    return (scope) => scope.error;
+    return (scope) => stringifyError(scope.error);
   }
 }
 
