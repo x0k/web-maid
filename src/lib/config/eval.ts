@@ -1,35 +1,21 @@
 import { parse } from "yaml";
 
 import { traverseJsonLike } from "@/lib/json-like-traverser";
-import {
-  ScopedOpFactory,
-  evalInScope,
-  makeDebugFactory,
-  makeOperatorResolver,
-} from "@/lib/operator";
+import { evalInScope } from "@/lib/operator";
 import { Json } from "@/lib/zod";
-import { ILogger } from "@/lib/logger";
 
-export interface EvalConfigRunnerOptions {
+export interface EvalConfigOptions {
   config: string;
-  debug: boolean;
   secrets: Json;
-  logger: ILogger;
-  operatorsFactory: ScopedOpFactory<unknown>;
+  operatorResolver: (value: unknown) => unknown;
 }
 
 export function evalConfig({
   config,
-  debug,
   secrets,
-  logger,
-  operatorsFactory,
-}: EvalConfigRunnerOptions) {
-  const configData = parse(config);
-  const resolver = makeOperatorResolver(
-    debug ? makeDebugFactory(operatorsFactory, logger) : operatorsFactory
-  );
-  return evalInScope(traverseJsonLike(resolver, configData), {
+  operatorResolver,
+}: EvalConfigOptions) {
+  return evalInScope(traverseJsonLike(operatorResolver, parse(config)), {
     functions: {},
     constants: {},
     context: secrets,

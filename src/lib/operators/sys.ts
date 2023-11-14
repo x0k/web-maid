@@ -9,6 +9,8 @@ import {
   evalInScope,
 } from "@/lib/operator";
 import { isRecord } from "@/lib/guards";
+import { Factory } from "@/lib/factory";
+import { traverseJsonLike } from "@/lib/json-like-traverser";
 
 const defineConfig = z.object({
   functions: z.record(z.function()).optional(),
@@ -102,14 +104,14 @@ export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
   }
 }
 
-const evalConfig = z.object({
+const execConfig = z.object({
   op: z.unknown(),
   config: z.unknown().optional(),
   arg: z.unknown().optional(),
 });
 
-export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
-  schema = evalConfig;
+export class ExecOpFactory extends FlowOpFactory<typeof execConfig, unknown> {
+  schema = execConfig;
 
   constructor(
     protected readonly operatorFactoryConfig: ScopedOpFactory<unknown>
@@ -144,13 +146,37 @@ export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
   }
 }
 
+const evalConfig = z.object({
+  expression: z.unknown(),
+});
+
+export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
+  schema = evalConfig;
+
+  constructor(private readonly operatorResolver: Factory<unknown, unknown>) {
+    super();
+  }
+
+  protected create({ expression }: TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      const opOrValue = traverseJsonLike(
+        (v) => this.operatorResolver.Create(v),
+        await evalInScope(expression, scope)
+      );
+      return await evalInScope(opOrValue, scope);
+    };
+  }
+}
+
 export function sysOperatorsFactories(
-  operatorsFactory: ScopedOpFactory<unknown>
+  operatorsFactory: ScopedOpFactory<unknown>,
+  operatorResolver: Factory<unknown, unknown>
 ) {
   return {
     define: new DefineOpFactory(),
     call: new CallOpFactory(),
     get: new GetOpFactory(),
-    eval: new EvalOpFactory(operatorsFactory),
+    exec: new ExecOpFactory(operatorsFactory),
+    eval: new EvalOpFactory(operatorResolver),
   };
 }

@@ -31,6 +31,11 @@ beforeEach(() => {
           return composed.Create(config);
         },
       },
+      operatorResolver: {
+        Create(config) {
+          return resolver(config);
+        },
+      },
     })
   );
   resolver = makeOperatorResolver(composed);
@@ -150,15 +155,38 @@ it("Should support recursion", async () => {
   ).toBe(34);
 });
 
-it("Should handle eval operator", async () => {
+it("Should handle exec operator", async () => {
   const result = traverseJsonLike<string | number, unknown>(resolver, {
-    [OPERATOR_KEY]: "sys.eval",
+    [OPERATOR_KEY]: "sys.exec",
     op: "plus",
     config: {
       left: {
         [OPERATOR_KEY]: "ctx.get",
       },
       right: 1,
+    },
+  });
+  expect(
+    await evalInScope(result, {
+      constants: {},
+      functions: {},
+      context: 1,
+    })
+  ).toBe(2);
+});
+
+it("Should handle eval operator", async () => {
+  const result = traverseJsonLike<string | number, unknown>(resolver, {
+    [OPERATOR_KEY]: "sys.eval",
+    expression: {
+      [OPERATOR_KEY]: "json.parse",
+      value: JSON.stringify({
+        [OPERATOR_KEY]: "plus",
+        left: {
+          [OPERATOR_KEY]: "ctx.get",
+        },
+        right: 1,
+      }),
     },
   });
   expect(

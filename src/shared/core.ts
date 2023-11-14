@@ -3,11 +3,10 @@ import { z } from "zod";
 import { Json } from "@/lib/zod";
 import { isObject } from "@/lib/guards";
 import { evalConfig } from "@/lib/config/eval";
+import { Factory } from "@/lib/factory";
 
 import rawConfig from "./config.yml?raw";
-import { removeEvalConfig } from "./remote-eval-config";
-import { ILogger } from "@/lib/logger";
-import { ScopedOpFactory } from "@/lib/operator";
+import { removeConfigEval } from "./remote-eval";
 
 const localSettingsSchema = z.object({
   secrets: z.string(),
@@ -104,7 +103,7 @@ async function evalConfigInTab(
 ): Promise<unknown> {
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
-    func: removeEvalConfig,
+    func: removeConfigEval,
     args: [contextId, config, secrets, debug],
   });
   if (
@@ -118,8 +117,7 @@ async function evalConfigInTab(
 }
 
 export function makeIsomorphicConfigEval(
-  logger: ILogger,
-  operatorsFactory: ScopedOpFactory<unknown>
+  operatorResolverFactory: Factory<boolean, (value: unknown) => unknown>
 ) {
   return async (
     contextId: string,
@@ -127,15 +125,13 @@ export function makeIsomorphicConfigEval(
     config: string,
     tabId?: number
   ) => {
-    const localConfig = await loadLocalSettings();
+    const { secrets } = await loadLocalSettings();
     return tabId
-      ? evalConfigInTab(contextId, debug, config, tabId, localConfig.secrets)
+      ? evalConfigInTab(contextId, debug, config, tabId, secrets)
       : evalConfig({
           config,
-          debug,
-          secrets: localConfig.secrets,
-          logger,
-          operatorsFactory,
+          secrets,
+          operatorResolver: operatorResolverFactory.Create(debug),
         });
   };
 }

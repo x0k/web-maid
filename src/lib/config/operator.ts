@@ -1,4 +1,4 @@
-import { AsyncFactory } from "@/lib/factory";
+import { AsyncFactory, Factory } from "@/lib/factory";
 import { ILogger } from "@/lib/logger";
 import { assignWithPrefix } from "@/lib/object";
 import { ScopedOpFactory } from "@/lib/operator";
@@ -31,6 +31,7 @@ export interface OperatorFactoryConfig {
   formShower: AsyncFactory<ShowFormData, unknown>;
   logger: ILogger;
   operatorsFactory: ScopedOpFactory<unknown>;
+  operatorResolver: Factory<unknown, unknown>;
 }
 
 export function compileOperatorFactories({
@@ -41,13 +42,18 @@ export function compileOperatorFactories({
   formShower,
   logger,
   operatorsFactory,
+  operatorResolver,
 }: OperatorFactoryConfig) {
   const factories: Record<
     string,
     ScopedOpFactory<unknown>
   > = flowOperatorsFactories();
   Object.assign(factories, mathOperatorsFactories());
-  assignWithPrefix("sys.", factories, sysOperatorsFactories(operatorsFactory));
+  assignWithPrefix(
+    "sys.",
+    factories,
+    sysOperatorsFactories(operatorsFactory, operatorResolver)
+  );
   assignWithPrefix(
     "template.",
     factories,

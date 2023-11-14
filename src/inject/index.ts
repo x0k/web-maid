@@ -2,9 +2,12 @@ import { stringifyError } from "@/lib/error";
 import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
 import { ContextRemoteActor } from "@/lib/actors/context";
 import { prepareForSending } from "@/lib/serialization";
-
 import { SandboxAction, SandboxActionResults } from "@/lib/sandbox/action";
 import { createAndMountIFrame, connectToSandbox } from "@/lib/sandbox/connect";
+import { evalConfig } from "@/lib/config/eval";
+import { createOperatorResolver } from "@/lib/config/create";
+import { Json } from "@/lib/zod";
+
 import { ExtensionAction, ExtensionActionResults } from "@/shared/action";
 import {
   RemoteLogger,
@@ -13,9 +16,6 @@ import {
   Renderer,
   Validator,
 } from "@/shared/impl";
-import { evalConfig } from "@/lib/config/eval";
-import { compileOperatorFactories } from "@/lib/config/operator";
-import { makeComposedFactory } from "@/lib/operator";
 
 import { iFrameId } from "./constants";
 
@@ -29,18 +29,38 @@ const extension = new ContextRemoteActor<
   },
 });
 
+interface InjectedConfigEvalOptions {
+  config: string;
+  secrets: Json;
+  debug: boolean;
+  contextId: string;
+}
+
 function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
+  const evaluator = new Evaluator(iFrameId, sandbox);
+  const rendered = new Renderer(iFrameId, sandbox);
+  const validator = new Validator(iFrameId, sandbox);
   const INJECTED = {
-    evalConfig,
-    compileOperatorFactories,
-    makeComposedFactory,
-    evaluator: new Evaluator(iFrameId, sandbox),
-    rendered: new Renderer(iFrameId, sandbox),
-    validator: new Validator(iFrameId, sandbox),
-    makeRemote: (contextId: string) => ({
-      formShower: new RemoteFormShower(contextId, extension),
-      logger: new RemoteLogger(contextId, extension),
-    }),
+    evalConfig: ({
+      config,
+      contextId,
+      debug,
+      secrets,
+    }: InjectedConfigEvalOptions) => {
+      const operatorResolver = createOperatorResolver({
+        debug,
+        evaluator,
+        rendered,
+        validator,
+        formShower: new RemoteFormShower(contextId, extension),
+        logger: new RemoteLogger(contextId, extension),
+      });
+      return evalConfig({
+        config,
+        secrets,
+        operatorResolver: operatorResolver,
+      });
+    },
     stringifyError,
   };
   window.__SCRAPER_EXTENSION__ = INJECTED;
