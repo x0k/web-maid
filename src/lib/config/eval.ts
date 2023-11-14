@@ -19,5 +19,6 @@ export function evalConfig({
     functions: {},
     constants: {},
     context: secrets,
+    error: null,
   });
 }

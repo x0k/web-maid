@@ -51,6 +51,7 @@ it("Should evaluate simple operators", async () => {
       constants: {},
       functions: {},
       context: null,
+      error: null,
     })
   ).toBe(true);
 });
@@ -91,6 +92,7 @@ it("Should evaluate nested operators", async () => {
       constants: {},
       functions: {},
       context: null,
+      error: null,
     })
   ).toEqual({
     inner: true,
@@ -151,6 +153,7 @@ it("Should support recursion", async () => {
       constants: {},
       functions: {},
       context: 9,
+      error: null,
     })
   ).toBe(34);
 });
@@ -171,6 +174,7 @@ it("Should handle exec operator", async () => {
       constants: {},
       functions: {},
       context: 1,
+      error: null,
     })
   ).toBe(2);
 });
@@ -194,6 +198,7 @@ it("Should handle eval operator", async () => {
       constants: {},
       functions: {},
       context: 1,
+      error: null,
     })
   ).toBe(2);
 });
