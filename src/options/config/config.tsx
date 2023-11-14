@@ -15,6 +15,8 @@ import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
 import { useFormDataValidator, useSandbox } from "@/lib/sandbox/react";
+import { ScopedOp, makeComposedFactory } from "@/lib/operator";
+import { compileOperatorFactories } from "@/lib/config/operator";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 
@@ -62,18 +64,24 @@ export function Config() {
   const rootFactory = useRootFactory(rootRef);
   const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
   const formShower = useFormShower(rootFactory, formDataValidator);
-  const evalConfig = useMemo(
-    () =>
-      makeIsomorphicConfigEval({
+  const evalConfig = useMemo(() => {
+    const operatorsFactory = makeComposedFactory(
+      compileOperatorFactories({
         window,
         evaluator: new Evaluator(sandboxIFrameId, sandbox),
         rendered: new Renderer(sandboxIFrameId, sandbox),
         validator: new Validator(sandboxIFrameId, sandbox),
         logger,
         formShower,
-      }),
-    [sandbox, logger, formShower]
-  );
+        operatorsFactory: {
+          Create(config): ScopedOp<unknown> {
+            return operatorsFactory.Create(config);
+          },
+        },
+      })
+    );
+    return makeIsomorphicConfigEval(logger, operatorsFactory);
+  }, [sandbox, logger, formShower]);
   const [debug, setDebug] = useState(true);
   const [selectedTab, selectTab] = useState<Tab | null>(null);
   const evalRunner = useSWRMutation(

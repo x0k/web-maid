@@ -4,10 +4,7 @@ import { ContextRemoteActor } from "@/lib/actors/context";
 import { prepareForSending } from "@/lib/serialization";
 
 import { SandboxAction, SandboxActionResults } from "@/lib/sandbox/action";
-import {
-  createAndMountIFrame,
-  connectToSandbox,
-} from "@/lib/sandbox/connect";
+import { createAndMountIFrame, connectToSandbox } from "@/lib/sandbox/connect";
 import { ExtensionAction, ExtensionActionResults } from "@/shared/action";
 import {
   RemoteLogger,
@@ -17,6 +14,8 @@ import {
   Validator,
 } from "@/shared/impl";
 import { evalConfig } from "@/lib/config/eval";
+import { compileOperatorFactories } from "@/lib/config/operator";
+import { makeComposedFactory } from "@/lib/operator";
 
 import { iFrameId } from "./constants";
 
@@ -33,6 +32,8 @@ const extension = new ContextRemoteActor<
 function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   const INJECTED = {
     evalConfig,
+    compileOperatorFactories,
+    makeComposedFactory,
     evaluator: new Evaluator(iFrameId, sandbox),
     rendered: new Renderer(iFrameId, sandbox),
     validator: new Validator(iFrameId, sandbox),

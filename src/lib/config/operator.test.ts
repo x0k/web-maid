@@ -18,18 +18,22 @@ import { compileOperatorFactories } from "./operator";
 let resolver: <C>(context: C) => ScopedOp<unknown> | C;
 
 beforeEach(() => {
-  resolver = makeOperatorResolver(
-    makeComposedFactory(
-      compileOperatorFactories({
-        window: {} as Window,
-        evaluator: {} as AsyncFactory<string, unknown>,
-        rendered: {} as AsyncFactory<TemplateRendererData, string>,
-        validator: {} as AsyncFactory<AsyncValidatorData, boolean>,
-        formShower: {} as AsyncFactory<ShowFormData, unknown>,
-        logger: {} as unknown as ILogger,
-      })
-    )
+  const composed = makeComposedFactory(
+    compileOperatorFactories({
+      window: {} as Window,
+      evaluator: {} as AsyncFactory<string, unknown>,
+      rendered: {} as AsyncFactory<TemplateRendererData, string>,
+      validator: {} as AsyncFactory<AsyncValidatorData, boolean>,
+      formShower: {} as AsyncFactory<ShowFormData, unknown>,
+      logger: {} as unknown as ILogger,
+      operatorsFactory: {
+        Create(config): ScopedOp<unknown> {
+          return composed.Create(config);
+        },
+      },
+    })
   );
+  resolver = makeOperatorResolver(composed);
 });
 
 it("Should evaluate simple operators", async () => {
@@ -144,4 +148,24 @@ it("Should support recursion", async () => {
       context: 9,
     })
   ).toBe(34);
+});
+
+it("Should handle eval operator", async () => {
+  const result = traverseJsonLike<string | number, unknown>(resolver, {
+    [OPERATOR_KEY]: "sys.eval",
+    op: "plus",
+    config: {
+      left: {
+        [OPERATOR_KEY]: "ctx.get",
+      },
+      right: 1,
+    },
+  });
+  expect(
+    await evalInScope(result, {
+      constants: {},
+      functions: {},
+      context: 1,
+    })
+  ).toBe(2);
 });

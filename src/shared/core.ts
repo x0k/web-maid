@@ -6,7 +6,8 @@ import { evalConfig } from "@/lib/config/eval";
 
 import rawConfig from "./config.yml?raw";
 import { removeEvalConfig } from "./remote-eval-config";
-import { OperatorFactoryConfig } from "@/lib/config/operator";
+import { ILogger } from "@/lib/logger";
+import { ScopedOpFactory } from "@/lib/operator";
 
 const localSettingsSchema = z.object({
   secrets: z.string(),
@@ -117,7 +118,8 @@ async function evalConfigInTab(
 }
 
 export function makeIsomorphicConfigEval(
-  operatorFactoryConfig: OperatorFactoryConfig
+  logger: ILogger,
+  operatorsFactory: ScopedOpFactory<unknown>
 ) {
   return async (
     contextId: string,
@@ -132,7 +134,8 @@ export function makeIsomorphicConfigEval(
           config,
           debug,
           secrets: localConfig.secrets,
-          operatorFactoryConfig,
+          logger,
+          operatorsFactory,
         });
   };
 }

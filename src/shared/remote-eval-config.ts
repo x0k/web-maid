@@ -1,4 +1,6 @@
-import { Json } from "@/lib/zod";
+// Type only imports
+import type { ScopedOp } from "@/lib/operator";
+import type { Json } from "@/lib/zod";
 
 export async function removeEvalConfig(
   contextId: string,
@@ -8,6 +10,8 @@ export async function removeEvalConfig(
 ) {
   const {
     evalConfig,
+    compileOperatorFactories,
+    makeComposedFactory,
     evaluator,
     makeRemote,
     rendered,
@@ -18,18 +22,27 @@ export async function removeEvalConfig(
   };
   try {
     const { formShower, logger } = makeRemote(contextId);
-    return await evalConfig({
-      config,
-      debug,
-      secrets,
-      operatorFactoryConfig: {
+    const operatorsFactory = makeComposedFactory(
+      compileOperatorFactories({
         window,
         evaluator,
         rendered,
         validator,
         formShower,
         logger,
-      },
+        operatorsFactory: {
+          Create(config): ScopedOp<unknown> {
+            return operatorsFactory.Create(config);
+          },
+        },
+      })
+    );
+    return await evalConfig({
+      config,
+      debug,
+      secrets,
+      logger,
+      operatorsFactory,
     });
   } catch (error) {
     return {

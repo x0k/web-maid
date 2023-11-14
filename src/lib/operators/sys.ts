@@ -1,6 +1,13 @@
 import { TypeOf, z } from "zod";
 
-import { FlowOpFactory, Scope, ScopedOp, evalInScope } from "@/lib/operator";
+import {
+  FlowOpFactory,
+  OPERATOR_KEY,
+  Scope,
+  ScopedOp,
+  ScopedOpFactory,
+  evalInScope,
+} from "@/lib/operator";
 import { isRecord } from "@/lib/guards";
 
 const defineConfig = z.object({
@@ -95,10 +102,55 @@ export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
   }
 }
 
-export function sysOperatorsFactories() {
+const evalConfig = z.object({
+  op: z.unknown(),
+  config: z.unknown().optional(),
+  arg: z.unknown().optional(),
+});
+
+export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
+  schema = evalConfig;
+
+  constructor(
+    protected readonly operatorFactoryConfig: ScopedOpFactory<unknown>
+  ) {
+    super();
+  }
+
+  protected create({
+    op,
+    config,
+    arg,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      let opConfig: Record<string, unknown>;
+      if (config === undefined) {
+        opConfig = { [OPERATOR_KEY]: op };
+      } else {
+        const resolvedConfig = await evalInScope(config, scope);
+        if (!isRecord(resolvedConfig)) {
+          throw new Error("Config must be an object");
+        }
+        opConfig = { ...resolvedConfig, [OPERATOR_KEY]: op };
+      }
+      const scopedOp = this.operatorFactoryConfig.Create(opConfig);
+      const context =
+        arg === undefined ? scope.context : await evalInScope(arg, scope);
+      return scopedOp({
+        ...scope,
+        context,
+      });
+    };
+  }
+}
+
+export function sysOperatorsFactories(
+  operatorsFactory: ScopedOpFactory<unknown>
+) {
   return {
     define: new DefineOpFactory(),
     call: new CallOpFactory(),
     get: new GetOpFactory(),
+    eval: new EvalOpFactory(operatorsFactory),
   };
 }

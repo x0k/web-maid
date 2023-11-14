@@ -30,6 +30,7 @@ export interface OperatorFactoryConfig {
   validator: AsyncFactory<AsyncValidatorData, boolean>;
   formShower: AsyncFactory<ShowFormData, unknown>;
   logger: ILogger;
+  operatorsFactory: ScopedOpFactory<unknown>;
 }
 
 export function compileOperatorFactories({
@@ -39,13 +40,14 @@ export function compileOperatorFactories({
   validator,
   formShower,
   logger,
+  operatorsFactory,
 }: OperatorFactoryConfig) {
   const factories: Record<
     string,
     ScopedOpFactory<unknown>
   > = flowOperatorsFactories();
   Object.assign(factories, mathOperatorsFactories());
-  assignWithPrefix("sys.", factories, sysOperatorsFactories());
+  assignWithPrefix("sys.", factories, sysOperatorsFactories(operatorsFactory));
   assignWithPrefix(
     "template.",
     factories,
