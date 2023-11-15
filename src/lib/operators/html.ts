@@ -2,6 +2,11 @@ import { Readability } from "@mozilla/readability";
 import Turndown from "turndown";
 import { z } from "zod";
 
+import { title } from "@/lib/metadata/title";
+import { description } from "@/lib/metadata/description";
+import { modifiedDate, publishedDate, unknownDate } from "@/lib/metadata/date";
+import { image } from "@/lib/metadata/image";
+
 import { BrowserFactory } from "./shared/browser-factory";
 
 const readabilityConfig = z.object({
@@ -63,10 +68,33 @@ export class Html2MarkdownOpFactory extends BrowserFactory<
   }
 }
 
+const metadataConfig = z.object({
+  html: z.string(),
+});
+
+export class MetadataOpFactory extends BrowserFactory<
+  typeof metadataConfig,
+  unknown
+> {
+  readonly schema = metadataConfig;
+  execute({ html }: z.TypeOf<this["schema"]>): unknown {
+    const root = new DOMParser().parseFromString(html, "text/html");
+    return {
+      title: title(root),
+      description: description(root),
+      modifiedDate: modifiedDate(root),
+      publishedDate: publishedDate(root),
+      date: unknownDate(root),
+      image: image(root),
+    };
+  }
+}
+
 export function htmlOperatorsFactories(window: Window) {
   return {
     readability: new ReadabilityOpFactory(window),
     simplify: new SimplifyHtmlOpFactory(window),
     markdown: new Html2MarkdownOpFactory(window),
+    metadata: new MetadataOpFactory(window),
   };
 }
