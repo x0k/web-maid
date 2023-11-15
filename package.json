@@ -24,6 +24,7 @@
     "@rjsf/validator-ajv8": "^5.13.6",
     "ajv": "^8.12.0",
     "browser-fs-access": "^0.35.0",
+    "chrono-node": "^2.7.0",
     "handlebars": "^4.7.8",
     "jsonpath": "^1.1.1",
     "mime": "^3.0.0",

@@ -1,6 +1,6 @@
 import { toTrimmed } from "./converters";
-import { flow, tryForEach } from "./core";
-import { jsonldJsonQuery, queryAttr, stringify } from "./extractors";
+import { tryForEach } from "./core";
+import { jsonldJsonQuery, queryAttr } from "./extractors";
 
 export const description = tryForEach(toTrimmed)(
   queryAttr("meta[property='og:description' i]", "content"),
@@ -8,5 +8,5 @@ export const description = tryForEach(toTrimmed)(
   queryAttr("meta[property='twitter:description' i]", "content"),
   queryAttr("meta[name='description' i]", "content"),
   queryAttr("meta[itemprop='description' i]", "content"),
-  flow(jsonldJsonQuery("$..articleBy", "$..description"), stringify)
+  jsonldJsonQuery("$..articleBy", "$..description")
 );

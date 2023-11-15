@@ -1,13 +1,8 @@
-import { flow, tryForEach } from "./core";
+import { tryForEach } from "./core";
 import { toTitle } from "./converters";
-import {
-  jsonldJsonQuery,
-  queryAttr,
-  queryTextContent,
-  stringify,
-} from "./extractors";
+import { jsonldJsonQuery, queryAttr, queryTextContent } from "./extractors";
 
-export const title = tryForEach(flow(stringify, toTitle))(
+export const title = tryForEach(toTitle)(
   queryAttr('meta[property="og:title" i]', "content"),
   queryAttr('meta[name="twitter:title" i]', "content"),
   queryAttr('meta[property="twitter:title"]', "content"),

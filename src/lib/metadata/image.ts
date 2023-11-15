@@ -1,6 +1,5 @@
-import { flow } from "../function";
 import { tryForEach } from "./core";
-import { jsonldJsonQuery, queryAttr, stringify } from "./extractors";
+import { jsonldJsonQuery, queryAttr } from "./extractors";
 import { isImageUrl } from "./guards";
 
 export const image = tryForEach(isImageUrl)(
@@ -12,7 +11,7 @@ export const image = tryForEach(isImageUrl)(
   queryAttr('meta[name="twitter:image" i]', "content"),
   queryAttr('meta[property="twitter:image" i]', "content"),
   queryAttr('meta[itemprop="image" i]', "content"),
-  flow(jsonldJsonQuery("$..image.url", "$..image"), stringify),
+  jsonldJsonQuery("$..image.url", "$..image"),
   queryAttr("article img[src], #content img[src]", "src"),
   queryAttr("img[alt*='cover'], img[alt*='author']", "src"),
   queryAttr("img[src]:not([aria-hidden='true'])", "src"),

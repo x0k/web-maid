@@ -1,9 +1,10 @@
 import jp from "jsonpath";
 
 import { JSONValue } from "@/lib/json";
+import { fallbacksWIthDefault } from "@/lib/function";
 
 import { Transform, flow } from "./core";
-import { fallbacksWIthDefault } from "../function";
+import { toString } from "./converters";
 
 export function query(selector: string): Transform<Element, Element> {
   return (element) => element.querySelector(selector);
@@ -31,10 +32,6 @@ export const fromJSON: Transform<string, JSONValue> = (value) => {
   } catch {
     return null;
   }
-};
-
-export const stringify: Transform<JSONValue, string> = (value) => {
-  return typeof value === "string" ? value : JSON.stringify(value);
 };
 
 export function jsonQueryAll(
@@ -81,7 +78,8 @@ export const jsonldJsonQuery = (...selectors: string[]) =>
       flow(
         textContent,
         fromJSON,
-        fallbacksWIthDefault(null, ...selectors.map(jsonQuery))
+        fallbacksWIthDefault(null, ...selectors.map(jsonQuery)),
+        toString
       )
     )
   );
