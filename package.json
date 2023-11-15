@@ -26,6 +26,7 @@
     "browser-fs-access": "^0.35.0",
     "chrono-node": "^2.7.0",
     "handlebars": "^4.7.8",
+    "is-relative-url": "^4.0.0",
     "jsonpath": "^1.1.1",
     "mime": "^3.0.0",
     "monaco-editor": "^0.44.0",
@@ -37,6 +38,7 @@
     "react-markdown": "^9.0.1",
     "swr": "^2.2.4",
     "turndown": "^7.1.2",
+    "url-regex-safe": "^4.0.0",
     "yaml": "^2.3.4",
     "zod": "^3.22.4",
     "zod-validation-error": "^2.1.0"
@@ -51,6 +53,7 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@types/turndown": "^5.0.4",
+    "@types/url-regex-safe": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
     "@vitejs/plugin-react-swc": "^3.4.1",

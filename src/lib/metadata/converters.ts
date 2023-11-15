@@ -19,12 +19,15 @@ export const toString: Transform<JsonLike<JSONPrimitive | Date>, string> = (
 export const toTrimmed: Transform<string, string> = (value) =>
   value.trim() || null;
 
-export const toTitle: Transform<string, string> = (value) => {
-  const trimmed = value.replace(/(^[\s|\\/•—-]+)|([\s|\\/•—-]+$)/g, "");
-  return (
-    trimmed.toLocaleLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()) || null
-  );
-};
+export function toReplaced(
+  pattern: string | RegExp,
+  replacement: string
+): Transform<string, string> {
+  return (value) => value.replace(pattern, replacement) || null;
+}
+
+export const toCapitalized: Transform<string, string> = (value) =>
+  value.toLocaleLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()) || null;
 
 export const toMimeType: Transform<string, string> = (value) =>
   mime.getType(value);

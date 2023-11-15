@@ -6,6 +6,7 @@ import { title } from "@/lib/metadata/title";
 import { description } from "@/lib/metadata/description";
 import { modifiedDate, publishedDate, unknownDate } from "@/lib/metadata/date";
 import { image } from "@/lib/metadata/image";
+import { author } from "@/lib/metadata/author";
 
 import { BrowserFactory } from "./shared/browser-factory";
 
@@ -86,6 +87,7 @@ export class MetadataOpFactory extends BrowserFactory<
       publishedDate: publishedDate(root),
       date: unknownDate(root),
       image: image(root),
+      author: author(root),
     };
   }
 }

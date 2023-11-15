@@ -78,18 +78,18 @@ export class CallOpFactory extends FlowOpFactory<typeof callConfig, unknown> {
 }
 
 const getConfig = z.object({
-  const: z.unknown(),
+  key: z.unknown(),
   default: z.unknown().optional(),
 });
 
 export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
   schema = getConfig;
   protected create({
-    const: name,
+    key,
     default: defaultValue,
   }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
-      const constName = await evalInScope(name, scope);
+      const constName = await evalInScope(key, scope);
       if (typeof constName !== "string") {
         throw new Error(`Constant name is not a string: ${constName}`);
       }
