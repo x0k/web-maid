@@ -1,7 +1,5 @@
-import { optionFlow } from "../function";
-import { isNull } from "../guards";
+import { flow, tryForEach } from "./core";
 import { toTitle } from "./converters";
-import { tryForEach } from "./core";
 import {
   jsonldJsonQuery,
   queryAttr,
@@ -9,7 +7,7 @@ import {
   stringify,
 } from "./extractors";
 
-export const title = tryForEach(optionFlow(isNull, stringify, toTitle))(
+export const title = tryForEach(flow(stringify, toTitle))(
   queryAttr('meta[property="og:title" i]', "content"),
   queryAttr('meta[name="twitter:title" i]', "content"),
   queryAttr('meta[property="twitter:title"]', "content"),

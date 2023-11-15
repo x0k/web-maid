@@ -2,9 +2,8 @@ import jp from "jsonpath";
 
 import { JSONValue } from "@/lib/json";
 
-import { Transform } from "./core";
-import { optionFlow } from "../function";
-import { isNull } from "../guards";
+import { Transform, flow } from "./core";
+import { fallbacksWIthDefault } from "../function";
 
 export function query(selector: string): Transform<Element, Element> {
   return (element) => element.querySelector(selector);
@@ -56,7 +55,7 @@ export function find<T>(predicate: (v: T) => boolean): Transform<T[], T> {
 }
 
 export const queryAttr = (selector: string, attribute: string) =>
-  optionFlow(isNull, query(selector), attr(attribute));
+  flow(query(selector), attr(attribute));
 
 export function findAndExtract<T, R>(
   extract: Transform<T, R>
@@ -73,13 +72,16 @@ export function findAndExtract<T, R>(
 }
 
 export const queryTextContent = (selector: string) =>
-  optionFlow(isNull, query(selector), textContent);
+  flow(query(selector), textContent);
 
-export const jsonldJsonQuery = (selector: string) =>
-  optionFlow(
-    isNull,
+export const jsonldJsonQuery = (...selectors: string[]) =>
+  flow(
     queryAll("script[type='application/ld+json']"),
     findAndExtract(
-      optionFlow(isNull, textContent, fromJSON, jsonQuery(selector))
+      flow(
+        textContent,
+        fromJSON,
+        fallbacksWIthDefault(null, ...selectors.map(jsonQuery))
+      )
     )
   );
