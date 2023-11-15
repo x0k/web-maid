@@ -15,6 +15,8 @@ import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
 import { useFormDataValidator, useSandbox } from "@/lib/sandbox/react";
+import { createOperatorResolver } from "@/lib/config/create";
+import { prepareForSending } from '@/lib/serialization';
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 
@@ -36,7 +38,6 @@ import { Evaluator, Renderer, Validator } from "@/shared/impl";
 import { contextId, sandboxIFrameId } from "../constants";
 import { TabsSelector } from "./tabs-selector";
 import { Readme } from "./readme";
-import { createOperatorResolver } from "@/lib/config/create";
 
 const configModel = monaco.editor.createModel("", "yaml");
 
@@ -90,7 +91,7 @@ export function Config() {
         logger.log({ success: result });
       },
       onError(error) {
-        logger.log({ error: error });
+        logger.log(prepareForSending({ error: error }));
       },
     }
   );
