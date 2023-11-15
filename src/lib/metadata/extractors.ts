@@ -6,11 +6,11 @@ import { fallbacksWIthDefault } from "@/lib/function";
 import { Transform, flow } from "./core";
 import { toString } from "./converters";
 
-export function query(selector: string): Transform<Element, Element> {
+export function query(selector: string): Transform<ParentNode, Element> {
   return (element) => element.querySelector(selector);
 }
 
-export function queryAll(selector: string): Transform<Element, Element[]> {
+export function queryAll(selector: string): Transform<ParentNode, Element[]> {
   return (element) => Array.from(element.querySelectorAll(selector));
 }
 
@@ -22,7 +22,7 @@ export const innerHTML: Transform<Element, string> = (element) => {
   return element.innerHTML.trim() || null;
 };
 
-export const textContent: Transform<Element, string> = (element) => {
+export const textContent: Transform<Node, string> = (element) => {
   return element.textContent?.trim() || null;
 };
 
