@@ -41,10 +41,7 @@ export function jsonQueryAll(
 }
 
 export function jsonQuery(selector: string): Transform<JSONValue, JSONValue> {
-  return (value) => {
-    const values = jp.value(value, selector);
-    return values.length > 0 ? values[0] : null;
-  };
+  return (value) => jp.value(value, selector) ?? null;
 }
 
 export function find<T>(predicate: (v: T) => boolean): Transform<T[], T> {
