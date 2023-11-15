@@ -1,4 +1,3 @@
-
 type Fn<T, R, E> = (value: T) => R | E
 
 type OptionGuard<E> = (value: unknown) => value is E

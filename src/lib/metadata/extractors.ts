@@ -34,6 +34,10 @@ export const fromJSON: Transform<string, JSONValue> = (value) => {
   }
 };
 
+export const stringify: Transform<JSONValue, string> = (value) => {
+  return typeof value === "string" ? value : JSON.stringify(value);
+};
+
 export function jsonQueryAll(
   selector: string
 ): Transform<JSONValue, JSONValue[]> {
@@ -70,3 +74,12 @@ export function findAndExtract<T, R>(
 
 export const queryTextContent = (selector: string) =>
   optionFlow(isNull, query(selector), textContent);
+
+export const jsonldJsonQuery = (selector: string) =>
+  optionFlow(
+    isNull,
+    queryAll("script[type='application/ld+json']"),
+    findAndExtract(
+      optionFlow(isNull, textContent, fromJSON, jsonQuery(selector))
+    )
+  );
