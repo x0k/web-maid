@@ -1,13 +1,11 @@
 import { z } from "zod";
-import { parse, stringify } from "yaml";
 
-import { Json } from "@/lib/zod";
 import { isObject } from "@/lib/guards";
 import { evalConfig } from "@/lib/config/eval";
 import { Factory } from "@/lib/factory";
 
 import rawConfig from "./config.yml?raw";
-import { removeConfigEval } from "./remote-eval";
+import { injectedConfigEval } from "./injected-config-eval";
 
 const localSettingsSchema = z.object({
   secrets: z.string(),
@@ -30,7 +28,7 @@ export interface SyncSettings {
 }
 
 const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
-  secrets: stringify({ token: "" }),
+  secrets: "token: secret",
 };
 
 const DEFAULT_SYNC_SETTINGS: z.infer<typeof syncSettingsSchema> = {
@@ -95,11 +93,11 @@ async function evalConfigInTab(
   debug: boolean,
   config: string,
   tabId: number,
-  secrets: Json
+  secrets: string
 ): Promise<unknown> {
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
-    func: removeConfigEval,
+    func: injectedConfigEval,
     args: [contextId, config, secrets, debug],
   });
   if (
@@ -122,12 +120,11 @@ export function makeIsomorphicConfigEval(
     secrets: string,
     tabId?: number
   ) => {
-    const secretsData = parse(secrets);
     return tabId
-      ? evalConfigInTab(contextId, debug, config, tabId, secretsData)
+      ? evalConfigInTab(contextId, debug, config, tabId, secrets)
       : evalConfig({
           config,
-          secrets: secretsData,
+          secrets,
           operatorResolver: operatorResolverFactory.Create(debug),
         });
   };

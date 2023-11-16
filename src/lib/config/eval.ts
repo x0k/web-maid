@@ -2,11 +2,10 @@ import { parse } from "yaml";
 
 import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { evalInScope } from "@/lib/operator";
-import { Json } from "@/lib/zod";
 
 export interface EvalConfigOptions {
   config: string;
-  secrets: Json;
+  secrets: string;
   operatorResolver: (value: unknown) => unknown;
 }
 
@@ -18,7 +17,7 @@ export function evalConfig({
   return evalInScope(traverseJsonLike(operatorResolver, parse(config)), {
     functions: {},
     constants: {},
-    context: secrets,
+    context: parse(secrets),
     error: null,
   });
 }

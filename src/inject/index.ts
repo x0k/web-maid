@@ -6,7 +6,6 @@ import { SandboxAction, SandboxActionResults } from "@/lib/sandbox/action";
 import { createAndMountIFrame, connectToSandbox } from "@/lib/sandbox/connect";
 import { evalConfig } from "@/lib/config/eval";
 import { createOperatorResolver } from "@/lib/config/create";
-import { Json } from "@/lib/zod";
 
 import { ExtensionAction, ExtensionActionResults } from "@/shared/action";
 import {
@@ -32,7 +31,7 @@ const extension = new ContextRemoteActor<
 
 interface InjectedConfigEvalOptions {
   config: string;
-  secrets: Json;
+  secrets: string;
   debug: boolean;
   contextId: string;
 }

@@ -1,10 +1,8 @@
 // Type only imports
-import type { Json } from "@/lib/zod";
-
-export async function removeConfigEval(
+export async function injectedConfigEval(
   contextId: string,
   config: string,
-  secrets: Json,
+  secrets: string,
   debug: boolean
 ) {
   const { evalConfig, stringifyError } = window.__SCRAPER_EXTENSION__ ?? {
