@@ -4,7 +4,7 @@ d:
   bun --bun run dev
 
 b:
-  bun --bun run build
+  NODE_ENV=production bun --bun run build
 
 c:
   bun --bun run check

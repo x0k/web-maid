@@ -32,8 +32,6 @@ export class TemplateFactory extends FlowOpFactory<
         throw new Error(`Template is not a string: ${resolvedTemplate}`);
       }
       const resolvedData = await evalInScope(data ?? scope.context, scope);
-      console.log(resolvedTemplate)
-      console.log(JSON.stringify(resolvedData))
       return this.hbs.Create({
         template: resolvedTemplate,
         data: resolvedData,

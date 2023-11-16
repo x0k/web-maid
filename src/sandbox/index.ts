@@ -19,7 +19,7 @@ Handlebars.registerHelper("quote", (data) =>
   typeof data === "string" ? `> ${data.split("\n").join("\n> ")}` : data
 );
 
-const frameId = window.frameElement?.id;
+const frameId = new URL(window.location.href).searchParams.get("id");
 
 if (frameId) {
   const sandbox = new SandboxActor<SandboxAction, SandboxActionResults, string>(
