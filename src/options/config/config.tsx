@@ -244,7 +244,9 @@ export function Config() {
         )}
         <div ref={rootRef} />
         {evalRunner.error && <ErrorAlert error={evalRunner.error} />}
-        {evalRunner.isMutating || evalRunner.data || evalRunner.error ? (
+        {evalRunner.isMutating ||
+        evalRunner.data !== undefined ||
+        evalRunner.error ? (
           <Box height="100%" display="flex" flexDirection="column">
             <Editor ref={logsEditorRef} model={logsModel} />
           </Box>
