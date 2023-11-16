@@ -85,6 +85,20 @@ export async function saveLocalSettings({
   await chrome.storage.local.set(data);
 }
 
+export function checkForTabsPermission(): Promise<boolean> {
+  return chrome.permissions.contains({
+    permissions: ["tabs"],
+    origins: ["https://*/*", "http://*/*"],
+  });
+}
+
+export function requestForTabsPermission(): Promise<boolean> {
+  return chrome.permissions.request({
+    permissions: ["tabs"],
+    origins: ["https://*/*", "http://*/*"],
+  });
+}
+
 export async function getAllTabs(): Promise<Tab[]> {
   return chrome.tabs.query({}).then(tabsSchema.parse);
 }

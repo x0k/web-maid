@@ -16,7 +16,7 @@ import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
 import { useFormDataValidator, useSandbox } from "@/lib/sandbox/react";
 import { createOperatorResolver } from "@/lib/config/create";
-import { prepareForSending } from '@/lib/serialization';
+import { prepareForSending } from "@/lib/serialization";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 
@@ -26,6 +26,8 @@ import {
   loadSyncSettings,
   saveSyncSettings,
   makeIsomorphicConfigEval,
+  checkForTabsPermission,
+  requestForTabsPermission,
 } from "@/shared/core";
 import {
   useContextActor,
@@ -47,6 +49,13 @@ function showError(err: unknown) {
   enqueueSnackbar({
     variant: "error",
     message: stringifyError(err),
+  });
+}
+
+function showSuccess(message: string) {
+  enqueueSnackbar({
+    variant: "success",
+    message,
   });
 }
 
@@ -96,9 +105,6 @@ export function Config() {
     }
   );
 
-  const tabs = useSWR("tabs", getAllTabs, {
-    fallbackData: initialTabs,
-  });
   useSWR("settings/sync", loadSyncSettings, {
     revalidateOnFocus: false,
     onSuccess({ config }) {
@@ -107,6 +113,9 @@ export function Config() {
     onError: showError,
   });
   const configMutation = useSWRMutation("settings/sync", saveConfig, {
+    onSuccess() {
+      showSuccess("Config saved");
+    },
     onError: showError,
   });
   const logic = useExtensionActorLogic(formShower, logger);
@@ -117,6 +126,23 @@ export function Config() {
       actor.stop();
     };
   }, [actor]);
+
+  const tabsPermission = useSWR("tabs/permission", checkForTabsPermission, {
+    revalidateOnFocus: false,
+  });
+  const requestForTabsPermissionMutation = useSWRMutation(
+    "tabs/permission",
+    () => requestForTabsPermission(),
+    {
+      onSuccess: (result) => {
+        tabsPermission.mutate(result);
+      },
+      onError: showError,
+    }
+  );
+  const tabs = useSWR(() => (tabsPermission.data ? "tabs" : null), getAllTabs, {
+    fallbackData: initialTabs,
+  });
   return (
     <Box
       flexGrow={1}
@@ -181,7 +207,20 @@ export function Config() {
             </Button>
           )}
         </Box>
-        {tabs.error ? (
+        {tabsPermission.data !== true ? (
+          <Button
+            variant="contained"
+            color="success"
+            size="large"
+            disabled={
+              tabsPermission.isLoading ||
+              requestForTabsPermissionMutation.isMutating
+            }
+            onClick={() => requestForTabsPermissionMutation.trigger()}
+          >
+            Grant permissions to execute on opened tabs
+          </Button>
+        ) : tabs.error ? (
           <ErrorAlert error={tabs.error} />
         ) : (
           <TabsSelector

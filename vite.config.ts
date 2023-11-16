@@ -28,7 +28,8 @@ export default defineConfig({
         options_page: "options.html",
         optional_permissions: ["tabs"],
         permissions: ["storage", "activeTab", "scripting"],
-        host_permissions: ["https://*/*", "http://*/*"],
+        //@ts-expect-error wrong types
+        optional_host_permissions: ["https://*/*", "http://*/*"],
         content_scripts: [
           {
             matches: ["https://*/*", "http://*/*"],
