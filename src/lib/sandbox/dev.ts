@@ -2,7 +2,7 @@ import Mustache from "mustache";
 import { Validator } from "@cfworker/json-schema";
 
 import type { IRemoteActor, Request } from "@/lib/actor";
-import { identity } from "@/lib/function";
+import { identity } from "@/lib/function/function";
 
 import {
   SandboxAction,

@@ -1,7 +1,7 @@
 import jp from "jsonpath";
 
 import { JSONValue } from "@/lib/json";
-import { fallbacksWIthDefault } from "@/lib/function";
+import { fallbacksWithDefault } from "@/lib/function/fallback";
 
 import { Transform, flow } from "./core";
 import { toString } from "./converters";
@@ -75,7 +75,7 @@ export const jsonldJsonQuery = (...selectors: string[]) =>
       flow(
         textContent,
         fromJSON,
-        fallbacksWIthDefault(null, ...selectors.map(jsonQuery)),
+        fallbacksWithDefault(null, ...selectors.map(jsonQuery)),
         toString
       )
     )

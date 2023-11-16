@@ -1,4 +1,4 @@
-import { fallbacksWIthDefault } from "@/lib/function";
+import { fallbacksWithDefault } from "@/lib/function/fallback";
 
 import { toDate, toString } from "./converters";
 import { flow, tryForEach } from "./core";
@@ -32,7 +32,7 @@ export const modifiedDate = asDate(
   queryAttr("time[itemprop*='dateModified' i]", "datetime")
 );
 
-export const date = fallbacksWIthDefault(
+export const date = fallbacksWithDefault(
   null,
   modifiedDate,
   publishedDate,

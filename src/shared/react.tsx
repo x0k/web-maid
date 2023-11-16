@@ -5,7 +5,7 @@ import { ValidationData } from "@rjsf/utils";
 import { AsyncFactory, Factory } from "@/lib/factory";
 import { ContextActor } from "@/lib/actors/context";
 import { IActorLogic, makeActorLogic } from "@/lib/actor";
-import { noop } from "@/lib/function";
+import { noop } from "@/lib/function/function";
 import { ShowFormData } from "@/lib/operators/json-schema";
 import { ILogger } from "@/lib/logger";
 import { stringifyError } from "@/lib/error";

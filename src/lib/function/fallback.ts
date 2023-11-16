@@ -1,6 +1,6 @@
 export type Fallback<Args extends unknown[], R> = (...args: Args) => R;
 
-export function fallbacksWIthDefault<Args extends unknown[], R>(
+export function fallbacksWithDefault<Args extends unknown[], R>(
   defaultValue: R,
   ...actions: Fallback<Args, R>[]
 ) {

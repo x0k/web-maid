@@ -86,7 +86,7 @@ export class MetadataOpFactory extends BrowserFactory<
       modifiedDate: modifiedDate(root),
       publishedDate: publishedDate(root),
       date: unknownDate(root),
-      image: image(root),
+      image: image(this.window.location.origin)(root),
       author: author(root),
     };
   }
