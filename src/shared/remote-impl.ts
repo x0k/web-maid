@@ -4,20 +4,21 @@ import { ActorId, IRemoteActor } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";
 import { TemplateRendererData } from "@/lib/operators/template";
 import { AsyncValidatorData, ShowFormData } from "@/lib/operators/json-schema";
+import { FetcherData } from "@/lib/operators/http";
 import { ILogger } from "@/lib/logger";
-
 import {
   SandboxAction,
   SandboxActionResults,
   SandboxActionType,
-} from "../lib/sandbox/action";
+} from "@/lib/sandbox/action";
+
 import {
   ExtensionAction,
   ExtensionActionResults,
   ExtensionActionType,
 } from "./action";
 
-export class Evaluator implements AsyncFactory<string, unknown> {
+export class RemoteEvaluator implements AsyncFactory<string, unknown> {
   constructor(
     private readonly handlerId: ActorId,
     private readonly actor: IRemoteActor<SandboxAction, SandboxActionResults>
@@ -32,7 +33,9 @@ export class Evaluator implements AsyncFactory<string, unknown> {
   }
 }
 
-export class Renderer implements AsyncFactory<TemplateRendererData, string> {
+export class RemoteRenderer
+  implements AsyncFactory<TemplateRendererData, string>
+{
   constructor(
     private readonly handlerId: ActorId,
     private readonly actor: IRemoteActor<SandboxAction, SandboxActionResults>
@@ -48,7 +51,9 @@ export class Renderer implements AsyncFactory<TemplateRendererData, string> {
   }
 }
 
-export class Validator implements AsyncFactory<AsyncValidatorData, boolean> {
+export class RemoteValidator
+  implements AsyncFactory<AsyncValidatorData, boolean>
+{
   constructor(
     private readonly handlerId: ActorId,
     private readonly actor: IRemoteActor<SandboxAction, SandboxActionResults>
@@ -100,6 +105,28 @@ export class RemoteLogger implements ILogger {
       handlerId: this.handlerId,
       type: ExtensionActionType.AppendLog,
       log: arg,
+    });
+  }
+}
+
+export class RemoteFetcher implements AsyncFactory<FetcherData, unknown> {
+  constructor(
+    private readonly handlerId: ActorId,
+    private readonly actor: IRemoteActor<
+      ExtensionAction,
+      ExtensionActionResults
+    >
+  ) {}
+  Create(config: FetcherData): Promise<unknown> {
+    return this.actor.call({
+      handlerId: this.handlerId,
+      id: nanoid(),
+      type: ExtensionActionType.MakeRequest,
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+      body: config.body,
+      as: config.as,
     });
   }
 }

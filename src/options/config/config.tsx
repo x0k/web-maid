@@ -35,7 +35,12 @@ import {
   useFormShower,
   useRootFactory,
 } from "@/shared/react";
-import { Evaluator, Renderer, Validator } from "@/shared/impl";
+import { Fetcher } from "@/shared/fetcher";
+import {
+  RemoteEvaluator,
+  RemoteRenderer,
+  RemoteValidator,
+} from "@/shared/remote-impl";
 
 import { contextId, sandboxIFrameId } from "../constants";
 import { TabsSelector } from "./tabs-selector";
@@ -65,6 +70,8 @@ async function saveConfig(_: string, { arg }: { arg: string }) {
 
 const initialTabs: Tab[] = [];
 
+const fetcher = new Fetcher();
+
 export function Config() {
   const sandbox = useSandbox();
   const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
@@ -79,9 +86,10 @@ export function Config() {
         Create(debug) {
           return createOperatorResolver({
             debug,
-            evaluator: new Evaluator(sandboxIFrameId, sandbox),
-            rendered: new Renderer(sandboxIFrameId, sandbox),
-            validator: new Validator(sandboxIFrameId, sandbox),
+            evaluator: new RemoteEvaluator(sandboxIFrameId, sandbox),
+            rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
+            validator: new RemoteValidator(sandboxIFrameId, sandbox),
+            fetcher,
             logger,
             formShower,
           });
@@ -118,7 +126,7 @@ export function Config() {
     },
     onError: showError,
   });
-  const logic = useExtensionActorLogic(formShower, logger);
+  const logic = useExtensionActorLogic(formShower, logger, fetcher);
   const actor = useContextActor(contextId, logic);
   useEffect(() => {
     actor.start();

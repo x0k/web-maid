@@ -11,11 +11,12 @@ import { Json } from "@/lib/zod";
 import { ExtensionAction, ExtensionActionResults } from "@/shared/action";
 import {
   RemoteLogger,
-  Evaluator,
+  RemoteEvaluator,
   RemoteFormShower,
-  Renderer,
-  Validator,
-} from "@/shared/impl";
+  RemoteRenderer,
+  RemoteValidator,
+  RemoteFetcher,
+} from "@/shared/remote-impl";
 
 import { iFrameId } from "./constants";
 
@@ -37,9 +38,9 @@ interface InjectedConfigEvalOptions {
 }
 
 function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
-  const evaluator = new Evaluator(iFrameId, sandbox);
-  const rendered = new Renderer(iFrameId, sandbox);
-  const validator = new Validator(iFrameId, sandbox);
+  const evaluator = new RemoteEvaluator(iFrameId, sandbox);
+  const rendered = new RemoteRenderer(iFrameId, sandbox);
+  const validator = new RemoteValidator(iFrameId, sandbox);
   const INJECTED = {
     evalConfig: ({
       config,
@@ -53,6 +54,7 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
         rendered,
         validator,
         formShower: new RemoteFormShower(contextId, extension),
+        fetcher: new RemoteFetcher(contextId, extension),
         logger: new RemoteLogger(contextId, extension),
       });
       return evalConfig({

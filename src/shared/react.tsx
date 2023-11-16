@@ -10,6 +10,7 @@ import { ShowFormData } from "@/lib/operators/json-schema";
 import { ILogger } from "@/lib/logger";
 import { stringifyError } from "@/lib/error";
 import { FormDataValidatorData } from "@/components/form";
+import { FetcherData } from "@/lib/operators/http";
 
 import { getAllTabs } from "./core";
 import {
@@ -41,7 +42,8 @@ export function useFormShower(
 
 export function useExtensionActorLogic(
   formShower: AsyncFactory<ShowFormData, unknown>,
-  logger: ILogger
+  logger: ILogger,
+  fetcher: AsyncFactory<FetcherData, unknown>
 ) {
   return useMemo(
     () =>
@@ -50,11 +52,12 @@ export function useExtensionActorLogic(
           [ExtensionActionType.AppendLog]: ({ log }) => {
             logger.log(log);
           },
-          [ExtensionActionType.ShowFrom]: (config) => formShower.Create(config),
+          [ExtensionActionType.ShowFrom]: formShower.Create.bind(formShower),
+          [ExtensionActionType.MakeRequest]: fetcher.Create.bind(fetcher),
         },
         stringifyError
       ),
-    [formShower, logger]
+    [formShower, logger, fetcher]
   );
 }
 

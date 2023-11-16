@@ -8,6 +8,7 @@ import {
 } from "@/lib/operator";
 import { AsyncValidatorData, ShowFormData } from "@/lib/operators/json-schema";
 import { TemplateRendererData } from "@/lib/operators/template";
+import { FetcherData } from "@/lib/operators/http";
 
 import { compileOperatorFactories } from "./operator";
 
@@ -17,6 +18,7 @@ export interface OperatorResolveOptions {
   rendered: AsyncFactory<TemplateRendererData, string>;
   validator: AsyncFactory<AsyncValidatorData, boolean>;
   formShower: AsyncFactory<ShowFormData, unknown>;
+  fetcher: AsyncFactory<FetcherData, unknown>;
   logger: ILogger;
 }
 
@@ -24,6 +26,7 @@ export function createOperatorResolver({
   debug,
   evaluator,
   formShower,
+  fetcher,
   logger,
   rendered,
   validator,
@@ -35,6 +38,7 @@ export function createOperatorResolver({
       rendered,
       validator,
       formShower,
+      fetcher,
       logger,
       operatorsFactory: {
         Create(config): ScopedOp<unknown> {

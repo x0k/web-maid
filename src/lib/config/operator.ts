@@ -7,7 +7,7 @@ import { documentOperatorsFactories } from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
 import { fsOperatorsFactories } from "@/lib/operators/fs";
 import { htmlOperatorsFactories } from "@/lib/operators/html";
-import { httpOperatorsFactories } from "@/lib/operators/http";
+import { FetcherData, httpOperatorsFactories } from "@/lib/operators/http";
 import { jsonOperatorsFactories } from "@/lib/operators/json";
 import {
   AsyncValidatorData,
@@ -28,6 +28,7 @@ export interface OperatorFactoryConfig {
   rendered: AsyncFactory<TemplateRendererData, string>;
   validator: AsyncFactory<AsyncValidatorData, boolean>;
   formShower: AsyncFactory<ShowFormData, unknown>;
+  fetcher: AsyncFactory<FetcherData, unknown>;
   logger: ILogger;
   operatorsFactory: ScopedOpFactory<unknown>;
   operatorResolver: Factory<unknown, unknown>;
@@ -39,6 +40,7 @@ export function compileOperatorFactories({
   rendered,
   validator,
   formShower,
+  fetcher,
   logger,
   operatorsFactory,
   operatorResolver,
@@ -73,6 +75,6 @@ export function compileOperatorFactories({
     jsonSchemaOperatorsFactories(validator, formShower)
   );
   assignWithPrefix("dbg.", factories, debugOperatorsFactories(logger));
-  assignWithPrefix("http.", factories, httpOperatorsFactories());
+  assignWithPrefix("http.", factories, httpOperatorsFactories(fetcher));
   return factories;
 }

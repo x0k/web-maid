@@ -25,6 +25,7 @@ beforeEach(() => {
       rendered: {} as AsyncFactory<TemplateRendererData, string>,
       validator: {} as AsyncFactory<AsyncValidatorData, boolean>,
       formShower: {} as AsyncFactory<ShowFormData, unknown>,
+      fetcher: {} as AsyncFactory<unknown, unknown>,
       logger: {} as unknown as ILogger,
       operatorsFactory: {
         Create(config): ScopedOp<unknown> {
