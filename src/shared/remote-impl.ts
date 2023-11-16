@@ -10,7 +10,7 @@ import {
   SandboxAction,
   SandboxActionResults,
   SandboxActionType,
-} from "@/lib/sandbox/action";
+} from "@/shared/sandbox/action";
 
 import {
   ExtensionAction,

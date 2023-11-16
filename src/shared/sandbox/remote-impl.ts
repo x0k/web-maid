@@ -1,15 +1,10 @@
-import { ValidationData } from "@rjsf/utils";
-import { nanoid } from "nanoid";
+import { FormDataValidatorData } from '@/components/form';
+import { ActorId, IRemoteActor } from '@/lib/actor';
+import { AsyncFactory } from '@/lib/factory';
+import { ValidationData } from '@rjsf/utils';
+import { nanoid } from 'nanoid';
 
-import { ActorId, IRemoteActor } from "@/lib/actor";
-import { AsyncFactory } from "@/lib/factory";
-import { FormDataValidatorData } from "@/components/form";
-
-import {
-  SandboxAction,
-  SandboxActionResults,
-  SandboxActionType,
-} from "./action";
+import { SandboxAction, SandboxActionResults, SandboxActionType } from './action';
 
 export class RemoteFormDataValidator<T>
   implements AsyncFactory<FormDataValidatorData<T>, ValidationData<T>>

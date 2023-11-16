@@ -3,7 +3,8 @@ import React, { useMemo } from "react";
 import { IRemoteActor } from "@/lib/actor";
 
 import type { SandboxAction, SandboxActionResults } from "./action";
-import { RemoteFormDataValidator } from "./form-data-validator";
+
+import { RemoteFormDataValidator } from "./remote-impl";
 
 export const SandboxContext = React.createContext<IRemoteActor<
   SandboxAction,

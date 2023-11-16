@@ -3,23 +3,16 @@ import { Root } from "react-dom/client";
 import { ValidationData } from "@rjsf/utils";
 
 import { AsyncFactory, Factory } from "@/lib/factory";
-import { ContextActor } from "@/lib/actors/context";
-import { IActorLogic, makeActorLogic } from "@/lib/actor";
-import { noop } from "@/lib/function/function";
+import { IActorLogic } from "@/lib/actor";
 import { ShowFormData } from "@/lib/operators/json-schema";
 import { ILogger } from "@/lib/logger";
-import { stringifyError } from "@/lib/error";
 import { FormDataValidatorData } from "@/components/form";
 import { FetcherData } from "@/lib/operators/http";
 
-import { getAllTabs } from "./core";
-import {
-  ExtensionAction,
-  ExtensionActionResults,
-  ExtensionActionType,
-} from "./action";
+import { ExtensionAction, ExtensionActionResults } from "./action";
 import { RootFactory } from "./root-factory";
 import { FormShower } from "./form-shower";
+import { makeExtensionActor, makeExtensionActorLogic } from "./actor";
 
 export function useRootFactory<E extends HTMLElement>(
   rootRef: RefObject<E>
@@ -46,17 +39,7 @@ export function useExtensionActorLogic(
   fetcher: AsyncFactory<FetcherData, unknown>
 ) {
   return useMemo(
-    () =>
-      makeActorLogic<ExtensionAction, ExtensionActionResults, string>(
-        {
-          [ExtensionActionType.AppendLog]: ({ log }) => {
-            logger.log(log);
-          },
-          [ExtensionActionType.ShowFrom]: formShower.Create.bind(formShower),
-          [ExtensionActionType.MakeRequest]: fetcher.Create.bind(fetcher),
-        },
-        stringifyError
-      ),
+    () => makeExtensionActorLogic(formShower, logger, fetcher),
     [formShower, logger, fetcher]
   );
 }
@@ -66,21 +49,7 @@ export function useContextActor(
   actorLogic: IActorLogic<ExtensionAction, ExtensionActionResults, string>
 ) {
   return useMemo(
-    () =>
-      new ContextActor(contextId, actorLogic, {
-        async sendMessage(message, tabId) {
-          if (tabId) {
-            chrome.tabs.sendMessage(tabId, message);
-            return;
-          }
-          chrome.runtime.sendMessage(message).catch(noop);
-          // TODO: Is it really needed?
-          const tabs = await getAllTabs();
-          for (const tab of tabs) {
-            chrome.tabs.sendMessage(tab.id, message).catch(noop);
-          }
-        },
-      }),
+    () => makeExtensionActor(contextId, actorLogic),
     [contextId, actorLogic]
   );
 }

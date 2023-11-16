@@ -2,10 +2,10 @@ import { stringifyError } from "@/lib/error";
 import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
 import { ContextRemoteActor } from "@/lib/actors/context";
 import { prepareForSerialization } from "@/lib/serialization";
-import { SandboxAction, SandboxActionResults } from "@/lib/sandbox/action";
-import { createAndMountIFrame, connectToSandbox } from "@/lib/sandbox/connect";
-import { evalConfig } from "@/lib/config/eval";
-import { createOperatorResolver } from "@/lib/config/create";
+import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
+import { createAndMountIFrame, connectToSandbox } from "@/shared/sandbox/connect";
+import { evalConfig } from "@/shared/config/eval";
+import { createOperatorResolver } from "@/shared/config/create";
 
 import { ExtensionAction, ExtensionActionResults } from "@/shared/action";
 import {

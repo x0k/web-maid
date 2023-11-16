@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { isObject } from "@/lib/guards";
-import { evalConfig } from "@/lib/config/eval";
+import { evalConfig } from "@/shared/config/eval";
 import { Factory } from "@/lib/factory";
 
 import rawConfig from "./config.yml?raw";
@@ -83,17 +83,25 @@ export async function getAllTabs(): Promise<Tab[]> {
   return chrome.tabs.query({}).then(tabsSchema.parse);
 }
 
+export async function getCurrentTab(): Promise<Tab | null> {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
+  return tab ? tabSchema.parse(tab) : null;
+}
+
 export interface ConfigRenderedData {
   configTemplate: string;
   configData: LocalSettings;
 }
 
-async function evalConfigInTab(
-  contextId: string,
-  debug: boolean,
-  config: string,
+export async function evalConfigInTab(
   tabId: number,
-  secrets: string
+  contextId: string,
+  config: string,
+  secrets: string,
+  debug: boolean,
 ): Promise<unknown> {
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
@@ -121,7 +129,7 @@ export function makeIsomorphicConfigEval(
     tabId?: number
   ) => {
     return tabId
-      ? evalConfigInTab(contextId, debug, config, tabId, secrets)
+      ? evalConfigInTab(tabId, contextId, config, secrets, debug)
       : evalConfig({
           config,
           secrets,
