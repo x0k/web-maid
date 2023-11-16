@@ -27,10 +27,11 @@ export function get<T, D extends number = 3>(
     let result = from as unknown;
     for (const k of key) {
       if (Array.isArray(result) && typeof k === "number") {
-        result = result[k];
-        continue;
-      }
-      if (isObject(result)) {
+        if (k >= 0 && k < result.length) {
+          result = result[k];
+          continue;
+        }
+      } else if (isObject(result) && k in result) {
         result = result[k];
         continue;
       }
@@ -43,10 +44,10 @@ export function get<T, D extends number = 3>(
     }
     return result as ValuesOf<T, D>;
   }
-  if (Array.isArray(from) && typeof key === "number") {
+  if (Array.isArray(from) && typeof key === "number" && key >= 0 && key < from.length) {
     return from[key];
   }
-  if (isObject<ValuesOf<T, D>>(from)) {
+  if (isObject<ValuesOf<T, D>>(from) && key in from) {
     return from[key];
   }
   if (defaultValue !== undefined) {
