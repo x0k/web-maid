@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parse, stringify } from "yaml";
 
 import { Json } from "@/lib/zod";
 import { isObject } from "@/lib/guards";
@@ -16,33 +17,24 @@ const partialLocalSettingsSchema = localSettingsSchema.partial();
 
 const syncSettingsSchema = z.object({
   config: z.string(),
-  secretsSchema: z.string(),
 });
 
 const partialSyncSettingsSchema = syncSettingsSchema.partial();
 
 export interface LocalSettings {
-  secrets: Json;
+  secrets: string;
 }
 
 export interface SyncSettings {
   config: string;
-  secretsSchema: string;
 }
 
 const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
-  secrets: JSON.stringify({ token: "" }),
+  secrets: stringify({ token: "" }),
 };
 
 const DEFAULT_SYNC_SETTINGS: z.infer<typeof syncSettingsSchema> = {
   config: rawConfig,
-  secretsSchema: `type: object
-properties:
-  token:
-    type: string
-required:
-  - token
-`,
 };
 
 const tabSchema = z.object({
@@ -67,21 +59,11 @@ export async function saveSyncSettings(settings: Partial<SyncSettings>) {
 
 export async function loadLocalSettings(): Promise<LocalSettings> {
   const settings = await chrome.storage.local.get(DEFAULT_LOCAL_SETTINGS);
-  const { secrets, ...rest } = localSettingsSchema.parse(settings);
-  return {
-    ...rest,
-    secrets: JSON.parse(secrets),
-  };
+  return localSettingsSchema.parse(settings);
 }
 
-export async function saveLocalSettings({
-  secrets,
-  ...rest
-}: Partial<LocalSettings>) {
-  const data = partialLocalSettingsSchema.parse({
-    ...rest,
-    secrets: JSON.stringify(secrets),
-  });
+export async function saveLocalSettings(settings: Partial<LocalSettings>) {
+  const data = partialLocalSettingsSchema.parse(settings);
   await chrome.storage.local.set(data);
 }
 
@@ -137,14 +119,15 @@ export function makeIsomorphicConfigEval(
     contextId: string,
     debug: boolean,
     config: string,
+    secrets: string,
     tabId?: number
   ) => {
-    const { secrets } = await loadLocalSettings();
+    const secretsData = parse(secrets);
     return tabId
-      ? evalConfigInTab(contextId, debug, config, tabId, secrets)
+      ? evalConfigInTab(contextId, debug, config, tabId, secretsData)
       : evalConfig({
           config,
-          secrets,
+          secrets: secretsData,
           operatorResolver: operatorResolverFactory.Create(debug),
         });
   };

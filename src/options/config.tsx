@@ -19,6 +19,7 @@ import { createOperatorResolver } from "@/lib/config/create";
 import { prepareForSending } from "@/lib/serialization";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
+import { Row } from "@/components/row";
 
 import {
   Tab,
@@ -28,6 +29,8 @@ import {
   makeIsomorphicConfigEval,
   checkForTabsPermission,
   requestForTabsPermission,
+  loadLocalSettings,
+  saveLocalSettings,
 } from "@/shared/core";
 import {
   useContextActor,
@@ -42,12 +45,12 @@ import {
   RemoteValidator,
 } from "@/shared/remote-impl";
 
-import { contextId, sandboxIFrameId } from "../constants";
+import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
 import { Readme } from "./readme";
 
 const configModel = monaco.editor.createModel("", "yaml");
-
+const secretsModel = monaco.editor.createModel("", "yaml");
 const logsModel = monaco.editor.createModel("", "yaml");
 
 function showError(err: unknown) {
@@ -66,6 +69,10 @@ function showSuccess(message: string) {
 
 async function saveConfig(_: string, { arg }: { arg: string }) {
   await saveSyncSettings({ config: arg });
+}
+
+async function saveSecrets(_: string, { arg }: { arg: string }) {
+  await saveLocalSettings({ secrets: arg });
 }
 
 const initialTabs: Tab[] = [];
@@ -101,8 +108,10 @@ export function Config() {
   const [selectedTab, selectTab] = useState<Tab | null>(null);
   const evalRunner = useSWRMutation(
     [debug, selectedTab],
-    ([debug, tab], { arg: config }: { arg: string }) =>
-      evalConfig(contextId, debug, config, tab?.id),
+    (
+      [debug, tab],
+      { arg: { config, secrets } }: { arg: { config: string; secrets: string } }
+    ) => evalConfig(contextId, debug, config, secrets, tab?.id),
     {
       onSuccess(result) {
         logger.log({ success: result });
@@ -113,19 +122,6 @@ export function Config() {
     }
   );
 
-  useSWR("settings/sync", loadSyncSettings, {
-    revalidateOnFocus: false,
-    onSuccess({ config }) {
-      configModel.setValue(config);
-    },
-    onError: showError,
-  });
-  const configMutation = useSWRMutation("settings/sync", saveConfig, {
-    onSuccess() {
-      showSuccess("Config saved");
-    },
-    onError: showError,
-  });
   const logic = useExtensionActorLogic(formShower, logger, fetcher);
   const actor = useContextActor(contextId, logic);
   useEffect(() => {
@@ -151,6 +147,38 @@ export function Config() {
   const tabs = useSWR(() => (tabsPermission.data ? "tabs" : null), getAllTabs, {
     fallbackData: initialTabs,
   });
+
+  const [isSecretsEditor, setIsSecretsEditor] = useState(false);
+  useSWR("settings/sync", loadSyncSettings, {
+    revalidateOnFocus: false,
+    onSuccess({ config }) {
+      configModel.setValue(config);
+    },
+    onError: showError,
+  });
+  const configMutation = useSWRMutation("settings/sync/config", saveConfig, {
+    onSuccess() {
+      showSuccess("Config saved");
+    },
+    onError: showError,
+  });
+  useSWR("settings/local", loadLocalSettings, {
+    revalidateOnFocus: false,
+    onSuccess({ secrets }) {
+      secretsModel.setValue(secrets);
+    },
+    onError: showError,
+  });
+  const secretsMutation = useSWRMutation(
+    "settings/local/secrets",
+    saveSecrets,
+    {
+      onSuccess() {
+        showSuccess("Secrets saved");
+      },
+      onError: showError,
+    }
+  );
   return (
     <Box
       flexGrow={1}
@@ -161,22 +189,65 @@ export function Config() {
       gap={2}
     >
       <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>
-        <Box display="flex" flexDirection="row" gap={2} alignItems="center">
-          <Typography flexGrow={1} variant="h6">
-            Config
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            onClick={() => {
-              configMutation.trigger(configModel.getValue());
-            }}
-          >
-            Save
-          </Button>
-        </Box>
-        <Editor model={configModel} />
+        {isSecretsEditor ? (
+          <>
+            <Row>
+              <Typography flexGrow={1} variant="h6">
+                Secrets
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={() => {
+                  secretsMutation.trigger(secretsModel.getValue());
+                }}
+              >
+                Save
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                size="small"
+                onClick={() => {
+                  setIsSecretsEditor(false);
+                }}
+              >
+                Edit config
+              </Button>
+            </Row>
+            <Editor model={secretsModel} />
+          </>
+        ) : (
+          <>
+            <Row>
+              <Typography flexGrow={1} variant="h6">
+                Config
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={() => {
+                  configMutation.trigger(configModel.getValue());
+                }}
+              >
+                Save
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                size="small"
+                onClick={() => {
+                  setIsSecretsEditor(true);
+                }}
+              >
+                Edit secrets
+              </Button>
+            </Row>
+            <Editor model={configModel} />
+          </>
+        )}
       </Box>
       <Box display="flex" flexDirection="column" gap={2}>
         <Box display="flex" flexDirection="row" gap={2} alignItems="center">
@@ -195,13 +266,16 @@ export function Config() {
             color="warning"
             size="small"
             onClick={() => {
-              evalRunner.trigger(configModel.getValue());
+              evalRunner.trigger({
+                config: configModel.getValue(),
+                secrets: secretsModel.getValue(),
+              });
             }}
             disabled={evalRunner.isMutating}
           >
             Test
           </Button>
-          {Boolean(evalRunner.data || evalRunner.error) && (
+          {Boolean(evalRunner.data !== undefined || evalRunner.error) && (
             <Button
               variant="contained"
               color="error"
