@@ -1,6 +1,6 @@
 import { traverseJsonLikeWithGuard } from "@/lib/json-like-traverser";
 
-export function prepareForSending<T>(value: T): T {
+export function prepareForSerialization<T>(value: T): T {
   return traverseJsonLikeWithGuard(
     (v): v is T => {
       return v instanceof Error

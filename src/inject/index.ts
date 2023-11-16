@@ -1,7 +1,7 @@
 import { stringifyError } from "@/lib/error";
 import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
 import { ContextRemoteActor } from "@/lib/actors/context";
-import { prepareForSending } from "@/lib/serialization";
+import { prepareForSerialization } from "@/lib/serialization";
 import { SandboxAction, SandboxActionResults } from "@/lib/sandbox/action";
 import { createAndMountIFrame, connectToSandbox } from "@/lib/sandbox/connect";
 import { evalConfig } from "@/lib/config/eval";
@@ -26,7 +26,7 @@ const extension = new ContextRemoteActor<
   string
 >(makeRemoteActorLogic(stringifyError), {
   sendMessage(msg) {
-    return chrome.runtime.sendMessage(prepareForSending(msg));
+    return chrome.runtime.sendMessage(prepareForSerialization(msg));
   },
 });
 

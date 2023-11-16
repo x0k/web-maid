@@ -3,6 +3,7 @@ import { stringify } from "yaml";
 
 import { monaco } from "@/lib/monaco";
 import { ILogger } from "@/lib/logger";
+import { prepareForSerialization } from './serialization';
 
 export class ReactMonacoLogger implements ILogger {
   constructor(
@@ -28,7 +29,7 @@ export class ReactMonacoLogger implements ILogger {
           endColumn: 1,
         },
         text: `---\n${stringify({
-          [new Date().toISOString()]: arg,
+          [new Date().toISOString()]: prepareForSerialization(arg),
         })}`,
       },
     ]);

@@ -16,7 +16,6 @@ import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
 import { useFormDataValidator, useSandbox } from "@/lib/sandbox/react";
 import { createOperatorResolver } from "@/lib/config/create";
-import { prepareForSending } from "@/lib/serialization";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 import { Row } from "@/components/row";
@@ -117,7 +116,7 @@ export function Config() {
         logger.log({ success: result });
       },
       onError(error) {
-        logger.log(prepareForSending({ error: error }));
+        logger.log({ error });
       },
     }
   );
