@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import { crx } from "@crxjs/vite-plugin";
 
 // https://vitejs.dev/config/
@@ -33,7 +33,7 @@ export default defineConfig({
         content_scripts: [
           {
             matches: ["https://*/*", "http://*/*"],
-            js: ["src/inject/index.ts"],
+            js: ["src/inject/index.tsx"],
           },
         ],
         sandbox: {
