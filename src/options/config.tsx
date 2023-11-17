@@ -14,12 +14,12 @@ import useSWR from "swr";
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
-import { useFormDataValidator, useSandbox } from "@/shared/sandbox/react";
-import { createOperatorResolver } from "@/shared/config/create";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 import { Row } from "@/components/row";
 
+import { useFormDataValidator, useSandbox } from "@/shared/sandbox/react";
+import { createOperatorResolver } from "@/shared/config/create";
 import {
   Tab,
   getAllTabs,
@@ -42,7 +42,7 @@ import {
   RemoteEvaluator,
   RemoteRenderer,
   RemoteValidator,
-} from "@/shared/remote-impl";
+} from "@/shared/sandbox/remote-impl";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";

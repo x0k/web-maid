@@ -2,20 +2,26 @@ import { stringifyError } from "@/lib/error";
 import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
 import { ContextRemoteActor } from "@/lib/actors/context";
 import { prepareForSerialization } from "@/lib/serialization";
+
 import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
-import { createAndMountIFrame, connectToSandbox } from "@/shared/sandbox/connect";
+import {
+  createAndMountIFrame,
+  connectToSandbox,
+} from "@/shared/sandbox/connect";
 import { evalConfig } from "@/shared/config/eval";
 import { createOperatorResolver } from "@/shared/config/create";
 
 import { ExtensionAction, ExtensionActionResults } from "@/shared/action";
 import {
   RemoteLogger,
-  RemoteEvaluator,
   RemoteFormShower,
-  RemoteRenderer,
-  RemoteValidator,
   RemoteFetcher,
 } from "@/shared/remote-impl";
+import {
+  RemoteEvaluator,
+  RemoteRenderer,
+  RemoteValidator,
+} from "@/shared/sandbox/remote-impl";
 
 import { iFrameId } from "./constants";
 
