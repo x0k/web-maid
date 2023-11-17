@@ -45,7 +45,7 @@ export class ReactFormShower implements AsyncFactory<ShowFormData, unknown> {
               flexDirection="row"
               gap={2}
               alignItems="center"
-              p={2}
+              pt={2}
             >
               <Button
                 fullWidth

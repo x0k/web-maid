@@ -79,7 +79,7 @@ export function Config() {
   const sandbox = useSandbox();
   const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
   const logger = useMonacoLogger(logsEditorRef);
-  const [rootFactoryRef, children] = useRootFactory()
+  const [rootFactoryRef, children, clearRoot] = useRootFactory();
   const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
   const formShower = useFormShower(rootFactoryRef.current, formDataValidator);
   const evalConfig = useMemo(
@@ -276,6 +276,7 @@ export function Config() {
               onClick={() => {
                 evalRunner.reset();
                 logsModel.setValue("");
+                clearRoot();
               }}
             >
               Reset

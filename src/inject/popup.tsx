@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   AlertTitle,
   Box,
   Button,
   IconButton,
-  LinearProgress,
   Paper,
   Typography,
 } from "@mui/material";
@@ -68,8 +67,14 @@ const background = new ContextRemoteActor<
   },
 });
 
+function stopPropagation(e: KeyboardEvent) {
+  if (e.key !== "Escape") {
+    e.stopPropagation();
+  }
+}
+
 export function Popup({ sandbox }: PopupProps) {
-  const [rootFactoryRef, children] = useRootFactory();
+  const [rootFactoryRef, children, clear] = useRootFactory();
   const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
   const formShower = useFormShower(rootFactoryRef.current, formDataValidator);
   const evalConfig = useMemo(
@@ -103,11 +108,16 @@ export function Popup({ sandbox }: PopupProps) {
     {
       onSuccess() {
         callbackRef.current = setTimeout(() => {
-          setIsVisible(false);
-        }, 1500);
+          closePopup();
+        }, 2000);
       },
     }
   );
+  const closePopup = useCallback(() => {
+    setIsVisible(false);
+    evaluator.reset();
+    clear();
+  }, [evaluator, clear]);
   const tabLogic = useMemo(
     () =>
       makeActorLogic<
@@ -141,6 +151,27 @@ export function Popup({ sandbox }: PopupProps) {
       background.stop();
     };
   }, [tabActor]);
+  const onEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closePopup();
+      }
+    },
+    [closePopup]
+  );
+  useEffect(() => {
+    if (isVisible) {
+      document.addEventListener("keydown", onEscape);
+      document.addEventListener("keydown", stopPropagation, true);
+    } else {
+      document.removeEventListener("keydown", stopPropagation, true);
+      document.removeEventListener("keydown", onEscape);
+    }
+    return () => {
+      document.removeEventListener("keydown", stopPropagation, true);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [isVisible, onEscape]);
   return (
     <Paper
       elevation={2}
@@ -148,7 +179,6 @@ export function Popup({ sandbox }: PopupProps) {
         position: "relative",
         visibility: isVisible ? "visible" : "hidden",
         padding: 16,
-        paddingBottom: 0,
       }}
     >
       <IconButton
@@ -157,23 +187,24 @@ export function Popup({ sandbox }: PopupProps) {
           position: "absolute",
           top: 0,
           right: 0,
-          visibility: evaluator.isMutating || !isVisible ? "hidden" : "visible",
           zIndex: 1,
         }}
-        onClick={() => {
-          evaluator.reset();
-          setIsVisible(false);
-        }}
+        onClick={closePopup}
       >
         <Close />
       </IconButton>
-      <Box display={"flex"} flexDirection={"column"} gap={2} minWidth={400}>
+      <Box display={"flex"} flexDirection={"column"} gap={2} width={500}>
         {evaluator.isMutating ? (
-          <LinearProgress style={{ marginBottom: 16 }} />
+          <Typography pb={2}>In progress...</Typography>
         ) : evaluator.error ? (
           <>
             <ErrorAlert error={evaluator.error} />
-            <Box display="flex" flexDirection="column" alignItems="center">
+            <Box
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              marginBottom="-10px"
+            >
               <Button
                 color="error"
                 variant="contained"
@@ -187,14 +218,14 @@ export function Popup({ sandbox }: PopupProps) {
               </Typography>
             </Box>
           </>
-        ) : evaluator.data !== undefined ? (
-          <Alert severity="success" style={{ marginBottom: 16 }}>
+        ) : (
+          <Alert severity="success">
             <AlertTitle>Success</AlertTitle>
             <pre>
               <code>{stringify(evaluator.data)}</code>
             </pre>
           </Alert>
-        ) : null}
+        )}
       </Box>
       {children}
     </Paper>

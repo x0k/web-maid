@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import { Root } from "react-dom/client";
 import { nanoid } from "nanoid";
 
@@ -30,5 +30,8 @@ export function useRootFactory() {
     },
   });
   const children = useMemo(() => Array.from(toChildren(map)), [map]);
-  return [factoryRef, children] as const;
+  const clear = useCallback(() => {
+    setMap(new Map());
+  }, [setMap]);
+  return [factoryRef, children, clear] as const;
 }
