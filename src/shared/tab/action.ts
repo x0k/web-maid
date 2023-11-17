@@ -4,8 +4,9 @@ export enum TabActionType {
   RunConfig = "config::run",
 }
 
-export interface AbstractTabAction<T extends TabActionType>
-  extends Request<T> {}
+export interface AbstractTabAction<T extends TabActionType> extends Request<T> {
+  tabId: number;
+}
 
 export interface RunConfigAction
   extends AbstractTabAction<TabActionType.RunConfig> {}

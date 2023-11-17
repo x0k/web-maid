@@ -1,12 +1,18 @@
+import { nanoid } from "nanoid";
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
 import { stringifyError } from "@/lib/error";
-import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
+import {
+  IRemoteActor,
+  makeActorLogic,
+  makeRemoteActorLogic,
+} from "@/lib/actor";
 import { ContextActor, ContextRemoteActor } from "@/lib/actors/context";
 import { prepareForSerialization } from "@/lib/serialization";
+import { noop } from "@/lib/function/function";
 
 import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
 import {
@@ -35,22 +41,37 @@ import {
   BackgroundActionResults,
 } from "@/shared/background/action";
 import { BACKGROUND_ACTOR_ID } from "@/shared/background/core";
-// import { TabAction, TabActionResults } from '@/shared/tab/action';
+import {
+  TabAction,
+  TabActionResults,
+  TabActionType,
+} from "@/shared/tab/action";
 
 import { sandboxIFrameId } from "./constants";
 import { Popup } from "./popup";
 import { renderInShadowDom } from "./shadow-dom";
 
-// const tab = new ContextActor<TabAction, TabActionResults, string>(
-
-// )
-
-const remoteLogic = makeRemoteActorLogic(stringifyError);
 const messageSender = {
   sendMessage(msg: unknown) {
     return chrome.runtime.sendMessage(prepareForSerialization(msg));
   },
 };
+
+const tab = new ContextActor<TabAction, TabActionResults, string>(
+  nanoid(),
+  makeActorLogic(
+    {
+      [TabActionType.RunConfig]: () => {
+        console.log("run config");
+      },
+    },
+    noop,
+    stringifyError
+  ),
+  messageSender
+);
+
+const remoteLogic = makeRemoteActorLogic(stringifyError);
 
 const extension = new ContextRemoteActor<
   ExtensionAction,
@@ -116,6 +137,8 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   window.__SCRAPER_EXTENSION__ = INJECTED;
   sandbox.start();
   extension.start();
+  background.start();
+  tab.start();
   const container = document.createElement("div");
   container.style.position = "fixed";
   container.style.top = "10px";
