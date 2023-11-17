@@ -1,6 +1,6 @@
 export type Fallback<Args extends unknown[], R> = (...args: Args) => R;
 
-export function fallbacksWithDefault<Args extends unknown[], R>(
+export function fallbackToDefault<Args extends unknown[], R>(
   defaultValue: R,
   ...actions: Fallback<Args, R>[]
 ) {
@@ -16,8 +16,8 @@ export function fallbacksWithDefault<Args extends unknown[], R>(
   };
 }
 
-export function fallbacksWithError<Args extends unknown[], R, E>(
-  errorMessage: E,
+export function fallbackToError<Args extends unknown[], R, E>(
+  error: E,
   ...actions: Fallback<Args, R>[]
 ) {
   return (...args: Args) => {
@@ -28,6 +28,6 @@ export function fallbacksWithError<Args extends unknown[], R, E>(
         return result;
       }
     }
-    throw errorMessage;
+    throw error;
   };
 }

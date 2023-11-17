@@ -1,6 +1,6 @@
 import {
   IMAGE_OR_VIDEO_REGEX,
-  fallbacksWithIdentity,
+  fallbackToIdentity,
   flow,
   tryForEach,
 } from "./core";
@@ -16,7 +16,7 @@ const isImageLocation = isTransforms(
 const handleImageUrl = (origin: string) =>
   flow(
     isImageLocation,
-    fallbacksWithIdentity(
+    fallbackToIdentity(
       flow(isSatisfies(isRelativeUrl), (v) => `${origin}${v}`)
     )
   );
