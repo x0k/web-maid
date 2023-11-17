@@ -46,18 +46,17 @@ const initPromise = Promise.all([
       );
       sandbox.start();
       actor.start();
-      return makeIsomorphicConfigEval({
-        Create: (debug) =>
-          createOperatorResolver({
-            debug,
-            logger,
-            evaluator: new RemoteEvaluator(sandboxIFrameId, sandbox),
-            rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
-            validator: new RemoteValidator(sandboxIFrameId, sandbox),
-            fetcher,
-            formShower,
-          }),
-      });
+      return makeIsomorphicConfigEval((debug) =>
+        createOperatorResolver({
+          debug,
+          logger,
+          evaluator: new RemoteEvaluator(sandboxIFrameId, sandbox),
+          rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
+          validator: new RemoteValidator(sandboxIFrameId, sandbox),
+          fetcher,
+          formShower,
+        })
+      );
     }
   ),
 ] as const);

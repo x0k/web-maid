@@ -88,19 +88,17 @@ export function Config() {
   const formShower = useFormShower(rootFactory, formDataValidator);
   const evalConfig = useMemo(
     () =>
-      makeIsomorphicConfigEval({
-        Create(debug) {
-          return createOperatorResolver({
-            debug,
-            evaluator: new RemoteEvaluator(sandboxIFrameId, sandbox),
-            rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
-            validator: new RemoteValidator(sandboxIFrameId, sandbox),
-            fetcher,
-            logger,
-            formShower,
-          });
-        },
-      }),
+      makeIsomorphicConfigEval((debug) =>
+        createOperatorResolver({
+          debug,
+          evaluator: new RemoteEvaluator(sandboxIFrameId, sandbox),
+          rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
+          validator: new RemoteValidator(sandboxIFrameId, sandbox),
+          fetcher,
+          logger,
+          formShower,
+        })
+      ),
     [sandbox, logger, formShower]
   );
   const [debug, setDebug] = useState(true);

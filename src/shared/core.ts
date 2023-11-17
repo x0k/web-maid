@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { isObject } from "@/lib/guards";
 import { evalConfig } from "@/shared/config/eval";
-import { Factory } from "@/lib/factory";
+import { FactoryFn } from "@/lib/factory";
 
 import rawConfig from "./config.yml?raw";
 import { injectedConfigEval } from "./injected-config-eval";
@@ -101,7 +101,7 @@ export async function evalConfigInTab(
   contextId: string,
   config: string,
   secrets: string,
-  debug: boolean,
+  debug: boolean
 ): Promise<unknown> {
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
@@ -119,7 +119,7 @@ export async function evalConfigInTab(
 }
 
 export function makeIsomorphicConfigEval(
-  operatorResolverFactory: Factory<boolean, (value: unknown) => unknown>
+  operatorResolverFactory: FactoryFn<boolean, (value: unknown) => unknown>
 ) {
   return async (
     contextId: string,
@@ -133,7 +133,7 @@ export function makeIsomorphicConfigEval(
       : evalConfig({
           config,
           secrets,
-          operatorResolver: operatorResolverFactory.Create(debug),
+          operatorResolver: operatorResolverFactory(debug),
         });
   };
 }
