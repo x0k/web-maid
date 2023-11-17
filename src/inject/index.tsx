@@ -1,18 +1,12 @@
-import { nanoid } from "nanoid";
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
 import { stringifyError } from "@/lib/error";
-import {
-  IRemoteActor,
-  makeActorLogic,
-  makeRemoteActorLogic,
-} from "@/lib/actor";
-import { ContextActor, ContextRemoteActor } from "@/lib/actors/context";
+import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
+import { ContextRemoteActor } from "@/lib/actors/context";
 import { prepareForSerialization } from "@/lib/serialization";
-import { noop } from "@/lib/function/function";
 
 import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
 import {
@@ -28,24 +22,10 @@ import {
 } from "@/shared/remote-impl";
 import {
   RemoteEvaluator,
-  RemoteFormDataValidator,
   RemoteRenderer,
   RemoteValidator,
 } from "@/shared/sandbox/remote-impl";
-import { RemoteFetcher as BackgroundRemoteFetcher } from "@/shared/background/remote-impl";
-import { makeIsomorphicConfigEval } from "@/shared/core";
-import { FormShower } from "@/shared/form-shower";
-import { ReactRootFactory } from "@/shared/react-root-factory";
-import {
-  BackgroundAction,
-  BackgroundActionResults,
-} from "@/shared/background/action";
-import { BACKGROUND_ACTOR_ID } from "@/shared/background/core";
-import {
-  TabAction,
-  TabActionResults,
-  TabActionType,
-} from "@/shared/tab/action";
+import { evalConfig } from "@/shared/config/eval";
 
 import { sandboxIFrameId } from "./constants";
 import { Popup } from "./popup";
@@ -56,21 +36,6 @@ const messageSender = {
     return chrome.runtime.sendMessage(prepareForSerialization(msg));
   },
 };
-
-const tab = new ContextActor<TabAction, TabActionResults, string>(
-  nanoid(),
-  makeActorLogic(
-    {
-      [TabActionType.RunConfig]: () => {
-        console.log("run config");
-      },
-    },
-    noop,
-    stringifyError
-  ),
-  messageSender
-);
-
 const remoteLogic = makeRemoteActorLogic(stringifyError);
 
 const extension = new ContextRemoteActor<
@@ -79,73 +44,50 @@ const extension = new ContextRemoteActor<
   string
 >(remoteLogic, messageSender);
 
-const background = new ContextRemoteActor<
-  BackgroundAction,
-  BackgroundActionResults,
-  string
->(remoteLogic, messageSender);
-
 interface InjectedConfigEvalOptions {
   config: string;
   secrets: string;
   debug: boolean;
-  contextId?: string;
+  contextId: string;
 }
 
 function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
+  sandbox.start();
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.top = "10px";
+  container.style.right = "25px";
+  container.style.zIndex = "9999999";
+  renderInShadowDom(container, <Popup sandbox={sandbox} />);
+  document.body.append(container);
+  // For tests
   const evaluator = new RemoteEvaluator(sandboxIFrameId, sandbox);
   const rendered = new RemoteRenderer(sandboxIFrameId, sandbox);
   const validator = new RemoteValidator(sandboxIFrameId, sandbox);
-
-  const formShowerRoot = document.createElement("div");
-  const formShower = new FormShower(
-    new ReactRootFactory({ current: formShowerRoot }),
-    new RemoteFormDataValidator(sandboxIFrameId, sandbox)
-  );
-  const fetcher = new BackgroundRemoteFetcher(BACKGROUND_ACTOR_ID, background);
-
   const INJECTED = {
     evalConfig: ({
       config,
       contextId,
       debug,
       secrets,
-    }: InjectedConfigEvalOptions) => {
-      const evalConfig = makeIsomorphicConfigEval((debug) =>
-        createOperatorResolver({
+    }: InjectedConfigEvalOptions) =>
+      evalConfig({
+        config,
+        secrets,
+        operatorResolver: createOperatorResolver({
           debug,
           evaluator,
           rendered,
           validator,
-          ...(contextId
-            ? {
-                formShower: new RemoteFormShower(contextId, extension),
-                fetcher: new RemoteFetcher(contextId, extension),
-                logger: new RemoteLogger(contextId, extension),
-              }
-            : {
-                formShower,
-                fetcher,
-                logger: console,
-              }),
-        })
-      );
-      return evalConfig(debug, config, secrets, contextId);
-    },
+          formShower: new RemoteFormShower(contextId, extension),
+          fetcher: new RemoteFetcher(contextId, extension),
+          logger: new RemoteLogger(contextId, extension),
+        }),
+      }),
     stringifyError,
   };
   window.__SCRAPER_EXTENSION__ = INJECTED;
-  sandbox.start();
   extension.start();
-  background.start();
-  tab.start();
-  const container = document.createElement("div");
-  container.style.position = "fixed";
-  container.style.top = "10px";
-  container.style.right = "25px";
-  container.style.zIndex = "9999999";
-  renderInShadowDom(container, <Popup />);
-  document.body.append(container);
   return INJECTED;
 }
 

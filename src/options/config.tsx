@@ -31,11 +31,7 @@ import {
   loadLocalSettings,
   saveLocalSettings,
 } from "@/shared/core";
-import {
-  useContextActor,
-  useExtensionActorLogic,
-  useFormShower,
-} from "@/shared/react-hooks";
+import { useContextActor, useExtensionActorLogic } from "@/shared/react-hooks";
 import { Fetcher } from "@/shared/fetcher";
 import {
   RemoteEvaluator,
@@ -43,6 +39,7 @@ import {
   RemoteValidator,
 } from "@/shared/sandbox/remote-impl";
 import { useRootFactory } from "@/shared/react-root-factory";
+import { useFormShower } from "@/shared/react-form-shower";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
@@ -82,10 +79,9 @@ export function Config() {
   const sandbox = useSandbox();
   const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
   const logger = useMonacoLogger(logsEditorRef);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const rootFactory = useRootFactory(rootRef);
+  const [rootFactoryRef, children] = useRootFactory()
   const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
-  const formShower = useFormShower(rootFactory, formDataValidator);
+  const formShower = useFormShower(rootFactoryRef.current, formDataValidator);
   const evalConfig = useMemo(
     () =>
       makeIsomorphicConfigEval((debug) =>
@@ -313,7 +309,7 @@ export function Config() {
         {evalRunner.isMutating && (
           <LinearProgress style={{ marginBottom: 16 }} />
         )}
-        <div ref={rootRef} />
+        {children}
         {evalRunner.error && <ErrorAlert error={evalRunner.error} />}
         {evalRunner.isMutating ||
         evalRunner.data !== undefined ||

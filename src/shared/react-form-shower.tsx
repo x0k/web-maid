@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Root } from "react-dom/client";
 import { Box, Button } from "@mui/material";
 import { IChangeEvent } from "@rjsf/core";
@@ -7,7 +8,7 @@ import { AsyncFactory, Factory } from "@/lib/factory";
 import { ShowFormData } from "@/lib/operators/json-schema";
 import { Form, FormDataValidatorData } from "@/components/form";
 
-export class FormShower implements AsyncFactory<ShowFormData, unknown> {
+export class ReactFormShower implements AsyncFactory<ShowFormData, unknown> {
   constructor(
     private readonly rootFactory: Factory<void, Root>,
     private readonly asyncValidator: AsyncFactory<
@@ -73,3 +74,17 @@ export class FormShower implements AsyncFactory<ShowFormData, unknown> {
     }
   }
 }
+
+export function useFormShower(
+  rootFactory: Factory<void, Root>,
+  asyncValidator: AsyncFactory<
+    FormDataValidatorData<unknown>,
+    ValidationData<unknown>
+  >
+): AsyncFactory<ShowFormData, unknown> {
+  return useMemo(
+    () => new ReactFormShower(rootFactory, asyncValidator),
+    [rootFactory, asyncValidator]
+  );
+}
+
