@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid/non-secure";
 
-import { ActorId, IRemoteActor } from "@/lib/actor";
+import { ActorId, IRemoteActor, MessageType } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";
 import { ShowFormData } from "@/lib/operators/json-schema";
 import { FetcherData } from "@/lib/operators/http";
@@ -24,11 +24,14 @@ export class RemoteFormShower implements AsyncFactory<ShowFormData, unknown> {
     return this.actor.call({
       handlerId: this.handlerId,
       id: nanoid(),
-      type: ExtensionActionType.ShowFrom,
-      schema: config.schema,
-      uiSchema: config.uiSchema,
-      data: config.data,
-      omitExtraData: config.omitExtraData,
+      type: MessageType.Request,
+      request: {
+        type: ExtensionActionType.ShowFrom,
+        schema: config.schema,
+        uiSchema: config.uiSchema,
+        data: config.data,
+        omitExtraData: config.omitExtraData,
+      },
     });
   }
 }
@@ -46,8 +49,11 @@ export class RemoteLogger implements ILogger {
     this.actor.call({
       id: nanoid(),
       handlerId: this.handlerId,
-      type: ExtensionActionType.AppendLog,
-      log: arg,
+      type: MessageType.Request,
+      request: {
+        type: ExtensionActionType.AppendLog,
+        log: arg,
+      },
     });
   }
 }
@@ -64,12 +70,15 @@ export class RemoteFetcher implements AsyncFactory<FetcherData, unknown> {
     return this.actor.call({
       handlerId: this.handlerId,
       id: nanoid(),
-      type: ExtensionActionType.MakeRequest,
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-      body: config.body,
-      as: config.as,
+      type: MessageType.Request,
+      request: {
+        type: ExtensionActionType.MakeRequest,
+        url: config.url,
+        method: config.method,
+        headers: config.headers,
+        body: config.body,
+        as: config.as,
+      },
     });
   }
 }

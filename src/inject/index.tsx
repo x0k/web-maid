@@ -5,7 +5,7 @@ import "@fontsource/roboto/700.css";
 
 import { stringifyError } from "@/lib/error";
 import { IRemoteActor, makeRemoteActorLogic } from "@/lib/actor";
-import { ContextRemoteActor } from "@/lib/actors/context";
+import { ContextActor, ContextRemoteActor } from "@/lib/actors/context";
 import { prepareForSerialization } from "@/lib/serialization";
 
 import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
@@ -13,7 +13,6 @@ import {
   createAndMountIFrame,
   connectToSandbox,
 } from "@/shared/sandbox/connect";
-import { evalConfig } from "@/shared/config/eval";
 import { createOperatorResolver } from "@/shared/config/create";
 import { ExtensionAction, ExtensionActionResults } from "@/shared/action";
 import {
@@ -23,35 +22,67 @@ import {
 } from "@/shared/remote-impl";
 import {
   RemoteEvaluator,
+  RemoteFormDataValidator,
   RemoteRenderer,
   RemoteValidator,
 } from "@/shared/sandbox/remote-impl";
+import { RemoteFetcher as BackgroundRemoteFetcher } from "@/shared/background/remote-impl";
+import { makeIsomorphicConfigEval } from "@/shared/core";
+import { FormShower } from "@/shared/form-shower";
+import { ReactRootFactory } from "@/shared/react-root-factory";
+import {
+  BackgroundAction,
+  BackgroundActionResults,
+} from "@/shared/background/action";
+import { BACKGROUND_ACTOR_ID } from "@/shared/background/core";
+// import { TabAction, TabActionResults } from '@/shared/tab/action';
 
-import { iFrameId } from "./constants";
+import { sandboxIFrameId } from "./constants";
 import { Popup } from "./popup";
 import { renderInShadowDom } from "./shadow-dom";
+
+// const tab = new ContextActor<TabAction, TabActionResults, string>(
+
+// )
+
+const remoteLogic = makeRemoteActorLogic(stringifyError);
+const messageSender = {
+  sendMessage(msg: unknown) {
+    return chrome.runtime.sendMessage(prepareForSerialization(msg));
+  },
+};
 
 const extension = new ContextRemoteActor<
   ExtensionAction,
   ExtensionActionResults,
   string
->(makeRemoteActorLogic(stringifyError), {
-  sendMessage(msg) {
-    return chrome.runtime.sendMessage(prepareForSerialization(msg));
-  },
-});
+>(remoteLogic, messageSender);
+
+const background = new ContextRemoteActor<
+  BackgroundAction,
+  BackgroundActionResults,
+  string
+>(remoteLogic, messageSender);
 
 interface InjectedConfigEvalOptions {
   config: string;
   secrets: string;
   debug: boolean;
-  contextId: string;
+  contextId?: string;
 }
 
 function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
-  const evaluator = new RemoteEvaluator(iFrameId, sandbox);
-  const rendered = new RemoteRenderer(iFrameId, sandbox);
-  const validator = new RemoteValidator(iFrameId, sandbox);
+  const evaluator = new RemoteEvaluator(sandboxIFrameId, sandbox);
+  const rendered = new RemoteRenderer(sandboxIFrameId, sandbox);
+  const validator = new RemoteValidator(sandboxIFrameId, sandbox);
+
+  const formShowerRoot = document.createElement("div");
+  const formShower = new FormShower(
+    new ReactRootFactory({ current: formShowerRoot }),
+    new RemoteFormDataValidator(sandboxIFrameId, sandbox)
+  );
+  const fetcher = new BackgroundRemoteFetcher(BACKGROUND_ACTOR_ID, background);
+
   const INJECTED = {
     evalConfig: ({
       config,
@@ -59,20 +90,26 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
       debug,
       secrets,
     }: InjectedConfigEvalOptions) => {
-      const operatorResolver = createOperatorResolver({
-        debug,
-        evaluator,
-        rendered,
-        validator,
-        formShower: new RemoteFormShower(contextId, extension),
-        fetcher: new RemoteFetcher(contextId, extension),
-        logger: new RemoteLogger(contextId, extension),
-      });
-      return evalConfig({
-        config,
-        secrets,
-        operatorResolver: operatorResolver,
-      });
+      const evalConfig = makeIsomorphicConfigEval((debug) =>
+        createOperatorResolver({
+          debug,
+          evaluator,
+          rendered,
+          validator,
+          ...(contextId
+            ? {
+                formShower: new RemoteFormShower(contextId, extension),
+                fetcher: new RemoteFetcher(contextId, extension),
+                logger: new RemoteLogger(contextId, extension),
+              }
+            : {
+                formShower,
+                fetcher,
+                logger: console,
+              }),
+        })
+      );
+      return evalConfig(debug, config, secrets, contextId);
     },
     stringifyError,
   };
@@ -91,4 +128,6 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
 
 export type Injected = ReturnType<typeof inject>;
 
-connectToSandbox("sandbox.html", createAndMountIFrame(iFrameId)).then(inject);
+connectToSandbox("sandbox.html", createAndMountIFrame(sandboxIFrameId)).then(
+  inject
+);

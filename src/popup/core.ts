@@ -17,5 +17,5 @@ export type InitData = [
 
 export function makeConfigEval(debug: boolean) {
   return ([tab, sync, local, evalConfig]: InitData) =>
-    evalConfig(contextId, debug, sync.config, local.secrets, tab?.id);
+    evalConfig(debug, sync.config, local.secrets, contextId, tab?.id);
 }

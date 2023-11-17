@@ -39,7 +39,12 @@ export function useExtensionActorLogic(
 
 export function useContextActor(
   contextId: string,
-  actorLogic: IActorLogic<ExtensionAction, ExtensionActionResults, string>
+  actorLogic: IActorLogic<
+    ExtensionAction,
+    ExtensionActionResults,
+    string,
+    chrome.runtime.MessageSender
+  >
 ) {
   return useMemo(
     () => makeExtensionActor(contextId, actorLogic),

@@ -1,13 +1,17 @@
-import { FormDataValidatorData } from '@/components/form';
-import { ActorId, IRemoteActor } from '@/lib/actor';
-import { AsyncFactory } from '@/lib/factory';
-import { ValidationData } from '@rjsf/utils';
-import { nanoid } from 'nanoid';
+import { FormDataValidatorData } from "@/components/form";
+import { ActorId, IRemoteActor, MessageType } from "@/lib/actor";
+import { AsyncFactory } from "@/lib/factory";
+import { ValidationData } from "@rjsf/utils";
+import { nanoid } from "nanoid";
 
-import { TemplateRendererData } from '@/lib/operators/template';
-import { AsyncValidatorData } from '@/lib/operators/json-schema';
+import { TemplateRendererData } from "@/lib/operators/template";
+import { AsyncValidatorData } from "@/lib/operators/json-schema";
 
-import { SandboxAction, SandboxActionResults, SandboxActionType } from './action';
+import {
+  SandboxAction,
+  SandboxActionResults,
+  SandboxActionType,
+} from "./action";
 
 export class RemoteEvaluator implements AsyncFactory<string, unknown> {
   constructor(
@@ -18,8 +22,11 @@ export class RemoteEvaluator implements AsyncFactory<string, unknown> {
     return this.actor.call({
       handlerId: this.handlerId,
       id: nanoid(),
-      type: SandboxActionType.RunEval,
-      expression,
+      type: MessageType.Request,
+      request: {
+        type: SandboxActionType.RunEval,
+        expression,
+      },
     });
   }
 }
@@ -35,9 +42,12 @@ export class RemoteRenderer
     return this.actor.call({
       handlerId: this.handlerId,
       id: nanoid(),
-      type: SandboxActionType.RenderTemplate,
-      template: config.template,
-      data: config.data,
+      type: MessageType.Request,
+      request: {
+        type: SandboxActionType.RenderTemplate,
+        template: config.template,
+        data: config.data,
+      },
     });
   }
 }
@@ -53,9 +63,12 @@ export class RemoteValidator
     return this.actor.call({
       handlerId: this.handlerId,
       id: nanoid(),
-      type: SandboxActionType.Validate,
-      schema: config.schema,
-      data: config.data,
+      type: MessageType.Request,
+      request: {
+        type: SandboxActionType.Validate,
+        schema: config.schema,
+        data: config.data,
+      },
     });
   }
 }
@@ -75,10 +88,13 @@ export class RemoteFormDataValidator<T>
     return this.actor.call({
       handlerId: this.handlerId,
       id: nanoid(),
-      type: SandboxActionType.ValidateFormData,
-      formData: config.formData,
-      schema: config.schema,
-      uiSchema: config.uiSchema,
+      type: MessageType.Request,
+      request: {
+        type: SandboxActionType.ValidateFormData,
+        formData: config.formData,
+        schema: config.schema,
+        uiSchema: config.uiSchema,
+      },
     });
   }
 }

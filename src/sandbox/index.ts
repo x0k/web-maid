@@ -4,6 +4,7 @@ import Ajv from "ajv";
 
 import { SandboxActor } from "@/lib/actors/sandbox";
 import { stringifyError } from "@/lib/error";
+import { noop } from '@/lib/function/function';
 
 import {
   SandboxAction,
@@ -49,6 +50,7 @@ if (frameId) {
             uiSchema
           ),
       },
+      noop,
       stringifyError
     )
   );

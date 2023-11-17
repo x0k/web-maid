@@ -20,7 +20,7 @@ export function makeExtensionActorLogic(
   logger: ILogger,
   fetcher: AsyncFactory<FetcherData, unknown>
 ) {
-  return makeActorLogic<ExtensionAction, ExtensionActionResults, string>(
+  return makeActorLogic<ExtensionAction, ExtensionActionResults, string, chrome.runtime.MessageSender>(
     {
       [ExtensionActionType.AppendLog]: ({ log }) => {
         logger.log(log);
@@ -28,13 +28,14 @@ export function makeExtensionActorLogic(
       [ExtensionActionType.ShowFrom]: formShower.Create.bind(formShower),
       [ExtensionActionType.MakeRequest]: fetcher.Create.bind(fetcher),
     },
+    noop,
     stringifyError
   );
 }
 
 export function makeExtensionActor(
   contextId: string,
-  actorLogic: IActorLogic<ExtensionAction, ExtensionActionResults, string>
+  actorLogic: IActorLogic<ExtensionAction, ExtensionActionResults, string, chrome.runtime.MessageSender>
 ) {
   return new ContextActor(contextId, actorLogic, {
     async sendMessage(message, tabId) {

@@ -6,19 +6,20 @@ import {
   AbstractActor,
   ResponseMessage,
   IRemoteActorLogic,
+  RequestMessage,
 } from "@/lib/actor";
 
 export class SandboxActor<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
   E
-> extends AbstractActor<I, R, E> {
+> extends AbstractActor<I, R, E, MessageEventSource> {
   protected broadcast(msg: ActorMessage<I, R, E>) {
     window.parent.postMessage(msg, "*");
   }
 
   private makeReply<T extends I["type"]>(
-    event: MessageEvent<Extract<I, Request<T>>>
+    event: MessageEvent<ActorMessage<Extract<I, Request<T>>, R, E>>
   ) {
     return (response: ResponseMessage<Extract<I, Request<T>>, R, E>) => {
       (event.source as WindowProxy).postMessage(response, event.origin);
@@ -26,10 +27,14 @@ export class SandboxActor<
   }
 
   private handleMessageEvent = <T extends I["type"]>(
-    event: MessageEvent<Extract<I, Request<T>>>
+    event: MessageEvent<ActorMessage<Extract<I, Request<T>>, R, E>>
   ) => {
-    //@ts-expect-error TODO: fix types
-    this.handleRequest(event.data, this.makeReply(event));
+    this.handleActorMessage(
+      event.data,
+      event.source as MessageEventSource,
+      // @ts-expect-error TODO fix type error
+      this.makeReply(event)
+    );
   };
 
   protected listen() {
@@ -47,7 +52,7 @@ export class SandboxRemoteActor<
   E
 > extends AbstractRemoteActor<I, R, E> {
   protected sendRequest<T extends I["type"]>(
-    req: Extract<I, Request<T>>
+    req: RequestMessage<Extract<I, Request<T>>>
   ): void {
     const cw = this.sandbox.contentWindow;
     if (!cw) {

@@ -122,13 +122,13 @@ export function makeIsomorphicConfigEval(
   operatorResolverFactory: FactoryFn<boolean, (value: unknown) => unknown>
 ) {
   return async (
-    contextId: string,
     debug: boolean,
     config: string,
     secrets: string,
+    contextId?: string,
     tabId?: number
   ) => {
-    return tabId
+    return tabId && contextId
       ? evalConfigInTab(tabId, contextId, config, secrets, debug)
       : evalConfig({
           config,

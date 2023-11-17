@@ -108,7 +108,7 @@ export function Config() {
     (
       [debug, tab],
       { arg: { config, secrets } }: { arg: { config: string; secrets: string } }
-    ) => evalConfig(contextId, debug, config, secrets, tab?.id),
+    ) => evalConfig(debug, config, secrets, contextId, tab?.id),
     {
       onSuccess(result) {
         logger.log({ success: result });
