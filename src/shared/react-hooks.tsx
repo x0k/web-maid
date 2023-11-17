@@ -1,4 +1,4 @@
-import { RefObject, useMemo } from "react";
+import { useMemo } from "react";
 import { Root } from "react-dom/client";
 import { ValidationData } from "@rjsf/utils";
 
@@ -6,19 +6,12 @@ import { AsyncFactory, Factory } from "@/lib/factory";
 import { IActorLogic } from "@/lib/actor";
 import { ShowFormData } from "@/lib/operators/json-schema";
 import { ILogger } from "@/lib/logger";
-import { FormDataValidatorData } from "@/components/form";
 import { FetcherData } from "@/lib/operators/http";
+import { FormDataValidatorData } from "@/components/form";
 
 import { ExtensionAction, ExtensionActionResults } from "./action";
-import { RootFactory } from "./root-factory";
 import { FormShower } from "./form-shower";
 import { makeExtensionActor, makeExtensionActorLogic } from "./actor";
-
-export function useRootFactory<E extends HTMLElement>(
-  rootRef: RefObject<E>
-): Factory<void, Root> {
-  return useMemo(() => new RootFactory(rootRef), []);
-}
 
 export function useFormShower(
   rootFactory: Factory<void, Root>,

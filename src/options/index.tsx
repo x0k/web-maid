@@ -4,7 +4,7 @@ import { SnackbarProvider } from "notistack";
 import { CssBaseline } from "@mui/material";
 
 import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
-import { SandboxContext } from "@/shared/sandbox/react";
+import { SandboxContext } from "@/shared/sandbox/react-hooks";
 import { ErrorAlert } from "@/components/error-alert";
 
 import { sandboxIFrameId } from "./constants";

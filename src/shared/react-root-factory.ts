@@ -1,4 +1,4 @@
-import { RefObject, ReactNode } from "react";
+import { RefObject, ReactNode, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { Root } from "react-dom/client";
 
@@ -21,7 +21,7 @@ export class RootWrapper implements Root {
   }
 }
 
-export class RootFactory<E extends HTMLElement> implements Factory<void, Root> {
+export class ReactRootFactory<E extends HTMLElement> implements Factory<void, Root> {
   constructor(private readonly rootRef: RefObject<E>) {}
 
   Create(): Root {
@@ -33,4 +33,10 @@ export class RootFactory<E extends HTMLElement> implements Factory<void, Root> {
     root.appendChild(tmpElement);
     return new RootWrapper(tmpElement);
   }
+}
+
+export function useRootFactory<E extends HTMLElement>(
+  rootRef: RefObject<E>
+): Factory<void, Root> {
+  return useMemo(() => new ReactRootFactory(rootRef), []);
 }

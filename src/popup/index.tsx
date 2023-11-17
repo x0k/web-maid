@@ -2,11 +2,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { CssBaseline } from "@mui/material";
 
-import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
 import { IRemoteActor } from "@/lib/actor";
-import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
 import { noop } from "@/lib/function/function";
 
+import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
+import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";
 import {
   getCurrentTab,
   loadLocalSettings,
@@ -15,13 +15,13 @@ import {
 } from "@/shared/core";
 import { makeExtensionActor, makeExtensionActorLogic } from "@/shared/actor";
 import { FormShower } from "@/shared/form-shower";
-import { RootFactory } from "@/shared/root-factory";
+import { ReactRootFactory } from "@/shared/react-root-factory";
 import { Fetcher } from "@/shared/fetcher";
-import { RemoteFormDataValidator } from '@/shared/sandbox/remote-impl';
+import { RemoteFormDataValidator } from "@/shared/sandbox/remote-impl";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { Popup } from "./popup";
-``
+
 function createActor(
   sandbox: IRemoteActor<SandboxAction, SandboxActionResults>
 ) {
@@ -33,7 +33,7 @@ function createActor(
     contextId,
     makeExtensionActorLogic(
       new FormShower(
-        new RootFactory({ current: formShowerRoot }),
+        new ReactRootFactory({ current: formShowerRoot }),
         new RemoteFormDataValidator(sandboxIFrameId, sandbox)
       ),
       { log: noop },
