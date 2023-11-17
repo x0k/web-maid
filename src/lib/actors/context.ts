@@ -8,6 +8,7 @@ import {
   IRemoteActorLogic,
   ActorMessage,
   AbstractRemoteActor,
+  RequestMessage,
 } from "@/lib/actor";
 
 export interface IContextActorMessageSender<
@@ -24,19 +25,17 @@ export interface IContextActorMessageSender<
 export class ContextActor<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
-  E
-> extends AbstractActor<I, R, E> {
+  E,
+> extends AbstractActor<I, R, E, chrome.runtime.MessageSender> {
   protected broadcast(msg: LoadedMessage): void {
     this.sender.sendMessage(msg);
   }
 
   private handleMessage = <T extends I["type"]>(
-    req: Extract<I, Request<T>>,
+    req: ActorMessage<Extract<I, Request<T>>, R, E>,
     sender: chrome.runtime.MessageSender
-    // sendResponse: (data: ResponseMessage<Extract<I, Request<T>>, R, E>) => void
   ) => {
-    // I haven't figured out why `sendResponse` doesn't work
-    this.handleRequest(req, (response) => {
+    this.handleActorMessage(req, sender, (response) => {
       this.sender.sendMessage(response, sender.tab?.id);
     });
   };
@@ -47,7 +46,7 @@ export class ContextActor<
 
   constructor(
     id: ActorId,
-    logic: IActorLogic<I, R, E>,
+    logic: IActorLogic<I, R, E, chrome.runtime.MessageSender>,
     protected readonly sender: IContextActorMessageSender<I, R, E>
   ) {
     super(id, logic);
@@ -64,7 +63,7 @@ export interface IContextRequestSender<
   E
 > {
   sendMessage<T extends I["type"]>(
-    message: Extract<I, Request<T>>
+    message: RequestMessage<Extract<I, Request<T>>>
   ): Promise<ResponseMessage<Extract<I, Request<T>>, R, E>>;
 }
 
@@ -74,7 +73,7 @@ export class ContextRemoteActor<
   E
 > extends AbstractRemoteActor<I, R, E> {
   protected sendRequest<T extends I["type"]>(
-    req: Extract<I, Request<T>>
+    req: RequestMessage<Extract<I, Request<T>>>
   ): void {
     this.sender.sendMessage(req);
   }

@@ -3,7 +3,7 @@ import makeUrlRegExp from "url-regex-safe";
 import { makeOptionFlow } from "@/lib/function/option-flow";
 import { makeTryForEach } from "@/lib/function/try-for-each";
 import { isNull } from "@/lib/guards";
-import { fallbacksWithDefault } from '@/lib/function/fallback';
+import { fallbackToDefault } from '@/lib/function/fallback';
 import { identity } from '@/lib/function/function';
 
 export type Transform<T, R> = (value: T) => R | null;
@@ -12,8 +12,8 @@ export const flow = makeOptionFlow(isNull);
 
 export const tryForEach = makeTryForEach(isNull, null);
 
-export const fallbacksWithIdentity = <T, R>(...transformers: Transform<T, R>[]) =>
-  fallbacksWithDefault<[T], R | T | null>(null, ...transformers, identity);
+export const fallbackToIdentity = <T, R>(...transformers: Transform<T, R>[]) =>
+  fallbackToDefault<[T], R | T | null>(null, ...transformers, identity);
 
 export const URL_REGEX = makeUrlRegExp({
   parens: true,

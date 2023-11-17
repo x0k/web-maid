@@ -4,12 +4,13 @@ import Ajv from "ajv";
 
 import { SandboxActor } from "@/lib/actors/sandbox";
 import { stringifyError } from "@/lib/error";
+import { noop } from '@/lib/function/function';
 
 import {
   SandboxAction,
   SandboxActionResults,
   SandboxActionType,
-} from "@/lib/sandbox/action";
+} from "@/shared/sandbox/action";
 import { makeActorLogic } from "@/lib/actor";
 
 const ajv = new Ajv();
@@ -49,6 +50,7 @@ if (frameId) {
             uiSchema
           ),
       },
+      noop,
       stringifyError
     )
   );

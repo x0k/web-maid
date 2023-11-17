@@ -1,7 +1,7 @@
 import Mustache from "mustache";
 import { Validator } from "@cfworker/json-schema";
 
-import type { IRemoteActor, Request } from "@/lib/actor";
+import type { IRemoteActor, Request, RequestMessage } from "@/lib/actor";
 import { identity } from "@/lib/function/function";
 
 import {
@@ -29,10 +29,12 @@ const handlers: {
 export class DevSandbox<T>
   implements IRemoteActor<SandboxAction<T>, SandboxActionResults<T>>
 {
-  async call<A extends SandboxActionType>(
-    msg: Extract<SandboxAction<T>, Request<A>>
-  ): Promise<SandboxActionResults<T>[A]> {
-    return handlers[msg.type](msg as never);
+  async call<A extends SandboxActionType>({
+    request,
+  }: RequestMessage<Extract<SandboxAction<T>, Request<A>>>): Promise<
+    SandboxActionResults<T>[A]
+  > {
+    return handlers[request.type](request as never);
   }
   start(): void {
     console.log("Starting dev sandbox");

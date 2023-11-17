@@ -14,12 +14,12 @@ import useSWR from "swr";
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
-import { useFormDataValidator, useSandbox } from "@/lib/sandbox/react";
-import { createOperatorResolver } from "@/lib/config/create";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 import { Row } from "@/components/row";
 
+import { useFormDataValidator, useSandbox } from "@/shared/sandbox/react-hooks";
+import { createOperatorResolver } from "@/shared/config/create";
 import {
   Tab,
   getAllTabs,
@@ -31,18 +31,15 @@ import {
   loadLocalSettings,
   saveLocalSettings,
 } from "@/shared/core";
-import {
-  useContextActor,
-  useExtensionActorLogic,
-  useFormShower,
-  useRootFactory,
-} from "@/shared/react";
+import { useContextActor, useExtensionActorLogic } from "@/shared/react-hooks";
 import { Fetcher } from "@/shared/fetcher";
 import {
   RemoteEvaluator,
   RemoteRenderer,
   RemoteValidator,
-} from "@/shared/remote-impl";
+} from "@/shared/sandbox/remote-impl";
+import { useRootFactory } from "@/shared/react-root-factory";
+import { useFormShower } from "@/shared/react-form-shower";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
@@ -82,25 +79,22 @@ export function Config() {
   const sandbox = useSandbox();
   const logsEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
   const logger = useMonacoLogger(logsEditorRef);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const rootFactory = useRootFactory(rootRef);
+  const [rootFactoryRef, children, clearRoot] = useRootFactory();
   const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
-  const formShower = useFormShower(rootFactory, formDataValidator);
+  const formShower = useFormShower(rootFactoryRef.current, formDataValidator);
   const evalConfig = useMemo(
     () =>
-      makeIsomorphicConfigEval({
-        Create(debug) {
-          return createOperatorResolver({
-            debug,
-            evaluator: new RemoteEvaluator(sandboxIFrameId, sandbox),
-            rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
-            validator: new RemoteValidator(sandboxIFrameId, sandbox),
-            fetcher,
-            logger,
-            formShower,
-          });
-        },
-      }),
+      makeIsomorphicConfigEval((debug) =>
+        createOperatorResolver({
+          debug,
+          evaluator: new RemoteEvaluator(sandboxIFrameId, sandbox),
+          rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
+          validator: new RemoteValidator(sandboxIFrameId, sandbox),
+          fetcher,
+          logger,
+          formShower,
+        })
+      ),
     [sandbox, logger, formShower]
   );
   const [debug, setDebug] = useState(true);
@@ -110,7 +104,7 @@ export function Config() {
     (
       [debug, tab],
       { arg: { config, secrets } }: { arg: { config: string; secrets: string } }
-    ) => evalConfig(contextId, debug, config, secrets, tab?.id),
+    ) => evalConfig(debug, config, secrets, contextId, tab?.id),
     {
       onSuccess(result) {
         logger.log({ success: result });
@@ -282,6 +276,7 @@ export function Config() {
               onClick={() => {
                 evalRunner.reset();
                 logsModel.setValue("");
+                clearRoot();
               }}
             >
               Reset
@@ -315,7 +310,7 @@ export function Config() {
         {evalRunner.isMutating && (
           <LinearProgress style={{ marginBottom: 16 }} />
         )}
-        <div ref={rootRef} />
+        {children}
         {evalRunner.error && <ErrorAlert error={evalRunner.error} />}
         {evalRunner.isMutating ||
         evalRunner.data !== undefined ||

@@ -1,13 +1,11 @@
 import { z } from "zod";
-import { parse, stringify } from "yaml";
 
-import { Json } from "@/lib/zod";
 import { isObject } from "@/lib/guards";
-import { evalConfig } from "@/lib/config/eval";
-import { Factory } from "@/lib/factory";
+import { evalConfig } from "@/shared/config/eval";
+import { FactoryFn } from "@/lib/factory";
 
 import rawConfig from "./config.yml?raw";
-import { removeConfigEval } from "./remote-eval";
+import { injectedConfigEval } from "./injected-config-eval";
 
 const localSettingsSchema = z.object({
   secrets: z.string(),
@@ -30,7 +28,7 @@ export interface SyncSettings {
 }
 
 const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
-  secrets: stringify({ token: "" }),
+  secrets: "token: secret",
 };
 
 const DEFAULT_SYNC_SETTINGS: z.infer<typeof syncSettingsSchema> = {
@@ -85,21 +83,29 @@ export async function getAllTabs(): Promise<Tab[]> {
   return chrome.tabs.query({}).then(tabsSchema.parse);
 }
 
+export async function getCurrentTab(): Promise<Tab | null> {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
+  return tab ? tabSchema.parse(tab) : null;
+}
+
 export interface ConfigRenderedData {
   configTemplate: string;
   configData: LocalSettings;
 }
 
-async function evalConfigInTab(
-  contextId: string,
-  debug: boolean,
-  config: string,
+export async function evalConfigInTab(
   tabId: number,
-  secrets: Json
+  contextId: string,
+  config: string,
+  secrets: string,
+  debug: boolean
 ): Promise<unknown> {
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
-    func: removeConfigEval,
+    func: injectedConfigEval,
     args: [contextId, config, secrets, debug],
   });
   if (
@@ -113,22 +119,21 @@ async function evalConfigInTab(
 }
 
 export function makeIsomorphicConfigEval(
-  operatorResolverFactory: Factory<boolean, (value: unknown) => unknown>
+  operatorResolverFactory: FactoryFn<boolean, (value: unknown) => unknown>
 ) {
   return async (
-    contextId: string,
     debug: boolean,
     config: string,
     secrets: string,
+    contextId?: string,
     tabId?: number
   ) => {
-    const secretsData = parse(secrets);
-    return tabId
-      ? evalConfigInTab(contextId, debug, config, tabId, secretsData)
+    return tabId && contextId
+      ? evalConfigInTab(tabId, contextId, config, secrets, debug)
       : evalConfig({
           config,
-          secrets: secretsData,
-          operatorResolver: operatorResolverFactory.Create(debug),
+          secrets,
+          operatorResolver: operatorResolverFactory(debug),
         });
   };
 }

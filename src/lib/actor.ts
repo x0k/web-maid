@@ -1,7 +1,10 @@
+import { neverError } from "./guards";
+
 export type ActorId = string;
 
 export enum MessageType {
   Loaded = "loaded",
+  Request = "request",
   Success = "success",
   Error = "error",
 }
@@ -15,27 +18,32 @@ export interface LoadedMessage extends AbstractMessage<MessageType.Loaded> {
 }
 
 export interface Request<T extends string> {
-  id: string;
-  handlerId: ActorId;
   type: T;
 }
 
-export interface AbstractResponseMessage<
-  I extends Request<string>,
-  T extends MessageType
-> extends AbstractMessage<T> {
-  requestId: I["id"];
+export type RequestMessageId = string;
+
+export interface RequestMessage<I extends Request<string>>
+  extends AbstractMessage<MessageType.Request> {
+  id: string;
+  handlerId: ActorId;
+  request: I;
+}
+
+export interface AbstractResponseMessage<T extends MessageType>
+  extends AbstractMessage<T> {
+  requestId: RequestMessageId;
 }
 
 export interface SuccessMessage<
   I extends Request<string>,
   R extends Record<I["type"], unknown>
-> extends AbstractResponseMessage<I, MessageType.Success> {
+> extends AbstractResponseMessage<MessageType.Success> {
   result: R[I["type"]];
 }
 
-export interface ErrorMessage<I extends Request<string>, E>
-  extends AbstractResponseMessage<I, MessageType.Error> {
+export interface ErrorMessage<E>
+  extends AbstractResponseMessage<MessageType.Error> {
   error: E;
 }
 
@@ -43,20 +51,26 @@ export type ResponseMessage<
   I extends Request<string>,
   R extends Record<string, unknown>,
   E
-> = SuccessMessage<I, R> | ErrorMessage<I, E>;
+> = SuccessMessage<I, R> | ErrorMessage<E>;
+
+export type InfoMessage = LoadedMessage;
 
 export type ActorMessage<
   I extends Request<string>,
   R extends Record<string, unknown>,
   E
-> = LoadedMessage | ResponseMessage<I, R, E>;
+> = InfoMessage | RequestMessage<I> | ResponseMessage<I, R, E>;
 
 export interface IActorLogic<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
-  E
+  E,
+  S
 > {
-  handle<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]>;
+  handleRequest<T extends I["type"]>(
+    msg: Extract<I, Request<T>>
+  ): Promise<R[T]>;
+  handleInfo(msg: InfoMessage, sender: S): void;
   castError(error: unknown): E;
 }
 
@@ -73,7 +87,9 @@ export interface IRemoteActor<
   I extends Request<string>,
   R extends Record<I["type"], unknown>
 > extends IActor {
-  call<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]>;
+  call<T extends I["type"]>(
+    msg: RequestMessage<Extract<I, Request<T>>>
+  ): Promise<R[T]>;
 }
 
 export function isResponseMessage<
@@ -87,15 +103,18 @@ export function isResponseMessage<
 export function makeActorLogic<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
-  E
+  E,
+  S
 >(
   handlers: { [K in I["type"]]: (msg: Extract<I, Request<K>>) => R[K] },
+  handleInfo: (msg: InfoMessage, sender: S) => void,
   castError: (e: unknown) => E
-): IActorLogic<I, R, E> {
+): IActorLogic<I, R, E, S> {
   return {
-    handle(msg) {
+    handleRequest(msg) {
       return Promise.resolve(handlers[msg.type](msg));
     },
+    handleInfo,
     castError,
   };
 }
@@ -116,42 +135,57 @@ type RequestResolver<
 export abstract class AbstractActor<
   I extends Request<string>,
   R extends Record<I["type"], unknown>,
-  E
+  E,
+  S
 > implements IActor
 {
   protected abstract listen(): void;
   protected abstract broadcast(msg: LoadedMessage): void;
 
-  protected async handleRequest<T extends I["type"]>(
-    req: Extract<I, Request<T>>,
+  protected async handleActorMessage<T extends I["type"]>(
+    msg: ActorMessage<Extract<I, Request<T>>, R, E>,
+    sender: S,
     reply: <T extends I["type"]>(
       response: ResponseMessage<Extract<I, Request<T>>, R, E>
     ) => void
   ) {
-    if (req.handlerId !== this.id) {
-      return;
-    }
-    try {
-      const result = await this.logic.handle(req);
-      if (result !== undefined) {
-        reply({
-          requestId: req.id,
-          type: MessageType.Success,
-          result,
-        });
+    switch (msg.type) {
+      case MessageType.Error:
+      case MessageType.Success:
+        break;
+      case MessageType.Request: {
+        if (msg.handlerId !== this.id) {
+          return;
+        }
+        try {
+          const result = await this.logic.handleRequest(msg.request);
+          if (result !== undefined) {
+            reply({
+              requestId: msg.id,
+              type: MessageType.Success,
+              result,
+            });
+          }
+        } catch (e) {
+          reply({
+            requestId: msg.id,
+            type: MessageType.Error,
+            error: this.logic.castError(e),
+          });
+        }
+        break;
       }
-    } catch (e) {
-      reply({
-        requestId: req.id,
-        type: MessageType.Error,
-        error: this.logic.castError(e),
-      });
+      case MessageType.Loaded:
+        this.logic.handleInfo(msg, sender);
+        break;
+      default:
+        throw neverError(msg, `Unknown message type: ${msg}`);
     }
   }
 
   constructor(
     protected readonly id: ActorId,
-    protected readonly logic: IActorLogic<I, R, E>
+    protected readonly logic: IActorLogic<I, R, E, S>
   ) {}
 
   start() {
@@ -169,11 +203,11 @@ export abstract class AbstractRemoteActor<
 > implements IRemoteActor<I, R>
 {
   protected abstract sendRequest<T extends I["type"]>(
-    req: Extract<I, Request<T>>
+    req: RequestMessage<Extract<I, Request<T>>>
   ): void;
 
   private readonly callbacks = new Map<
-    I["id"],
+    RequestMessageId,
     {
       resolve: RequestResolver<I, R>;
       reject: (reason: E) => void;
@@ -199,7 +233,9 @@ export abstract class AbstractRemoteActor<
 
   constructor(protected readonly logic: IRemoteActorLogic<E>) {}
 
-  async call<T extends I["type"]>(msg: Extract<I, Request<T>>): Promise<R[T]> {
+  async call<T extends I["type"]>(
+    msg: RequestMessage<Extract<I, Request<T>>>
+  ): Promise<R[T]> {
     const promise = new Promise<R[T]>((resolve, reject) => {
       if (this.callbacks.has(msg.id)) {
         reject(this.logic.castError(new Error("Duplicate request id")));

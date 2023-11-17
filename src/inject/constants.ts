@@ -1,1 +1,1 @@
-export const iFrameId = "sandbox";
+export const sandboxIFrameId = "sandbox";
