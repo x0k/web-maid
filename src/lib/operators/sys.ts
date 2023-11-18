@@ -23,6 +23,7 @@ export class DefineOpFactory extends FlowOpFactory<
   typeof defineConfig,
   unknown
 > {
+  name = "define";
   schema = defineConfig;
   protected create({
     constants,
@@ -59,6 +60,7 @@ const callConfig = z.object({
 });
 
 export class CallOpFactory extends FlowOpFactory<typeof callConfig, unknown> {
+  name = "call";
   schema = callConfig;
   protected create({ fn, arg }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
@@ -83,6 +85,7 @@ const getConfig = z.object({
 });
 
 export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
+  name = "get";
   schema = getConfig;
   protected create({
     key,
@@ -112,6 +115,7 @@ const execConfig = z.object({
 });
 
 export class ExecOpFactory extends FlowOpFactory<typeof execConfig, unknown> {
+  name = "exec";
   schema = execConfig;
 
   constructor(
@@ -152,6 +156,7 @@ const evalConfig = z.object({
 });
 
 export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
+  name = "eval";
   schema = evalConfig;
 
   constructor(private readonly operatorResolver: Factory<unknown, unknown>) {
@@ -172,6 +177,7 @@ export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
 const errorConfig = z.unknown();
 
 export class ErrorOpFactory extends FlowOpFactory<typeof errorConfig, unknown> {
+  name = "err";
   schema = errorConfig;
   protected create(): ScopedOp<unknown> {
     return (scope) => stringifyError(scope.error);
@@ -182,12 +188,12 @@ export function sysOperatorsFactories(
   operatorsFactory: ScopedOpFactory<unknown>,
   operatorResolver: Factory<unknown, unknown>
 ) {
-  return {
-    define: new DefineOpFactory(),
-    call: new CallOpFactory(),
-    get: new GetOpFactory(),
-    exec: new ExecOpFactory(operatorsFactory),
-    eval: new EvalOpFactory(operatorResolver),
-    err: new ErrorOpFactory(),
-  };
+  return [
+    new DefineOpFactory(),
+    new CallOpFactory(),
+    new GetOpFactory(),
+    new ExecOpFactory(operatorsFactory),
+    new EvalOpFactory(operatorResolver),
+    new ErrorOpFactory(),
+  ];
 }

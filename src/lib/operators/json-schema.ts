@@ -17,6 +17,7 @@ export class ValidateOpFactory extends TaskOpFactory<
   typeof validateConfig,
   boolean
 > {
+  name = "validate";
   schema = validateConfig;
 
   constructor(
@@ -43,6 +44,7 @@ const formConfig = z.object({
 export type ShowFormData = z.infer<typeof formConfig>;
 
 export class FormOpFactory extends TaskOpFactory<typeof formConfig, unknown> {
+  name = "form";
   schema = formConfig;
   constructor(
     private readonly formShower: AsyncFactory<ShowFormData, unknown>
@@ -58,8 +60,5 @@ export function jsonSchemaOperatorsFactories(
   asyncValidator: AsyncFactory<AsyncValidatorData, boolean>,
   formShower: AsyncFactory<ShowFormData, unknown>
 ) {
-  return {
-    validate: new ValidateOpFactory(asyncValidator),
-    form: new FormOpFactory(formShower),
-  };
+  return [new ValidateOpFactory(asyncValidator), new FormOpFactory(formShower)];
 }

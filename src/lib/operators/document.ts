@@ -19,10 +19,11 @@ const documentConfig = z.object({
   default: z.unknown().optional(),
 });
 
-export class DocumentOpFactory extends BrowserFactory<
+export class GetOpFactory extends BrowserFactory<
   typeof documentConfig,
   unknown
 > {
+  name = "get";
   readonly schema = documentConfig;
   execute({ key, default: defaultValue }: z.TypeOf<this["schema"]>): unknown {
     const value = get(key, this.window.document, defaultValue);
@@ -39,6 +40,7 @@ export class JsEvalOpFactory extends BrowserFactory<
   typeof jsEvalConfig,
   unknown
 > {
+  name = "eval";
   readonly schema = jsEvalConfig;
 
   constructor(
@@ -73,6 +75,7 @@ export class SelectionOpFactory extends BrowserFactory<
   typeof selectionConfig,
   unknown
 > {
+  name = "selection";
   readonly schema = selectionConfig;
   execute({ as, default: defaultValue }: z.TypeOf<this["schema"]>): unknown {
     const selection = this.window.getSelection();
@@ -98,9 +101,9 @@ export function documentOperatorsFactories(
   window: Window,
   evaluator: AsyncFactory<string, unknown>
 ) {
-  return {
-    get: new DocumentOpFactory(window),
-    eval: new JsEvalOpFactory(window, evaluator),
-    selection: new SelectionOpFactory(window),
-  };
+  return [
+    new GetOpFactory(window),
+    new JsEvalOpFactory(window, evaluator),
+    new SelectionOpFactory(window),
+  ];
 }

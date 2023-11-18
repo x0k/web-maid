@@ -20,7 +20,8 @@ export class ReadabilityOpFactory extends BrowserFactory<
   typeof readabilityConfig,
   unknown
 > {
-  readonly schema = readabilityConfig;
+  name = "readability";
+  schema = readabilityConfig;
   execute({
     html,
     baseUrl,
@@ -38,6 +39,7 @@ export class ReadabilityOpFactory extends BrowserFactory<
 }
 
 export class SimplifyHtmlOpFactory extends ReadabilityOpFactory {
+  name = "simplify";
   execute(config: z.TypeOf<this["schema"]>): unknown {
     const result = super.execute(config);
     if (typeof result === "object" && result !== null && "content" in result) {
@@ -62,7 +64,8 @@ export class Html2MarkdownOpFactory extends BrowserFactory<
   typeof html2MarkdownConfig,
   string
 > {
-  readonly schema = html2MarkdownConfig;
+  name = "markdown";
+  schema = html2MarkdownConfig;
   execute({ html, options }: z.TypeOf<this["schema"]>): string {
     const turndown = new Turndown(options);
     return turndown.turndown(html);
@@ -77,7 +80,8 @@ export class MetadataOpFactory extends BrowserFactory<
   typeof metadataConfig,
   unknown
 > {
-  readonly schema = metadataConfig;
+  name = "metadata";
+  schema = metadataConfig;
   execute({ html }: z.TypeOf<this["schema"]>): unknown {
     const root = new DOMParser().parseFromString(html, "text/html");
     return {
@@ -93,10 +97,10 @@ export class MetadataOpFactory extends BrowserFactory<
 }
 
 export function htmlOperatorsFactories(window: Window) {
-  return {
-    readability: new ReadabilityOpFactory(window),
-    simplify: new SimplifyHtmlOpFactory(window),
-    markdown: new Html2MarkdownOpFactory(window),
-    metadata: new MetadataOpFactory(window),
-  };
+  return [
+    new ReadabilityOpFactory(window),
+    new SimplifyHtmlOpFactory(window),
+    new Html2MarkdownOpFactory(window),
+    new MetadataOpFactory(window),
+  ];
 }

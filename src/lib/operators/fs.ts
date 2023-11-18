@@ -15,6 +15,7 @@ export class SaveFileOpFactory extends TaskOpFactory<
   typeof saveConfig,
   string
 > {
+  name = "saveFile";
   readonly schema = saveConfig;
 
   constructor(private readonly okShower: AsyncFactory<string, void>) {
@@ -59,6 +60,7 @@ export class OpenFileOpFactory extends TaskOpFactory<
   typeof openConfig,
   string
 > {
+  name = "openFile";
   readonly schema = openConfig;
   protected async execute(options: z.TypeOf<this["schema"]>): Promise<string> {
     const blob = await fileOpen(options);
@@ -67,8 +69,5 @@ export class OpenFileOpFactory extends TaskOpFactory<
 }
 
 export function fsOperatorsFactories(okShower: AsyncFactory<string, void>) {
-  return {
-    saveFile: new SaveFileOpFactory(okShower),
-    openFile: new OpenFileOpFactory(),
-  };
+  return [new SaveFileOpFactory(okShower), new OpenFileOpFactory()];
 }

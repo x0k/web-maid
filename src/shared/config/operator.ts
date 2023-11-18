@@ -1,7 +1,8 @@
+import { ZodTypeAny } from 'zod';
+
 import { AsyncFactory, Factory } from "@/lib/factory";
 import { ILogger } from "@/lib/logger";
-import { assignWithPrefix } from "@/lib/object";
-import { ScopedOpFactory } from "@/lib/operator";
+import { BaseOpFactory, ScopedOpFactory } from "@/lib/operator";
 import { debugOperatorsFactories } from "@/lib/operators/debug";
 import { documentOperatorsFactories } from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
@@ -35,6 +36,25 @@ export interface OperatorFactoryConfig {
   okShower: AsyncFactory<string, void>;
 }
 
+function assign(
+  target: Record<string, ScopedOpFactory<unknown>>,
+  source: BaseOpFactory<ZodTypeAny, unknown>[]
+) {
+  for (const f of source) {
+    target[f.name] = f;
+  }
+}
+
+function assignWithPrefix(
+  prefix: string,
+  target: Record<string, ScopedOpFactory<unknown>>,
+  source: BaseOpFactory<ZodTypeAny, unknown>[]
+) {
+  for (const f of source) {
+    target[`${prefix}${f.name}`] = f;
+  }
+}
+
 export function compileOperatorFactories({
   window,
   evaluator,
@@ -49,9 +69,10 @@ export function compileOperatorFactories({
 }: OperatorFactoryConfig) {
   const factories: Record<
     string,
-    ScopedOpFactory<unknown>
-  > = flowOperatorsFactories();
-  Object.assign(factories, mathOperatorsFactories());
+    BaseOpFactory<ZodTypeAny, unknown>
+  > = {}
+  assign(factories, flowOperatorsFactories());
+  assign(factories, mathOperatorsFactories());
   assignWithPrefix(
     "sys.",
     factories,

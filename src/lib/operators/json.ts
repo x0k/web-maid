@@ -10,6 +10,7 @@ export class StringifyOpFactory extends TaskOpFactory<
   typeof stringifyConfig,
   string
 > {
+  name = "stringify";
   schema = stringifyConfig;
   protected execute({ value }: z.TypeOf<this["schema"]>): string {
     return JSON.stringify(value);
@@ -21,6 +22,7 @@ const parseConfig = z.object({
 });
 
 export class ParseOpFactory extends TaskOpFactory<typeof parseConfig, unknown> {
+  name = "parse";
   schema = parseConfig;
   protected execute({ value }: z.TypeOf<this["schema"]>): unknown {
     return JSON.parse(value);
@@ -28,8 +30,5 @@ export class ParseOpFactory extends TaskOpFactory<typeof parseConfig, unknown> {
 }
 
 export function jsonOperatorsFactories() {
-  return {
-    stringify: new StringifyOpFactory(),
-    parse: new ParseOpFactory(),
-  };
+  return [new StringifyOpFactory(), new ParseOpFactory()];
 }

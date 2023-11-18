@@ -25,6 +25,7 @@ export class RequestOpFactory extends TaskOpFactory<
   typeof requestConfig,
   unknown
 > {
+  name = "request";
   schema = requestConfig;
 
   constructor(private readonly fetcher: AsyncFactory<FetcherData, unknown>) {
@@ -39,7 +40,5 @@ export class RequestOpFactory extends TaskOpFactory<
 export function httpOperatorsFactories(
   fetcher: AsyncFactory<FetcherData, unknown>
 ) {
-  return {
-    request: new RequestOpFactory(fetcher),
-  };
+  return [new RequestOpFactory(fetcher)];
 }

@@ -16,6 +16,7 @@ const pipeConfig = z.object({
 });
 
 export class PipeOpFactory extends FlowOpFactory<typeof pipeConfig, unknown> {
+  name = "pipe";
   readonly schema = pipeConfig;
   create({ do: operators }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
@@ -33,6 +34,7 @@ const andConfig = z.object({
 });
 
 export class AndOpFactory extends FlowOpFactory<typeof andConfig, unknown> {
+  name = "and";
   readonly schema = andConfig;
   create({ conditions }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
@@ -53,6 +55,7 @@ const notConfig = z.object({
 });
 
 export class NotOpFactory extends TaskOpFactory<typeof notConfig, boolean> {
+  name = "not";
   readonly schema = notConfig;
   execute({ value }: z.TypeOf<this["schema"]>): boolean {
     return !value;
@@ -66,6 +69,7 @@ const ifConfig = z.object({
 });
 
 export class IfOpFactory extends FlowOpFactory<typeof ifConfig, unknown> {
+  name = "if";
   readonly schema = ifConfig;
   create({
     condition,
@@ -88,6 +92,7 @@ const condConfig = z.object({
 });
 
 export class CondOpFactory extends FlowOpFactory<typeof condConfig, unknown> {
+  name = "cond";
   readonly schema = condConfig;
   create({
     cases,
@@ -114,6 +119,7 @@ const binaryConfig = z.object({
 });
 
 export class LtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  name = "lt";
   readonly schema = binaryConfig;
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) === -1;
@@ -121,6 +127,7 @@ export class LtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 }
 
 export class LteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  name = "lte";
   readonly schema = binaryConfig;
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) < 1;
@@ -128,6 +135,7 @@ export class LteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 }
 
 export class GtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  name = "gt";
   readonly schema = binaryConfig;
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) === 1;
@@ -135,6 +143,7 @@ export class GtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 }
 
 export class GteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  name = "gte";
   readonly schema = binaryConfig;
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) > -1;
@@ -142,6 +151,7 @@ export class GteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 }
 
 export class EqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  name = "eq";
   readonly schema = binaryConfig;
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) === 0;
@@ -149,6 +159,7 @@ export class EqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 }
 
 export class NeqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
+  name = "neq";
   readonly schema = binaryConfig;
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) !== 0;
@@ -171,6 +182,7 @@ const getConfig = z.object({
 });
 
 export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
+  name = "get";
   readonly schema = getConfig;
   create({
     key,
@@ -199,6 +211,7 @@ export class UpdateOpFactory extends FlowOpFactory<
   typeof updateConfig,
   Record<string, unknown> | Array<unknown>
 > {
+  name = "update";
   readonly schema = updateConfig;
   create({
     source,
@@ -233,6 +246,7 @@ const tryConfig = z.object({
 });
 
 export class TryOpFactory extends FlowOpFactory<typeof tryConfig, unknown> {
+  name = "try";
   schema = tryConfig;
   protected create({
     do: action,
@@ -271,6 +285,7 @@ const throwConfig = z.object({
 });
 
 export class ThrowOpFactory extends FlowOpFactory<typeof throwConfig, unknown> {
+  name = "throw";
   schema = throwConfig;
   protected create({ error }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return (scope) => evalInScope(error, scope).then(Promise.reject);
@@ -278,21 +293,21 @@ export class ThrowOpFactory extends FlowOpFactory<typeof throwConfig, unknown> {
 }
 
 export function flowOperatorsFactories() {
-  return {
-    pipe: new PipeOpFactory(),
-    and: new AndOpFactory(),
-    not: new NotOpFactory(),
-    if: new IfOpFactory(),
-    cond: new CondOpFactory(),
-    lt: new LtOpFactory(),
-    lte: new LteOpFactory(),
-    gt: new GtOpFactory(),
-    gte: new GteOpFactory(),
-    eq: new EqOpFactory(),
-    neq: new NeqOpFactory(),
-    get: new GetOpFactory(),
-    update: new UpdateOpFactory(),
-    try: new TryOpFactory(),
-    throw: new ThrowOpFactory(),
-  };
+  return [
+    new PipeOpFactory(),
+    new AndOpFactory(),
+    new NotOpFactory(),
+    new IfOpFactory(),
+    new CondOpFactory(),
+    new LtOpFactory(),
+    new LteOpFactory(),
+    new GtOpFactory(),
+    new GteOpFactory(),
+    new EqOpFactory(),
+    new NeqOpFactory(),
+    new GetOpFactory(),
+    new UpdateOpFactory(),
+    new TryOpFactory(),
+    new ThrowOpFactory(),
+  ];
 }

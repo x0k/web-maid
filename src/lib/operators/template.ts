@@ -17,6 +17,7 @@ export class TemplateFactory extends FlowOpFactory<
   typeof templateConfig,
   string
 > {
+  name = "render";
   readonly schema = templateConfig;
 
   constructor(
@@ -43,7 +44,5 @@ export class TemplateFactory extends FlowOpFactory<
 export function templateOperatorsFactories(
   hbs: AsyncFactory<TemplateRendererData, string>
 ) {
-  return {
-    render: new TemplateFactory(hbs),
-  };
+  return [new TemplateFactory(hbs)];
 }
