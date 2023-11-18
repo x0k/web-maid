@@ -11,12 +11,13 @@ import { makeExtensionActor, makeExtensionActorLogic } from "./actor";
 
 export function useExtensionActorLogic(
   formShower: AsyncFactory<ShowFormData, unknown>,
+  okShower: AsyncFactory<string, void>,
   logger: ILogger,
   fetcher: AsyncFactory<FetcherData, unknown>
 ) {
   return useMemo(
-    () => makeExtensionActorLogic(formShower, logger, fetcher),
-    [formShower, logger, fetcher]
+    () => makeExtensionActorLogic(formShower, okShower, logger, fetcher),
+    [formShower, okShower, logger, fetcher]
   );
 }
 

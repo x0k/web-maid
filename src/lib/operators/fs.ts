@@ -3,6 +3,7 @@ import mime from "mime";
 import { fileOpen, fileSave } from "browser-fs-access";
 
 import { TaskOpFactory } from "@/lib/operator";
+import { AsyncFactory } from "../factory";
 
 const saveConfig = z.object({
   filename: z.string(),
@@ -15,6 +16,11 @@ export class SaveFileOpFactory extends TaskOpFactory<
   string
 > {
   readonly schema = saveConfig;
+
+  constructor(private readonly okShower: AsyncFactory<string, void>) {
+    super();
+  }
+
   protected async execute({
     filename,
     content,
@@ -24,9 +30,21 @@ export class SaveFileOpFactory extends TaskOpFactory<
     if (!type) {
       throw new Error(`Could not determine mime type for ${filename}`);
     }
-    await fileSave(new Blob([content], { type }), {
-      fileName: filename,
-    });
+    try {
+      await fileSave(new Blob([content], { type }), {
+        fileName: filename,
+      });
+    } catch (error) {
+      // Failed to execute 'showSaveFilePicker' on 'Window': Must be handling a user gesture to show a file picker.
+      if (error instanceof DOMException && error.name === "SecurityError") {
+        await this.okShower.Create(`Download "${filename}"`);
+        await fileSave(new Blob([content], { type }), {
+          fileName: filename,
+        });
+      } else {
+        throw error;
+      }
+    }
     return filename;
   }
 }
@@ -48,9 +66,9 @@ export class OpenFileOpFactory extends TaskOpFactory<
   }
 }
 
-export function fsOperatorsFactories() {
+export function fsOperatorsFactories(okShower: AsyncFactory<string, void>) {
   return {
-    saveFile: new SaveFileOpFactory(),
+    saveFile: new SaveFileOpFactory(okShower),
     openFile: new OpenFileOpFactory(),
   };
 }

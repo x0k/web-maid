@@ -32,6 +32,7 @@ export interface OperatorFactoryConfig {
   logger: ILogger;
   operatorsFactory: ScopedOpFactory<unknown>;
   operatorResolver: Factory<unknown, unknown>;
+  okShower: AsyncFactory<string, void>;
 }
 
 export function compileOperatorFactories({
@@ -44,6 +45,7 @@ export function compileOperatorFactories({
   logger,
   operatorsFactory,
   operatorResolver,
+  okShower,
 }: OperatorFactoryConfig) {
   const factories: Record<
     string,
@@ -67,7 +69,7 @@ export function compileOperatorFactories({
   );
   assignWithPrefix("html.", factories, htmlOperatorsFactories(window));
   assignWithPrefix("str.", factories, stringsOperatorsFactories());
-  assignWithPrefix("fs.", factories, fsOperatorsFactories());
+  assignWithPrefix("fs.", factories, fsOperatorsFactories(okShower));
   assignWithPrefix("json.", factories, jsonOperatorsFactories());
   assignWithPrefix(
     "jsonSchema.",

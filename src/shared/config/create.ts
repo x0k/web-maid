@@ -19,6 +19,7 @@ export interface OperatorResolveOptions {
   validator: AsyncFactory<AsyncValidatorData, boolean>;
   formShower: AsyncFactory<ShowFormData, unknown>;
   fetcher: AsyncFactory<FetcherData, unknown>;
+  okShower: AsyncFactory<string, void>;
   logger: ILogger;
 }
 
@@ -26,6 +27,7 @@ export function createOperatorResolver({
   debug,
   evaluator,
   formShower,
+  okShower,
   fetcher,
   logger,
   rendered,
@@ -38,6 +40,7 @@ export function createOperatorResolver({
       rendered,
       validator,
       formShower,
+      okShower,
       fetcher,
       logger,
       operatorsFactory: {

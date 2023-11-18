@@ -40,6 +40,7 @@ import {
 } from "@/shared/sandbox/remote-impl";
 import { useRootFactory } from "@/shared/react-root-factory";
 import { useFormShower } from "@/shared/react-form-shower";
+import { useOkShower } from '@/shared/react-ok-shower';
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
@@ -82,6 +83,7 @@ export function Config() {
   const [rootFactoryRef, children, clearRoot] = useRootFactory();
   const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
   const formShower = useFormShower(rootFactoryRef.current, formDataValidator);
+  const okShower = useOkShower(rootFactoryRef.current);
   const evalConfig = useMemo(
     () =>
       makeIsomorphicConfigEval((debug) =>
@@ -93,9 +95,10 @@ export function Config() {
           fetcher,
           logger,
           formShower,
+          okShower
         })
       ),
-    [sandbox, logger, formShower]
+    [sandbox, logger, formShower, okShower]
   );
   const [debug, setDebug] = useState(true);
   const [selectedTab, selectTab] = useState<Tab | null>(null);
@@ -115,7 +118,7 @@ export function Config() {
     }
   );
 
-  const logic = useExtensionActorLogic(formShower, logger, fetcher);
+  const logic = useExtensionActorLogic(formShower, okShower, logger, fetcher);
   const actor = useContextActor(contextId, logic);
   useEffect(() => {
     actor.start();

@@ -17,6 +17,7 @@ import { getAllTabs } from "./core";
 
 export function makeExtensionActorLogic(
   formShower: AsyncFactory<ShowFormData, unknown>,
+  okShower: AsyncFactory<string, void>,
   logger: ILogger,
   fetcher: AsyncFactory<FetcherData, unknown>
 ) {
@@ -25,6 +26,7 @@ export function makeExtensionActorLogic(
       [ExtensionActionType.AppendLog]: ({ log }) => {
         logger.log(log);
       },
+      [ExtensionActionType.ShowOk]: ({ message }) => okShower.Create(message),
       [ExtensionActionType.ShowFrom]: formShower.Create.bind(formShower),
       [ExtensionActionType.MakeRequest]: fetcher.Create.bind(fetcher),
     },

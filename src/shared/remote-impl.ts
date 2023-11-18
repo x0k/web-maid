@@ -36,6 +36,27 @@ export class RemoteFormShower implements AsyncFactory<ShowFormData, unknown> {
   }
 }
 
+export class RemoteOkShower implements AsyncFactory<string, void> {
+  constructor(
+    private readonly handlerId: ActorId,
+    private readonly actor: IRemoteActor<
+      ExtensionAction,
+      ExtensionActionResults
+    >
+  ) {}
+  Create(message: string): Promise<void> {
+    return this.actor.call({
+      handlerId: this.handlerId,
+      id: nanoid(),
+      type: MessageType.Request,
+      request: {
+        type: ExtensionActionType.ShowOk,
+        message,
+      },
+    });
+  }
+}
+
 export class RemoteLogger implements ILogger {
   constructor(
     private readonly handlerId: ActorId,

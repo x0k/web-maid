@@ -2,6 +2,7 @@ import { Request } from "@/lib/actor";
 
 export enum ExtensionActionType {
   ShowFrom = "form::show",
+  ShowOk = "form::ok",
   AppendLog = "log::append",
   MakeRequest = "request::make",
 }
@@ -17,6 +18,10 @@ export interface ShowFromAction
   omitExtraData?: boolean;
 }
 
+export interface ShowOkAction
+  extends AbstractExtensionAction<ExtensionActionType.ShowOk> {
+    message: string;
+  }
 export interface AppendLogAction
   extends AbstractExtensionAction<ExtensionActionType.AppendLog> {
   log: unknown;
@@ -33,11 +38,13 @@ export interface MakeRequestAction
 
 export type ExtensionAction =
   | ShowFromAction
+  | ShowOkAction
   | AppendLogAction
   | MakeRequestAction;
 
 export interface ExtensionActionResults {
   [ExtensionActionType.ShowFrom]: unknown;
+  [ExtensionActionType.ShowOk]: void;
   [ExtensionActionType.AppendLog]: void;
   [ExtensionActionType.MakeRequest]: unknown;
 }

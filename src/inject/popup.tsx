@@ -50,6 +50,7 @@ import {
   loadSyncSettings,
   makeIsomorphicConfigEval,
 } from "@/shared/core";
+import { useOkShower } from '@/shared/react-ok-shower';
 
 import { sandboxIFrameId } from "./constants";
 
@@ -77,6 +78,7 @@ export function Popup({ sandbox }: PopupProps) {
   const [rootFactoryRef, children, clear] = useRootFactory();
   const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
   const formShower = useFormShower(rootFactoryRef.current, formDataValidator);
+  const okShower = useOkShower(rootFactoryRef.current);
   const evalConfig = useMemo(
     () =>
       makeIsomorphicConfigEval((debug) =>
@@ -86,11 +88,12 @@ export function Popup({ sandbox }: PopupProps) {
           rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
           validator: new RemoteValidator(sandboxIFrameId, sandbox),
           formShower,
+          okShower,
           fetcher: new RemoteFetcher(BACKGROUND_ACTOR_ID, background),
           logger: console,
         })
       ),
-    [sandbox, formShower]
+    [sandbox, formShower, okShower]
   );
   const [isVisible, setIsVisible] = useState(false);
   const callbackRef = useRef<NodeJS.Timeout>();

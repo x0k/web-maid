@@ -37,6 +37,7 @@ beforeEach(() => {
           return resolver(config);
         },
       },
+      okShower: {} as AsyncFactory<string, void>,
     })
   );
   resolver = makeOperatorResolver(composed);
