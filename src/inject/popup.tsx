@@ -180,8 +180,8 @@ export function Popup({ sandbox }: PopupProps) {
       elevation={2}
       style={{
         position: "relative",
-        visibility: isVisible ? "visible" : "hidden",
         padding: 16,
+        display: isVisible ? "block" : "none",
       }}
     >
       <IconButton
