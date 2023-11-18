@@ -14,6 +14,12 @@ function renderExample(example: OpExample) {
 
 \`\`\`yaml
 ${example.code}
+\`\`\`
+
+**Result:**
+
+\`\`\`yaml
+${example.result}
 \`\`\``;
 }
 
@@ -47,9 +53,11 @@ ${
 //@ts-expect-error empty deps is ok for metadata extraction
 const operators = compileOperatorFactories({});
 
-const text = readme + Object.keys(operators)
-  .map((key) => renderFactory(key, operators[key]))
-  .join("\n\n");
+const text =
+  readme +
+  Object.keys(operators)
+    .map((key) => renderFactory(key, operators[key]))
+    .join("\n\n");
 
 export function Readme() {
   return (

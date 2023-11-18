@@ -75,6 +75,7 @@ export async function evalInScope<T, R>(
 export interface OpExample {
   description: string;
   code: string;
+  result: string
 }
 
 export abstract class BaseOpFactory<S extends ZodType, R>

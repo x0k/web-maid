@@ -17,7 +17,25 @@ const pipeConfig = z.object({
 
 export class PipeOpFactory extends FlowOpFactory<typeof pipeConfig, unknown> {
   name = "pipe";
-  readonly schema = pipeConfig;
+  signature = `interface PipeConfig<R> {
+  do: R[]
+}
+function pipe<R>(config: PipeConfig<R>): R`;
+  description =
+    "Passes the result of the previous operator as the context to the next operator";
+  examples = [
+    {
+      description: "Basic usage",
+      code: `$op: pipe
+do:
+  - key: value
+  - $op: get
+    key: key
+`,
+      result: "value",
+    },
+  ];
+  schema = pipeConfig;
   create({ do: operators }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
       const result = { ...scope };
@@ -30,11 +48,31 @@ export class PipeOpFactory extends FlowOpFactory<typeof pipeConfig, unknown> {
 }
 
 const andConfig = z.object({
-  conditions: z.array(z.unknown()),
+  conditions: z.array(z.unknown()).min(1),
 });
 
 export class AndOpFactory extends FlowOpFactory<typeof andConfig, unknown> {
   name = "and";
+  signature = `interface AndConfig<R> {
+  conditions: R[]
+}
+function and<R>(config: AndConfig<R>): R`;
+  description = `Evaluates conditions one by one.
+If any of the conditions fails, returns the result of the failed condition,
+otherwise returns the result of the last condition.`;
+  examples = [
+    {
+      description: "Basic usage",
+      code: `$op: and
+conditions:
+  - true
+  - string
+  - 0
+  - null`,
+      result: `# Failed at '0'
+0`,
+    },
+  ];
   readonly schema = andConfig;
   create({ conditions }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
@@ -56,6 +94,19 @@ const notConfig = z.object({
 
 export class NotOpFactory extends TaskOpFactory<typeof notConfig, boolean> {
   name = "not";
+  signature = `interface NotConfig {
+  value: any;
+}
+function not(config: NotConfig): boolean`;
+  description = "Takes truthy values to `false` and falsy values to `true`";
+  examples = [
+    {
+      description: "Basic usage",
+      code: `$op: not
+value: some value`,
+      result: "false",
+    },
+  ];
   readonly schema = notConfig;
   execute({ value }: z.TypeOf<this["schema"]>): boolean {
     return !value;

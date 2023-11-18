@@ -14,13 +14,13 @@ export class LogOpFactory extends FlowOpFactory<typeof logConfig, unknown> {
   label?: string
   value?: any
 }
-function log ({ label = "log", value = context }: LogConfig):
-  <C>(context: C) => C`;
+function log ({ label = "log", value = <context> }: LogConfig): <context>`;
   description = `Prints a log message to the console`;
   examples = [
     {
       description: "Prints a current context",
       code: "$op: dbg.log",
+      result: `<context>`,
     },
     {
       description: "Prints specified value with provided label",
@@ -29,6 +29,7 @@ label: "token"
 value:
   $op: get
   key: token`,
+      result: `<context>`,
     },
   ];
   schema = logConfig;
