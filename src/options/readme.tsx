@@ -8,6 +8,7 @@ import { BaseOpFactory, OpExample } from "@/lib/operator";
 import { compileOperatorFactories } from "@/shared/config/operator";
 
 import readme from "./readme.md?raw";
+import { memo } from "react";
 
 function renderExample(example: OpExample) {
   return `- ${example.description}
@@ -59,32 +60,30 @@ const text =
     .map((key) => renderFactory(key, operators[key]))
     .join("\n\n");
 
-export function Readme() {
-  return (
-    <Markdown
-      className="prose max-w-none prose-pre:p-0"
-      components={{
-        code(props) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { children, className, node, ...rest } = props;
-          const match = /language-(\w+)/.exec(className || "");
-          return match ? (
-            // @ts-expect-error ref types conflict
-            <SyntaxHighlighter
-              {...rest}
-              PreTag="div"
-              children={String(children).replace(/\n$/, "")}
-              language={match[1]}
-              style={vscDarkPlus}
-            />
-          ) : (
-            <code {...rest} className={className}>
-              {children}
-            </code>
-          );
-        },
-      }}
-      children={text}
-    />
-  );
-}
+export const Readme = memo(() => (
+  <Markdown
+    className="prose max-w-none prose-pre:p-0"
+    components={{
+      code(props) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { children, className, node, ...rest } = props;
+        const match = /language-(\w+)/.exec(className || "");
+        return match ? (
+          // @ts-expect-error ref types conflict
+          <SyntaxHighlighter
+            {...rest}
+            PreTag="div"
+            children={String(children).replace(/\n$/, "")}
+            language={match[1]}
+            style={vscDarkPlus}
+          />
+        ) : (
+          <code {...rest} className={className}>
+            {children}
+          </code>
+        );
+      },
+    }}
+    children={text}
+  />
+));
