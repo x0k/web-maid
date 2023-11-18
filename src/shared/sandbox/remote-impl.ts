@@ -6,6 +6,7 @@ import { nanoid } from "nanoid";
 
 import { TemplateRendererData } from "@/lib/operators/template";
 import { AsyncValidatorData } from "@/lib/operators/json-schema";
+import { EvaluatorData } from "@/lib/operators/document";
 
 import {
   SandboxAction,
@@ -13,19 +14,21 @@ import {
   SandboxActionType,
 } from "./action";
 
-export class RemoteEvaluator implements AsyncFactory<string, unknown> {
+export class RemoteEvaluator implements AsyncFactory<EvaluatorData, unknown> {
   constructor(
     private readonly handlerId: ActorId,
     private readonly actor: IRemoteActor<SandboxAction, SandboxActionResults>
   ) {}
-  Create(expression: string) {
+  Create(config: EvaluatorData): Promise<unknown> {
     return this.actor.call({
       handlerId: this.handlerId,
       id: nanoid(),
       type: MessageType.Request,
       request: {
         type: SandboxActionType.RunEval,
-        expression,
+        expression: config.expression,
+        data: config.data,
+        injectAs: config.injectAs,
       },
     });
   }

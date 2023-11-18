@@ -9,12 +9,13 @@ import {
 import { AsyncValidatorData, ShowFormData } from "@/lib/operators/json-schema";
 import { TemplateRendererData } from "@/lib/operators/template";
 import { FetcherData } from "@/lib/operators/http";
+import { EvaluatorData } from '@/lib/operators/document';
 
 import { compileOperatorFactories } from "./operator";
 
 export interface OperatorResolveOptions {
   debug: boolean;
-  evaluator: AsyncFactory<string, unknown>;
+  evaluator: AsyncFactory<EvaluatorData, unknown>;
   rendered: AsyncFactory<TemplateRendererData, string>;
   validator: AsyncFactory<AsyncValidatorData, boolean>;
   formShower: AsyncFactory<ShowFormData, unknown>;

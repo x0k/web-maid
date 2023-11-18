@@ -1,10 +1,13 @@
-import { ZodTypeAny } from 'zod';
+import { ZodTypeAny } from "zod";
 
 import { AsyncFactory, Factory } from "@/lib/factory";
 import { ILogger } from "@/lib/logger";
 import { BaseOpFactory, ScopedOpFactory } from "@/lib/operator";
 import { debugOperatorsFactories } from "@/lib/operators/debug";
-import { documentOperatorsFactories } from "@/lib/operators/document";
+import {
+  EvaluatorData,
+  documentOperatorsFactories,
+} from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
 import { fsOperatorsFactories } from "@/lib/operators/fs";
 import { htmlOperatorsFactories } from "@/lib/operators/html";
@@ -25,7 +28,7 @@ import { mathOperatorsFactories } from "@/lib/operators/math";
 
 export interface OperatorFactoryConfig {
   window: Window;
-  evaluator: AsyncFactory<string, unknown>;
+  evaluator: AsyncFactory<EvaluatorData, unknown>;
   rendered: AsyncFactory<TemplateRendererData, string>;
   validator: AsyncFactory<AsyncValidatorData, boolean>;
   formShower: AsyncFactory<ShowFormData, unknown>;
@@ -67,10 +70,7 @@ export function compileOperatorFactories({
   operatorResolver,
   okShower,
 }: OperatorFactoryConfig) {
-  const factories: Record<
-    string,
-    BaseOpFactory<ZodTypeAny, unknown>
-  > = {}
+  const factories: Record<string, BaseOpFactory<ZodTypeAny, unknown>> = {};
   assign(factories, flowOperatorsFactories());
   assign(factories, mathOperatorsFactories());
   assignWithPrefix(
