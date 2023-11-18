@@ -2,83 +2,91 @@ import { z } from "zod";
 
 import { TaskOpFactory } from "@/lib/operator";
 
-const plusConfig = z
-  .object({
-    left: z.number(),
-    right: z.number(),
-  })
-  .or(
-    z.object({
-      left: z.string(),
-      right: z.string(),
-    })
-  );
-
-export class PlusOpFactory extends TaskOpFactory<typeof plusConfig, unknown> {
-  name = "plus";
-  schema = plusConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
-    //@ts-expect-error typescript
-    return config.left + config.right;
-  }
-}
-
 const binaryConfig = z.object({
   left: z.number(),
   right: z.number(),
 });
 
+
+function binaryOperatorSignature(name: string) {
+  return `interface BinaryOperatorConfig {
+  left: number;
+  right: number;
+}
+function ${name}(config: BinaryOperatorConfig): number`
+}
+
+export class PlusOpFactory extends TaskOpFactory<typeof binaryConfig, number> {
+  name = "plus";
+  schema = binaryConfig;
+  signature = binaryOperatorSignature("plus");
+  description = 'Returns the sum of `left` and `right`.'
+  protected execute(config: z.TypeOf<this["schema"]>): number {
+    return config.left + config.right;
+  }
+}
+
 export class MinusOpFactory extends TaskOpFactory<
   typeof binaryConfig,
-  unknown
+  number
 > {
   name = "minus";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  signature = binaryOperatorSignature("minus");
+  description = 'Returns the difference of `left` and `right`.'
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left - config.right;
   }
 }
 
 export class MultiplyOpFactory extends TaskOpFactory<
   typeof binaryConfig,
-  unknown
+  number
 > {
   name = "mul";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  signature = binaryOperatorSignature("mul");
+  description = 'Returns the product of `left` and `right`.'
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left * config.right;
   }
 }
 
 export class DivideOpFactory extends TaskOpFactory<
   typeof binaryConfig,
-  unknown
+  number
 > {
   name = "div";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  signature = binaryOperatorSignature("div");
+  description = 'Returns the quotient of `left` and `right`.'
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left / config.right;
   }
 }
 
 export class ModuloOpFactory extends TaskOpFactory<
   typeof binaryConfig,
-  unknown
+  number
 > {
   name = "mod";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  signature = binaryOperatorSignature("mod");
+  description = 'Returns the remainder of `left` and `right`.'
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left % config.right;
   }
 }
 
 export class PowerOpFactory extends TaskOpFactory<
   typeof binaryConfig,
-  unknown
+  number
 > {
   name = "pow";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  signature = binaryOperatorSignature("pow");
+  description = 'Returns the power of `left` and `right`.'
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return Math.pow(config.left, config.right);
   }
 }
