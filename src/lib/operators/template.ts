@@ -19,6 +19,23 @@ export class TemplateFactory extends FlowOpFactory<
 > {
   name = "render";
   readonly schema = templateConfig;
+  signature = `interface RenderConfig {
+  template: string;
+  data?: unknown;
+}
+function render({ template, data = <config> }: RenderConfig): string`;
+  description = "Renders handlebars `template` with `data`.";
+  examples = [
+    {
+      description: "Basic usage",
+      code: `$op: template.render
+template: |
+  Hello, {{name}}!
+data:
+  name: John`,
+      result: "Hello, John!",
+    },
+  ];
 
   constructor(
     private readonly hbs: AsyncFactory<TemplateRendererData, string>
