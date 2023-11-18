@@ -69,8 +69,7 @@ conditions:
   - string
   - 0
   - null`,
-      result: `# Failed at '0'
-0`,
+      result: `0`,
     },
   ];
   readonly schema = andConfig;
