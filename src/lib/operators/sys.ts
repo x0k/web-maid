@@ -25,6 +25,35 @@ export class DefineOpFactory extends FlowOpFactory<
 > {
   name = "define";
   schema = defineConfig;
+  signature = `interface DefineConfig<R> {
+  functions?: Record<string, any>;
+  constants?: Record<string, any>;
+  for: R;
+}
+function define<R>(config: DefineConfig<R>): R`;
+  description =
+    "Defines a functions and/or constants. \
+If function or constant already exists in `scope` it will be overwritten. \
+Definition affects only `scope` that passes for evaluation `for` key.";
+  examples = [
+    {
+      description: "Override scope",
+      code: `$op: sys.define
+constants:
+  const: 1
+for:
+  $op: sys.define
+  constants:
+    const: 2
+  for:
+    $op: plus
+    left:
+      $op: sys.get
+      key: const
+    right: 2`,
+      result: "4",
+    },
+  ];
   protected create({
     constants,
     functions,
@@ -62,6 +91,29 @@ const callConfig = z.object({
 export class CallOpFactory extends FlowOpFactory<typeof callConfig, unknown> {
   name = "call";
   schema = callConfig;
+  signature = `interface CallConfig {
+  fn: string
+  arg?: any
+}
+function call({ fn, arg = <context> }: CallConfig): unknown`;
+  description = "Calls a function and returns its result.";
+  examples = [
+    {
+      description: "Basic usage",
+      code: `$op: sys.define
+functions:
+  add10:
+    $op: plus
+    left:
+      $op: get
+    right: 10
+for:
+  $op: sys.call
+  fn: add10
+  arg: 5`,
+      result: "15",
+    },
+  ];
   protected create({ fn, arg }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
       const fnName = await evalInScope(fn, scope);
@@ -87,6 +139,15 @@ const getConfig = z.object({
 export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
   name = "get";
   schema = getConfig;
+  signature = `interface GetConfig {
+  key: string
+  default?: any
+}
+function get(config: GetConfig): unknown`;
+  description =
+    "Returns a constant from a current scope. \
+If constant is not defined then `default` value is returned. \
+If `default` is not defined then an error is thrown.";
   protected create({
     key,
     default: defaultValue,
@@ -117,6 +178,29 @@ const execConfig = z.object({
 export class ExecOpFactory extends FlowOpFactory<typeof execConfig, unknown> {
   name = "exec";
   schema = execConfig;
+  signature = `interface ExecConfig {
+  op: string;
+  config?: Record<string, any>;
+  arg?: any;
+}
+function exec({ op, config, arg = <context> }: ExecConfig): unknown`;
+  description =
+    "Executes an operator and returns its result. \
+Can be used to execute operators with computed `config`.";
+  examples = [
+    {
+      description: "Basic usage",
+      code: `$op: pipe
+do:
+  - key: key2
+    key2: value
+  - $op: sys.exec
+    op: get
+    config:
+      $op: get`,
+      result: "value",
+    },
+  ];
 
   constructor(
     protected readonly operatorFactoryConfig: ScopedOpFactory<unknown>
@@ -158,6 +242,25 @@ const evalConfig = z.object({
 export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
   name = "eval";
   schema = evalConfig;
+  signature = `interface EvalConfig {
+  expression: any;
+}
+function eval(config: EvalConfig): unknown`;
+  description =
+    "Evaluates an expression on the current scope and returns its result.";
+  examples = [
+    {
+      description: "Basic usage",
+      code: `$op: pipe
+do:
+  - val
+  - $op: sys.eval
+    expression:
+      $op: json.parse
+      value: "{\\"$op\\": \\"get\\"}"`,
+      result: "val",
+    },
+  ];
 
   constructor(private readonly operatorResolver: Factory<unknown, unknown>) {
     super();
@@ -179,6 +282,9 @@ const errorConfig = z.unknown();
 export class ErrorOpFactory extends FlowOpFactory<typeof errorConfig, unknown> {
   name = "err";
   schema = errorConfig;
+  signature = "function error(config: any): string";
+  description =
+    "Returns an last caught by `try` operator stringified error in the current `scope`.";
   protected create(): ScopedOp<unknown> {
     return (scope) => stringifyError(scope.error);
   }
