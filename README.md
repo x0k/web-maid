@@ -30,7 +30,7 @@ do:
     filename:
       $op: str.join
       values:
-        - $op: ctx.get
+        - $op: get
           key: title
         - ".md"
     content:
