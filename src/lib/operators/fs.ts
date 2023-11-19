@@ -3,7 +3,7 @@ import mime from "mime";
 import { fileOpen, fileSave } from "browser-fs-access";
 
 import { TaskOpFactory } from "@/lib/operator";
-import { AsyncFactory } from "../factory";
+import { AsyncFactory } from "@/lib/factory";
 
 const saveConfig = z.object({
   filename: z.string(),
@@ -20,6 +20,22 @@ export class SaveFileOpFactory extends TaskOpFactory<
 
   constructor(private readonly okShower: AsyncFactory<string, void>) {
     super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  filename: string
+  content: string
+  mimeType?: string
+}`,
+          returns: `string`,
+          description:
+            "Trigger a file save dialog if possible. Otherwise, shows a download button. \
+If `mimeType` is not provided, it will be guessed from `filename`. \
+Returns the `filename`.",
+        },
+      ];
+    }
   }
 
   protected async execute({
@@ -62,6 +78,23 @@ export class OpenFileOpFactory extends TaskOpFactory<
 > {
   name = "openFile";
   readonly schema = openConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  extensions?: string[]
+  description?: string
+  mimeTypes?: string[]
+}`,
+          returns: `string`,
+          description: "Open a file dialog. \
+Returns the content of the selected file as string.",
+        },
+      ];
+    }
+  }
   protected async execute(options: z.TypeOf<this["schema"]>): Promise<string> {
     const blob = await fileOpen(options);
     return await blob.text();
