@@ -1,39 +1,52 @@
 import { z } from "zod";
 
-import { TaskOpFactory } from "@/lib/operator";
+import { OpSignature, TaskOpFactory } from "@/lib/operator";
 
 const binaryConfig = z.object({
   left: z.number(),
   right: z.number(),
 });
 
-
-function binaryOperatorSignature(name: string) {
-  return `interface BinaryOperatorConfig {
+function binOpSignatures(description: string): OpSignature[] {
+  return [
+    {
+      params: `interface Config {
   left: number;
   right: number;
-}
-function ${name}(config: BinaryOperatorConfig): number`
+}`,
+      returns: "number",
+      description,
+    },
+  ];
 }
 
 export class PlusOpFactory extends TaskOpFactory<typeof binaryConfig, number> {
   name = "plus";
   schema = binaryConfig;
-  signature = binaryOperatorSignature("plus");
-  description = 'Returns the sum of `left` and `right`.'
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the sum of `left` and `right`."
+      );
+    }
+  }
   protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left + config.right;
   }
 }
 
-export class MinusOpFactory extends TaskOpFactory<
-  typeof binaryConfig,
-  number
-> {
+export class MinusOpFactory extends TaskOpFactory<typeof binaryConfig, number> {
   name = "minus";
   schema = binaryConfig;
-  signature = binaryOperatorSignature("minus");
-  description = 'Returns the difference of `left` and `right`.'
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the difference of `left` and `right`."
+      );
+    }
+  }
   protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left - config.right;
   }
@@ -45,8 +58,14 @@ export class MultiplyOpFactory extends TaskOpFactory<
 > {
   name = "mul";
   schema = binaryConfig;
-  signature = binaryOperatorSignature("mul");
-  description = 'Returns the product of `left` and `right`.'
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the product of `left` and `right`."
+      );
+    }
+  }
   protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left * config.right;
   }
@@ -58,8 +77,14 @@ export class DivideOpFactory extends TaskOpFactory<
 > {
   name = "div";
   schema = binaryConfig;
-  signature = binaryOperatorSignature("div");
-  description = 'Returns the quotient of `left` and `right`.'
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the quotient of `left` and `right`."
+      );
+    }
+  }
   protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left / config.right;
   }
@@ -71,21 +96,30 @@ export class ModuloOpFactory extends TaskOpFactory<
 > {
   name = "mod";
   schema = binaryConfig;
-  signature = binaryOperatorSignature("mod");
-  description = 'Returns the remainder of `left` and `right`.'
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the remainder of `left` and `right`."
+      );
+    }
+  }
   protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left % config.right;
   }
 }
 
-export class PowerOpFactory extends TaskOpFactory<
-  typeof binaryConfig,
-  number
-> {
+export class PowerOpFactory extends TaskOpFactory<typeof binaryConfig, number> {
   name = "pow";
   schema = binaryConfig;
-  signature = binaryOperatorSignature("pow");
-  description = 'Returns the power of `left` and `right`.'
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the power of `left` and `right`."
+      );
+    }
+  }
   protected execute(config: z.TypeOf<this["schema"]>): number {
     return Math.pow(config.left, config.right);
   }
