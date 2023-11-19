@@ -30,6 +30,24 @@ export class RequestOpFactory extends TaskOpFactory<
 
   constructor(private readonly fetcher: AsyncFactory<FetcherData, unknown>) {
     super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  url: string
+  method?: string
+  headers?: Record<string, string>
+  body?: string
+  as?: "json" | "text"
+}`,
+          returns: `<json> | string`,
+          description:
+            "Makes a fetch request. \
+If `as` parameter is not provided, the result type will be determined \
+by the `Content-Type` header.",
+        },
+      ];
+    }
   }
 
   execute(config: z.TypeOf<this["schema"]>): Promise<unknown> {
