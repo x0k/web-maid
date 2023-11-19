@@ -17,6 +17,7 @@ export class JoinOpFactory extends TaskOpFactory<typeof joinConfig, string> {
         {
           params: `interface Config {
   values: string[]
+  /** @default "" */
   separator?: string
 }`,
           returns: `string`,

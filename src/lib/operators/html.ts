@@ -30,6 +30,7 @@ export class ReadabilityOpFactory extends BrowserFactory<
           params: `interface Config<D> {
   html: string;
   baseUrl?: string;
+  /** @default "" */
   default?: D | string;
 }`,
           returns: `{
@@ -124,6 +125,13 @@ export class Html2MarkdownOpFactory extends BrowserFactory<
         {
           params: `interface Config {
   html: string;
+  /** @default {
+    headingStyle: "atx",
+    hr: "---",
+    bulletListMarker: "-",
+    codeBlockStyle: "fenced",
+    emDelimiter: "*",
+  } */
   options?: {
     headingStyle?: "setext" | "atx" | undefined;
     hr?: string | undefined;

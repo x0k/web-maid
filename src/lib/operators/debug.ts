@@ -28,7 +28,7 @@ export class LogOpFactory extends FlowOpFactory<typeof logConfig, unknown> {
       ];
       this.examples = [
         {
-          description: "Prints a current context",
+          description: "Prints a current `context`",
           code: "$op: dbg.log",
           result: `<context>`,
         },

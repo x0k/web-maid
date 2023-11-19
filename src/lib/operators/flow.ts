@@ -158,6 +158,7 @@ export class IfOpFactory extends FlowOpFactory<typeof ifConfig, unknown> {
           params: `interface IfConfig<T, E> {
   condition: any;
   then: T;
+  /** @default null */
   else?: E | null;
 }`,
           returns: `T | E | null`,

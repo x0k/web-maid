@@ -102,7 +102,9 @@ export class JsEvalOpFactory extends BrowserFactory<
         {
           params: `interface Config {
   expression: string
+  /** @default {} */
   data?: Record<string, any>
+  /** @default "context" */
   injectAs?: "context" | "scope"
   default?: any
 }`,
@@ -177,7 +179,9 @@ export class SelectionOpFactory extends BrowserFactory<
       this.signatures = [
         {
           params: `interface Config<D> {
+  /** @default "text" */
   as?: "text" | "html";
+  /** @default "" */
   default?: D | string;
 }`,
           returns: "D | string",
