@@ -391,20 +391,40 @@ export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
     if (import.meta.env.DEV) {
       this.signatures = [
         {
-          params: `interface GetConfig {
-  key?: string | number | Array<string | number>;
-  from?: any;
+          params: `interface Config {}`,
+          returns: "<context>",
+          description: "Returns the current context",
+        },
+        {
+          params: `interface Config {
+  key: string;
+  from: Record<string, unknown>;
   default?: any;
 }`,
           returns: "unknown",
           description:
-            "The operator works as follows:\n\n\
-1. If `key` is not provided, returns current context\n\
-2. If `key` is a string and `from` is an object and `from[key]` exists, returns `from[key]`\n\
-3. If `key` is a number and `from` is an array and `from[key]` exists, returns `from[key]`\n\
-4. If `key` is a array then steps 2 and 3 are repeated for each element of `key`, returns the last value\n\
-5. If some previous step fails and `default` is provided, returns `default`\n\
-6. Throws an error",
+            "Returns `from[key]` if it exists, otherwise returns `default` if provided, otherwise throws an error",
+        },
+        {
+          params: `interface Config {
+  key: number;
+  from: Array<unknown>;
+  default?: any;
+}`,
+          returns: "unknown",
+          description:
+            "Returns `from[key]` if it exists, otherwise returns `default` if provided, otherwise throws an error",
+        },
+        {
+          params: `type From = Record<string, unknown | From> | Array<unknown | From>
+interface Config {
+  key: Array<string | number>;
+  from: From
+  default?: any;
+}`,
+          returns: "unknown",
+          description:
+            "Retrieves a value from nested objects, if it exist, otherwise returns `default` if provided, otherwise throws an error",
         },
       ];
       this.examples = [
