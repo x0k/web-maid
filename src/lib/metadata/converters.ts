@@ -6,7 +6,7 @@ import { JsonLike } from "@/lib/json-like-traverser";
 
 import { Transform } from "./core";
 
-export const toString: Transform<JsonLike<JSONPrimitive | Date>, string> = (
+export const toString: Transform<JsonLike<JSONPrimitive | null | Date>, string> = (
   value
 ) => {
   return typeof value === "string"

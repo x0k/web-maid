@@ -1,89 +1,137 @@
 import { z } from "zod";
 
-import { TaskOpFactory } from "@/lib/operator";
-
-const plusConfig = z
-  .object({
-    left: z.number(),
-    right: z.number(),
-  })
-  .or(
-    z.object({
-      left: z.string(),
-      right: z.string(),
-    })
-  );
-
-export class PlusOpFactory extends TaskOpFactory<typeof plusConfig, unknown> {
-  schema = plusConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
-    //@ts-expect-error typescript
-    return config.left + config.right;
-  }
-}
+import { OpSignature, TaskOpFactory } from "@/lib/operator";
 
 const binaryConfig = z.object({
   left: z.number(),
   right: z.number(),
 });
 
-export class MinusOpFactory extends TaskOpFactory<
-  typeof binaryConfig,
-  unknown
-> {
+function binOpSignatures(description: string): OpSignature[] {
+  return [
+    {
+      params: `interface Config {
+  left: number;
+  right: number;
+}`,
+      returns: "number",
+      description,
+    },
+  ];
+}
+
+export class PlusOpFactory extends TaskOpFactory<typeof binaryConfig, number> {
+  name = "plus";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the sum of `left` and `right`."
+      );
+    }
+  }
+  protected execute(config: z.TypeOf<this["schema"]>): number {
+    return config.left + config.right;
+  }
+}
+
+export class MinusOpFactory extends TaskOpFactory<typeof binaryConfig, number> {
+  name = "minus";
+  schema = binaryConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the difference of `left` and `right`."
+      );
+    }
+  }
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left - config.right;
   }
 }
 
 export class MultiplyOpFactory extends TaskOpFactory<
   typeof binaryConfig,
-  unknown
+  number
 > {
+  name = "mul";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the product of `left` and `right`."
+      );
+    }
+  }
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left * config.right;
   }
 }
 
 export class DivideOpFactory extends TaskOpFactory<
   typeof binaryConfig,
-  unknown
+  number
 > {
+  name = "div";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the quotient of `left` and `right`."
+      );
+    }
+  }
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left / config.right;
   }
 }
 
 export class ModuloOpFactory extends TaskOpFactory<
   typeof binaryConfig,
-  unknown
+  number
 > {
+  name = "mod";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the remainder of `left` and `right`."
+      );
+    }
+  }
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return config.left % config.right;
   }
 }
 
-export class PowerOpFactory extends TaskOpFactory<
-  typeof binaryConfig,
-  unknown
-> {
+export class PowerOpFactory extends TaskOpFactory<typeof binaryConfig, number> {
+  name = "pow";
   schema = binaryConfig;
-  protected execute(config: z.TypeOf<this["schema"]>): unknown {
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = binOpSignatures(
+        "Returns the power of `left` and `right`."
+      );
+    }
+  }
+  protected execute(config: z.TypeOf<this["schema"]>): number {
     return Math.pow(config.left, config.right);
   }
 }
 
 export function mathOperatorsFactories() {
-  return {
-    plus: new PlusOpFactory(),
-    minus: new MinusOpFactory(),
-    mul: new MultiplyOpFactory(),
-    div: new DivideOpFactory(),
-    mod: new ModuloOpFactory(),
-    pow: new PowerOpFactory(),
-  };
+  return [
+    new PlusOpFactory(),
+    new MinusOpFactory(),
+    new MultiplyOpFactory(),
+    new DivideOpFactory(),
+    new ModuloOpFactory(),
+    new PowerOpFactory(),
+  ];
 }

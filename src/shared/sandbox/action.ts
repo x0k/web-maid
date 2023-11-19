@@ -20,6 +20,8 @@ export interface RenderTemplateAction
 
 export interface RunEvalAction extends AbstractSandboxAction<SandboxActionType.RunEval> {
   expression: string;
+  data: Record<string, unknown>;
+  injectAs: "context" | "scope";
 }
 
 export interface ValidateAction extends AbstractSandboxAction<SandboxActionType.Validate> {

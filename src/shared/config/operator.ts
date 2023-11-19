@@ -1,9 +1,13 @@
+import { ZodTypeAny } from "zod";
+
 import { AsyncFactory, Factory } from "@/lib/factory";
 import { ILogger } from "@/lib/logger";
-import { assignWithPrefix } from "@/lib/object";
-import { ScopedOpFactory } from "@/lib/operator";
+import { BaseOpFactory, ScopedOpFactory } from "@/lib/operator";
 import { debugOperatorsFactories } from "@/lib/operators/debug";
-import { documentOperatorsFactories } from "@/lib/operators/document";
+import {
+  EvaluatorData,
+  documentOperatorsFactories,
+} from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
 import { fsOperatorsFactories } from "@/lib/operators/fs";
 import { htmlOperatorsFactories } from "@/lib/operators/html";
@@ -24,7 +28,7 @@ import { mathOperatorsFactories } from "@/lib/operators/math";
 
 export interface OperatorFactoryConfig {
   window: Window;
-  evaluator: AsyncFactory<string, unknown>;
+  evaluator: AsyncFactory<EvaluatorData, unknown>;
   rendered: AsyncFactory<TemplateRendererData, string>;
   validator: AsyncFactory<AsyncValidatorData, boolean>;
   formShower: AsyncFactory<ShowFormData, unknown>;
@@ -33,6 +37,25 @@ export interface OperatorFactoryConfig {
   operatorsFactory: ScopedOpFactory<unknown>;
   operatorResolver: Factory<unknown, unknown>;
   okShower: AsyncFactory<string, void>;
+}
+
+function assign(
+  target: Record<string, ScopedOpFactory<unknown>>,
+  source: BaseOpFactory<ZodTypeAny, unknown>[]
+) {
+  for (const f of source) {
+    target[f.name] = f;
+  }
+}
+
+function assignWithPrefix(
+  prefix: string,
+  target: Record<string, ScopedOpFactory<unknown>>,
+  source: BaseOpFactory<ZodTypeAny, unknown>[]
+) {
+  for (const f of source) {
+    target[`${prefix}${f.name}`] = f;
+  }
 }
 
 export function compileOperatorFactories({
@@ -47,11 +70,9 @@ export function compileOperatorFactories({
   operatorResolver,
   okShower,
 }: OperatorFactoryConfig) {
-  const factories: Record<
-    string,
-    ScopedOpFactory<unknown>
-  > = flowOperatorsFactories();
-  Object.assign(factories, mathOperatorsFactories());
+  const factories: Record<string, BaseOpFactory<ZodTypeAny, unknown>> = {};
+  assign(factories, flowOperatorsFactories());
+  assign(factories, mathOperatorsFactories());
   assignWithPrefix(
     "sys.",
     factories,

@@ -11,6 +11,7 @@ import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { AsyncFactory } from "@/lib/factory";
 import { TemplateRendererData } from "@/lib/operators/template";
 import { AsyncValidatorData, ShowFormData } from "@/lib/operators/json-schema";
+import { EvaluatorData } from "@/lib/operators/document";
 import { ILogger } from "@/lib/logger";
 
 import { compileOperatorFactories } from "./operator";
@@ -21,7 +22,7 @@ beforeEach(() => {
   const composed = makeComposedFactory(
     compileOperatorFactories({
       window: {} as Window,
-      evaluator: {} as AsyncFactory<string, unknown>,
+      evaluator: {} as AsyncFactory<EvaluatorData, unknown>,
       rendered: {} as AsyncFactory<TemplateRendererData, string>,
       validator: {} as AsyncFactory<AsyncValidatorData, boolean>,
       formShower: {} as AsyncFactory<ShowFormData, unknown>,

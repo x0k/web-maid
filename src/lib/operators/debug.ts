@@ -9,10 +9,40 @@ const logConfig = z.object({
 });
 
 export class LogOpFactory extends FlowOpFactory<typeof logConfig, unknown> {
-  readonly schema = logConfig;
+  name = "log";
+
+  schema = logConfig;
 
   constructor(private readonly logger: ILogger) {
     super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          description: `Prints a log message to the console`,
+          params: `interface LogConfig {
+  label?: string
+  value?: any
+}`,
+          returns: `<context>`,
+        },
+      ];
+      this.examples = [
+        {
+          description: "Prints a current `context`",
+          code: "$op: dbg.log",
+          result: `<context>`,
+        },
+        {
+          description: "Prints specified value with provided label",
+          code: `$op: dbg.log
+label: "token"
+value:
+  $op: get
+  key: token`,
+          result: `<context>`,
+        },
+      ];
+    }
   }
 
   protected create({
@@ -30,7 +60,5 @@ export class LogOpFactory extends FlowOpFactory<typeof logConfig, unknown> {
 }
 
 export function debugOperatorsFactories(logger: ILogger) {
-  return {
-    log: new LogOpFactory(logger),
-  };
+  return [new LogOpFactory(logger)];
 }

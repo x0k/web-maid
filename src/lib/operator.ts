@@ -2,6 +2,7 @@ import { type TypeOf, type ZodType } from "zod";
 
 import { isObject } from "@/lib/guards";
 import { Factory } from "@/lib/factory";
+
 import { ILogger } from "./logger";
 
 export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
@@ -71,17 +72,25 @@ export async function evalInScope<T, R>(
   );
 }
 
-export abstract class BaseValFactory<S extends ZodType, R>
-  implements Factory<unknown, Result<R>>
-{
-  abstract readonly schema: S;
-  abstract Create(config: unknown): Result<R>;
+export interface OpSignature {
+  description: string;
+  params: string;
+  returns: string;
+}
+
+export interface OpExample {
+  description: string;
+  code: string;
+  result: string;
 }
 
 export abstract class BaseOpFactory<S extends ZodType, R>
   implements ScopedOpFactory<R>
 {
-  abstract readonly schema: S;
+  public abstract readonly name: string;
+  public abstract readonly schema: S;
+  public signatures: OpSignature[] = [];
+  public examples: OpExample[] = [];
   abstract Create(config: unknown): ScopedOp<R>;
 }
 

@@ -64,8 +64,4 @@ token: Bearer token
 
 ## Operators
 
-Operators are functions with the following signature
-
-```typescript
-type Operator<C, R> = (config: C) => (context: unknown) => R;
-```
+Full documentation of operators is available in the [operators](docs/operators.md) section and on the `options` page of the extension.

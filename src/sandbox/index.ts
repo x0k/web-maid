@@ -4,14 +4,16 @@ import Ajv from "ajv";
 
 import { SandboxActor } from "@/lib/actors/sandbox";
 import { stringifyError } from "@/lib/error";
-import { noop } from '@/lib/function/function';
+import { noop } from "@/lib/function/function";
+import { makeActorLogic } from "@/lib/actor";
+import { evalInContext, evalInScope } from "@/lib/eval";
 
 import {
+  RunEvalAction,
   SandboxAction,
   SandboxActionResults,
   SandboxActionType,
 } from "@/shared/sandbox/action";
-import { makeActorLogic } from "@/lib/actor";
 
 const ajv = new Ajv();
 
@@ -22,6 +24,14 @@ Handlebars.registerHelper("quote", (data) =>
 
 const frameId = new URL(window.location.href).searchParams.get("id");
 
+const evaluators: Record<
+  RunEvalAction["injectAs"],
+  (expression: string, data: Record<string, unknown>) => unknown
+> = {
+  context: evalInContext,
+  scope: evalInScope,
+};
+
 if (frameId) {
   const sandbox = new SandboxActor<SandboxAction, SandboxActionResults, string>(
     frameId,
@@ -31,7 +41,8 @@ if (frameId) {
           Handlebars.compile(template, {
             noEscape: true,
           })(data),
-        [SandboxActionType.RunEval]: ({ expression }) => eval(expression),
+        [SandboxActionType.RunEval]: ({ expression, data, injectAs }) =>
+          evaluators[injectAs](expression, data),
         // https://ajv.js.org/api.html#ajv-validateschema-schema-object-boolean
         [SandboxActionType.ValidateSchema]: ({ schema }) =>
           ajv.validateSchema(schema) as boolean,
