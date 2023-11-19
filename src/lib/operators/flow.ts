@@ -88,7 +88,7 @@ conditions:
 }
 
 const notConfig = z.object({
-  value: z.any(),
+  value: z.unknown(),
 });
 
 export class NotOpFactory extends TaskOpFactory<typeof notConfig, boolean> {

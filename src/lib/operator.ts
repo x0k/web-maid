@@ -88,9 +88,9 @@ export abstract class BaseOpFactory<S extends ZodType, R>
   implements ScopedOpFactory<R>
 {
   public abstract readonly name: string;
+  public abstract readonly schema: S;
   public signatures: OpSignature[] = [];
   public examples: OpExample[] = [];
-  public abstract readonly schema: S;
   abstract Create(config: unknown): ScopedOp<R>;
 }
 

@@ -44,7 +44,7 @@ import { useOkShower } from '@/shared/react-ok-shower';
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
-import { Readme } from "./readme";
+import { Docs } from "./docs";
 
 const configModel = monaco.editor.createModel("", "yaml");
 const secretsModel = monaco.editor.createModel("", "yaml");
@@ -322,7 +322,7 @@ export function Config() {
             <Editor ref={logsEditorRef} model={logsModel} />
           </Box>
         ) : (
-          <Readme />
+          <Docs />
         )}
       </Box>
     </Box>
