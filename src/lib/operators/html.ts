@@ -22,6 +22,41 @@ export class ReadabilityOpFactory extends BrowserFactory<
 > {
   name = "readability";
   schema = readabilityConfig;
+  constructor(readonly window: Window) {
+    super(window);
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<D> {
+  html: string;
+  baseUrl?: string;
+  default?: D | string;
+}`,
+          returns: `{
+  /** article title */
+  title: string;
+  /** HTML string of processed article content */
+  content: T;
+  /** text content of the article, with all the HTML tags removed */
+  textContent: string;
+  /** length of an article, in characters */
+  length: number;
+  /** article description, or short excerpt from the content */
+  excerpt: string;
+  /** author metadata */
+  byline: string;
+  /** content direction */
+  dir: string;
+  /** name of the site */
+  siteName: string;
+  /** content language */
+  lang: string;
+} | D | string"`,
+          description: "Returns an article object.",
+        },
+      ];
+    }
+  }
   execute({
     html,
     baseUrl,
@@ -40,6 +75,22 @@ export class ReadabilityOpFactory extends BrowserFactory<
 
 export class SimplifyHtmlOpFactory extends ReadabilityOpFactory {
   name = "simplify";
+  constructor(readonly window: Window) {
+    super(window);
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<D> {
+  html: string;
+  baseUrl?: string;
+  default?: D | string;
+}`,
+          returns: `D | string"`,
+          description: "Returns a content of article object.",
+        },
+      ];
+    }
+  }
   execute(config: z.TypeOf<this["schema"]>): unknown {
     const result = super.execute(config);
     if (typeof result === "object" && result !== null && "content" in result) {
@@ -66,6 +117,32 @@ export class Html2MarkdownOpFactory extends BrowserFactory<
 > {
   name = "markdown";
   schema = html2MarkdownConfig;
+  constructor(readonly window: Window) {
+    super(window);
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<D> {
+  html: string;
+  options?: {
+    headingStyle?: "setext" | "atx" | undefined;
+    hr?: string | undefined;
+    br?: string | undefined;
+    bulletListMarker?: "-" | "+" | "*" | undefined;
+    codeBlockStyle?: "indented" | "fenced" | undefined;
+    emDelimiter?: "_" | "*" | undefined;
+    fence?: "\`\`\`" | "~~~" | undefined;
+    strongDelimiter?: "__" | "**" | undefined;
+    linkStyle?: "inlined" | "referenced" | undefined;
+    linkReferenceStyle?: "full" | "collapsed" | "shortcut" | undefined;
+  }
+}`,
+          returns: "string",
+          description: "Converts HTML to Markdown.",
+        },
+      ];
+    }
+  }
   execute({ html, options }: z.TypeOf<this["schema"]>): string {
     const turndown = new Turndown(options);
     return turndown.turndown(html);
@@ -82,6 +159,28 @@ export class MetadataOpFactory extends BrowserFactory<
 > {
   name = "metadata";
   schema = metadataConfig;
+  constructor(readonly window: Window) {
+    super(window);
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<D> {
+  html: string
+}`,
+          returns: `{
+  title: string | null
+  description: string | null
+  modifiedDate: string | null
+  publishedDate: string | null
+  date: string | null
+  image: string | null
+  author: string | null
+}`,
+          description: "Returns HTML page metadata.",
+        },
+      ];
+    }
+  }
   execute({ html }: z.TypeOf<this["schema"]>): unknown {
     const root = new DOMParser().parseFromString(html, "text/html");
     return {
