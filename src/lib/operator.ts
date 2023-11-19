@@ -72,19 +72,24 @@ export async function evalInScope<T, R>(
   );
 }
 
+export interface OpSignature {
+  description: string;
+  params: string;
+  returns: string;
+}
+
 export interface OpExample {
   description: string;
   code: string;
-  result: string
+  result: string;
 }
 
 export abstract class BaseOpFactory<S extends ZodType, R>
   implements ScopedOpFactory<R>
 {
   public abstract readonly name: string;
-  public readonly signature: string = "No signature provided";
-  public readonly description: string = "No description provided";
-  public readonly examples: OpExample[] = []
+  public signatures: OpSignature[] = [];
+  public examples: OpExample[] = [];
   public abstract readonly schema: S;
   abstract Create(config: unknown): ScopedOp<R>;
 }
