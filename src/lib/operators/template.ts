@@ -18,29 +18,35 @@ export class TemplateFactory extends FlowOpFactory<
   string
 > {
   name = "render";
-  readonly schema = templateConfig;
-  signature = `interface RenderConfig {
-  template: string;
-  data?: unknown;
-}
-function render({ template, data = <config> }: RenderConfig): string`;
-  description = "Renders handlebars `template` with `data`.";
-  examples = [
-    {
-      description: "Basic usage",
-      code: `$op: template.render
-template: |
-  Hello, {{name}}!
-data:
-  name: John`,
-      result: "Hello, John!",
-    },
-  ];
+  schema = templateConfig;
 
   constructor(
     private readonly hbs: AsyncFactory<TemplateRendererData, string>
   ) {
     super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface RenderConfig {
+  template: string;
+  data?: unknown;
+}`,
+          returns: "string",
+          description: "Renders handlebars `template` with `data`.",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Basic usage",
+          code: `$op: template.render
+template: |
+  Hello, {{name}}!
+data:
+  name: John`,
+          result: "Hello, John!",
+        },
+      ];
+    }
   }
 
   create({ template, data }: z.TypeOf<this["schema"]>): ScopedOp<string> {
