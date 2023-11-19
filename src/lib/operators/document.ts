@@ -25,38 +25,47 @@ export class GetOpFactory extends BrowserFactory<
 > {
   name = "get";
   readonly schema = documentConfig;
-  signature = `interface GetConfig {
+  constructor(window: Window) {
+    super(window);
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
   key: string | number | (string | number)[];
   default?: unknown;
-}
-function get(config: GetConfig): <json>`;
-  description =
-    "Returns a value from `document` and validates it as `<json>`. \
-Follows the same rules as `get` operator.";
-  examples = [
-    {
-      description: "Get document title",
-      code: `$op: doc.get
+}`,
+          returns: "<json>",
+          description:
+            "Returns a value from `document` and validates it as `<json>`. \
+Follows the same rules as `get` operator.",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Get document title",
+          code: `$op: doc.get
 key: title`,
-      result: `<current document title>`,
-    },
-    {
-      description: "Get current URL",
-      code: `$op: doc.get
+          result: `<current document title>`,
+        },
+        {
+          description: "Get current URL",
+          code: `$op: doc.get
 key:
   - location
   - href`,
-      result: `<current document URL>`,
-    },
-    {
-      description: "Get document HTML",
-      code: `$op: doc.get
+          result: `<current document URL>`,
+        },
+        {
+          description: "Get document HTML",
+          code: `$op: doc.get
 key:
   - documentElement
   - outerHTML`,
-      result: `<current document HTML>`,
-    },
-  ];
+          result: `<current document HTML>`,
+        },
+      ];
+    }
+  }
   execute({ key, default: defaultValue }: z.TypeOf<this["schema"]>): unknown {
     const value = get(key, this.window.document, defaultValue);
     return jsonSchema.parse(value);
@@ -83,44 +92,50 @@ export class JsEvalOpFactory extends BrowserFactory<
 > {
   name = "eval";
   readonly schema = jsEvalConfig;
-  signature = `interface EvalConfig {
-  expression: string
-  data?: Record<string, any>
-  injectAs?: "context" | "scope"
-  default?: any
-}
-function eval({ data = {}, injectAs = "context", ...rest }: EvalConfig): unknown`;
-  description =
-    "Evaluates an javascript expression and returns its result. \
-Since the `eval` is blocked by CSP, evaluation is performed in an isolated sandbox. \
-If during the execution of the expression an error occurs, the `default` value is returned.\n\n\
-There are several ways to inject `data` into the expression:\n\n\
-- `context` - the provided `data` will be available by `this` keyword.\n\
-- `scope` - the values of provided `data` will be implicitly available in the expression.";
-  examples = [
-    {
-      description: "Inject as context",
-      code: `$op: doc.eval
-expression: this.key + 1
-data:
-  key: 1`,
-      result: "2",
-    },
-    {
-      description: "Inject as scope",
-      code: `$op: doc.eval
-expression: key + 1
-injectAs: scope
-data:
-  key: 1`,
-      result: "2",
-    }
-  ]
   constructor(
     window: Window,
     private readonly evaluator: AsyncFactory<EvaluatorData, unknown>
   ) {
     super(window);
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  expression: string
+  data?: Record<string, any>
+  injectAs?: "context" | "scope"
+  default?: any
+}`,
+          returns: "unknown",
+          description:
+            "Evaluates an javascript expression and returns its result. \
+Since the `eval` is blocked by CSP, evaluation is performed in an isolated sandbox. \
+If during the execution of the expression an error occurs, the `default` value is returned.\n\n\
+There are several ways to inject `data` into the expression:\n\n\
+- `context` - the provided `data` will be available by `this` keyword.\n\
+- `scope` - the values of provided `data` will be implicitly available in the expression.",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Inject as context",
+          code: `$op: doc.eval
+expression: this.key + 1
+data:
+  key: 1`,
+          result: "2",
+        },
+        {
+          description: "Inject as scope",
+          code: `$op: doc.eval
+expression: key + 1
+injectAs: scope
+data:
+  key: 1`,
+          result: "2",
+        },
+      ];
+    }
   }
 
   async execute({
@@ -150,21 +165,29 @@ const selectionConfig = z.object({
   default: z.unknown().default(""),
 });
 
-
-
 export class SelectionOpFactory extends BrowserFactory<
   typeof selectionConfig,
   unknown
 > {
   name = "selection";
   readonly schema = selectionConfig;
-  signature = `interface SelectionConfig<D> {
+  constructor(window: Window) {
+    super(window);
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<D> {
   as?: "text" | "html";
   default?: D | string;
-}
-function selection<D>({ as = "text", default = "" }: SelectionConfig<D>): string | D`
-  description = 'Returns the selection of current document in `text` or `html` format. \
-If the selection is empty, the `default` value is returned.';
+}`,
+          returns: "D | string",
+          description:
+            "Returns the selection of current document in `text` or `html` format. \
+If the selection is empty, the `default` value is returned.",
+        },
+      ];
+    }
+  }
   execute({ as, default: defaultValue }: z.TypeOf<this["schema"]>): unknown {
     const selection = this.window.getSelection();
     if (selection === null) {
