@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   evalInScope,
   FlowOpFactory,
+  OpSignature,
   ScopedOp,
   TaskOpFactory,
 } from "@/lib/operator";
@@ -17,25 +18,34 @@ const pipeConfig = z.object({
 
 export class PipeOpFactory extends FlowOpFactory<typeof pipeConfig, unknown> {
   name = "pipe";
-  signature = `interface PipeConfig<R> {
+  schema = pipeConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<R> {
   do: R[]
-}
-function pipe<R>(config: PipeConfig<R>): R`;
-  description =
-    "Passes the result of the previous operator as the context to the next operator";
-  examples = [
-    {
-      description: "Basic usage",
-      code: `$op: pipe
+}`,
+          returns: "R",
+          description:
+            "Passes the result of the previous operator as the context to the next operator",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Basic usage",
+          code: `$op: pipe
 do:
   - key: value
   - $op: get
     key: key
 `,
-      result: "value",
-    },
-  ];
-  schema = pipeConfig;
+          result: "value",
+        },
+      ];
+    }
+  }
   create({ do: operators }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
       const result = { ...scope };
@@ -53,26 +63,35 @@ const andConfig = z.object({
 
 export class AndOpFactory extends FlowOpFactory<typeof andConfig, unknown> {
   name = "and";
-  signature = `interface AndConfig<R> {
+  schema = andConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<R> {
   conditions: R[]
-}
-function and<R>(config: AndConfig<R>): R`;
-  description = `Evaluates conditions one by one.
+}`,
+          returns: "R",
+          description: `Evaluates conditions one by one.
 If any of the conditions fails, returns the result of the failed condition,
-otherwise returns the result of the last condition.`;
-  examples = [
-    {
-      description: "Basic usage",
-      code: `$op: and
+otherwise returns the result of the last condition.`,
+        },
+      ];
+      this.examples = [
+        {
+          description: "Basic usage",
+          code: `$op: and
 conditions:
   - true
   - string
   - 0
   - null`,
-      result: `0`,
-    },
-  ];
-  readonly schema = andConfig;
+          result: `0`,
+        },
+      ];
+    }
+  }
   create({ conditions }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
       let result: unknown;
@@ -93,20 +112,30 @@ const notConfig = z.object({
 
 export class NotOpFactory extends TaskOpFactory<typeof notConfig, boolean> {
   name = "not";
-  signature = `interface NotConfig {
+  schema = notConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface NotConfig {
   value: any;
-}
-function not(config: NotConfig): boolean`;
-  description = "Takes truthy values to `false` and falsy values to `true`";
-  examples = [
-    {
-      description: "Basic usage",
-      code: `$op: not
+}`,
+          returns: "boolean",
+          description:
+            "Takes truthy values to `false` and falsy values to `true`",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Basic usage",
+          code: `$op: not
 value: some value`,
-      result: "false",
-    },
-  ];
-  readonly schema = notConfig;
+          result: "false",
+        },
+      ];
+    }
+  }
   execute({ value }: z.TypeOf<this["schema"]>): boolean {
     return !value;
   }
@@ -120,25 +149,34 @@ const ifConfig = z.object({
 
 export class IfOpFactory extends FlowOpFactory<typeof ifConfig, unknown> {
   name = "if";
-  signature = `interface IfConfig<T, E> {
+  schema = ifConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface IfConfig<T, E> {
   condition: any;
   then: T;
   else?: E | null;
-}
-function if<T, E>({ condition, then, else = null }: IfConfig<T, E>): T | E | null`;
-  description =
-    "Returns `then` if `condition` is truthy, otherwise `else`. \
-If `condition` is falsy and `else` is not provided, returns `null`.";
-  examples = [
-    {
-      description: "Basic usage",
-      code: `$op: if
+}`,
+          returns: `T | E | null`,
+          description:
+            "Returns `then` if `condition` is truthy, otherwise `else`. \
+If `condition` is falsy and `else` is not provided, returns `null`.",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Basic usage",
+          code: `$op: if
 condition: false
 then: next value`,
-      result: "null",
-    },
-  ];
-  readonly schema = ifConfig;
+          result: "null",
+        },
+      ];
+    }
+  }
   create({
     condition,
     then,
@@ -161,27 +199,36 @@ const condConfig = z.object({
 
 export class CondOpFactory extends FlowOpFactory<typeof condConfig, unknown> {
   name = "cond";
-  signature = `interface CondConfig<R> {
+  schema = condConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface CondConfig<R> {
   cases: [condition: any, then: R][];
   default?: R;
-}
-function cond<R>(config: CondConfig<R>): R`;
-  description =
-    "Evaluates `conditions` in order until one returns truthy and returns the `then` value.\n\n\
+}`,
+          returns: "R",
+          description:
+            "Evaluates `conditions` in order until one returns truthy and returns the `then` value.\n\n\
 - If none of the `conditions` return truthy and `default` is provided, returns `default`.\
-- If none of the `conditions` return truthy and `default` is not provided, throws an error.";
-  examples = [
-    {
-      description: "Basic usage",
-      code: `$op: cond
+- If none of the `conditions` return truthy and `default` is not provided, throws an error.",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Basic usage",
+          code: `$op: cond
 cases:
   - [false, falsy]
   - [true, truthy]
 default: default`,
-      result: "truthy",
-    },
-  ];
-  readonly schema = condConfig;
+          result: "truthy",
+        },
+      ];
+    }
+  }
   create({
     cases,
     default: otherwise,
@@ -206,19 +253,31 @@ const binaryConfig = z.object({
   right: jsonSchema,
 });
 
-function operatorSignature(name: string) {
-  return `interface BinaryOperatorConfig {
+function opSignatures(description: string): OpSignature[] {
+  return [
+    {
+      params: `interface Config {
   left: <json>;
   right: <json>;
-}
-function ${name}(config: BinaryOperatorConfig): boolean`;
+}`,
+      returns: "boolean",
+      description,
+    },
+  ];
 }
 
 export class LtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
   name = "lt";
-  signature = operatorSignature("lt");
-  description = "Returns `true` if `left` is less than `right`.";
   readonly schema = binaryConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = opSignatures(
+        "Returns `true` if `left` is less than `right`."
+      );
+    }
+  }
+
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) === -1;
   }
@@ -226,9 +285,16 @@ export class LtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 
 export class LteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
   name = "lte";
-  signature = operatorSignature("lte");
-  description = "Returns `true` if `left` is less than or equal to `right`.";
   readonly schema = binaryConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = opSignatures(
+        "Returns `true` if `left` is less than or equal to `right`."
+      );
+    }
+  }
+
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) < 1;
   }
@@ -236,9 +302,16 @@ export class LteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 
 export class GtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
   name = "gt";
-  signature = operatorSignature("gt");
-  description = "Returns `true` if `left` is greater than `right`.";
   readonly schema = binaryConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = opSignatures(
+        "Returns `true` if `left` is greater than `right`."
+      );
+    }
+  }
+
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) === 1;
   }
@@ -246,9 +319,16 @@ export class GtOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 
 export class GteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
   name = "gte";
-  signature = operatorSignature("gte");
-  description = "Returns `true` if `left` is greater than or equal to `right`.";
   readonly schema = binaryConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = opSignatures(
+        "Returns `true` if `left` is greater than or equal to `right`."
+      );
+    }
+  }
+
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) > -1;
   }
@@ -256,9 +336,16 @@ export class GteOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 
 export class EqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
   name = "eq";
-  signature = operatorSignature("eq");
-  description = "Returns `true` if `left` is equal to `right`.";
   readonly schema = binaryConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = opSignatures(
+        "Returns `true` if `left` is equal to `right`."
+      );
+    }
+  }
+
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) === 0;
   }
@@ -266,9 +353,16 @@ export class EqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
 
 export class NeqOpFactory extends TaskOpFactory<typeof binaryConfig, boolean> {
   name = "neq";
-  signature = operatorSignature("neq");
-  description = "Returns `true` if `left` is not equal to `right`.";
   readonly schema = binaryConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = opSignatures(
+        "Returns `true` if `left` is not equal to `right`."
+      );
+    }
+  }
+
   execute({ left, right }: z.TypeOf<this["schema"]>): boolean {
     return compareJsonValue(left, right) !== 0;
   }
@@ -291,36 +385,45 @@ const getConfig = z.object({
 
 export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
   name = "get";
-  signature = `interface GetConfig {
+  schema = getConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface GetConfig {
   key?: string | number | Array<string | number>;
   from?: any;
   default?: any;
-}
-function get({ key, from = <context>, default }: GetConfig): unknown`;
-  description =
-    "The operator works as follows:\n\n\
+}`,
+          returns: "unknown",
+          description:
+            "The operator works as follows:\n\n\
 1. If `key` is not provided, returns current context\n\
 2. If `key` is a string and `from` is an object and `from[key]` exists, returns `from[key]`\n\
 3. If `key` is a number and `from` is an array and `from[key]` exists, returns `from[key]`\n\
 4. If `key` is a array then steps 2 and 3 are repeated for each element of `key`, returns the last value\n\
 5. If some previous step fails and `default` is provided, returns `default`\n\
-6. Throws an error";
-  examples = [
-    {
-      description: "Returns current context",
-      code: "$op: get",
-      result: "<context>",
-    },
-    {
-      description: "Returns specified value",
-      code: `$op: get
+6. Throws an error",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Returns current context",
+          code: "$op: get",
+          result: "<context>",
+        },
+        {
+          description: "Returns specified value",
+          code: `$op: get
 key: "token"
 from:
   token: some-token`,
-      result: "some-token",
-    },
-  ];
-  readonly schema = getConfig;
+          result: "some-token",
+        },
+      ];
+    }
+  }
   create({
     key,
     from,
@@ -349,36 +452,48 @@ export class UpdateOpFactory extends FlowOpFactory<
   Record<string, unknown> | Array<unknown>
 > {
   name = "update";
-  signature = `interface UpdateArrayConfig<T> {
+  schema = updateConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<T> {
   source?: Array<T>
   properties: Record<number, T>;
-}
-function update<T>({ source = <context>, properties }: UpdateArrayConfig<T>): Array<T>
-interface UpdateRecordConfig<T> {
+}`,
+          returns: `Array<T>`,
+          description: "Updates `source` array with `properties`",
+        },
+        {
+          params: `interface Config<T> {
   source?: Record<string, T>
   properties: Record<string, T>;
-}
-function update<T>({ source = <context>, properties }: UpdateRecordConfig<T>): Record<string, T>`;
-  description = "Updates `source` with `properties`";
-  examples = [
-    {
-      description: "Updates array",
-      code: `$op: update
+}`,
+          returns: `Record<string, T>`,
+          description: "Updates `source` object with `properties`",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Updates array",
+          code: `$op: update
 source: [1, 2, 3]
 properties:
   1: 10`,
-      result: "[1, 10, 3]",
-    },
-    {
-      description: "Updates object",
-      code: `$op: update
+          result: "[1, 10, 3]",
+        },
+        {
+          description: "Updates object",
+          code: `$op: update
 source: { a: 1, b: 2 }
 properties:
   a: 10`,
-      result: "{ a: 10, b: 2 }",
-    },
-  ];
-  readonly schema = updateConfig;
+          result: "{ a: 10, b: 2 }",
+        },
+      ];
+    }
+  }
   create({
     source,
     properties,
@@ -414,24 +529,31 @@ const tryConfig = z.object({
 export class TryOpFactory extends FlowOpFactory<typeof tryConfig, unknown> {
   name = "try";
   schema = tryConfig;
-  signature = `interface TryConfig<R, C, F> {
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface TryConfig<R, C, F> {
   do: R;
   catch?: C;
   finally?: F;
-}
-function try<R, C, F>(config: TryConfig<R, C, F>): R | C | F`;
-  description =
-    "Catches and handles runtime errors. Works as follows:\n\
+}`,
+          returns: ` R | C | F`,
+          description:
+            "Catches and handles runtime errors. Works as follows:\n\
 - Executes `do` block, returned value is rewritten as `context`\n\
   - If it fails, an error is stored in `scope`\n\
     - If `catch` block is provided, it is executed, returned value is rewritten as `context`\n\
 - If `finally` block is provided, it is executed, returned value is rewritten as `context`\n\
 - If an error is occurred, it is thrown\n\
-- If no error is occurred, the `context` is returned";
-  examples = [
-    {
-      description: "Catches and handles runtime errors",
-      code: `$op: try
+- If no error is occurred, the `context` is returned",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Catches and handles runtime errors",
+          code: `$op: try
 do:
   $op: throw
   error: "some error"
@@ -441,9 +563,11 @@ finally:
   left:
     $op: get
   right: 1`,
-      result: "2",
-    },
-  ];
+          result: "2",
+        },
+      ];
+    }
+  }
   protected create({
     do: action,
     catch: rescue,
@@ -482,12 +606,21 @@ const throwConfig = z.object({
 
 export class ThrowOpFactory extends FlowOpFactory<typeof throwConfig, unknown> {
   name = "throw";
-  signature = `interface ThrowConfig {
-  error: any;
-}
-function throw(config: ThrowConfig): void`;
-  description = "Throws a runtime error";
   schema = throwConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface ThrowConfig {
+  error: any;
+}`,
+          returns: "never",
+          description: "Throws a runtime error",
+        },
+      ];
+    }
+  }
   protected create({ error }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return (scope) => evalInScope(error, scope).then(Promise.reject);
   }
