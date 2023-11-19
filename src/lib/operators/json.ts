@@ -12,6 +12,20 @@ export class StringifyOpFactory extends TaskOpFactory<
 > {
   name = "stringify";
   schema = stringifyConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+            value: <json>
+          }`,
+          returns: `string`,
+          description: "Converts a `<json>` value to a JSON string.",
+        },
+      ];
+    }
+  }
   protected execute({ value }: z.TypeOf<this["schema"]>): string {
     return JSON.stringify(value);
   }
@@ -24,6 +38,20 @@ const parseConfig = z.object({
 export class ParseOpFactory extends TaskOpFactory<typeof parseConfig, unknown> {
   name = "parse";
   schema = parseConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+            value: string
+          }`,
+          returns: `<json>`,
+          description: "Parses a JSON string.",
+        },
+      ];
+    }
+  }
   protected execute({ value }: z.TypeOf<this["schema"]>): unknown {
     return JSON.parse(value);
   }
