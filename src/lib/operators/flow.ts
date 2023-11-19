@@ -29,7 +29,7 @@ export class PipeOpFactory extends FlowOpFactory<typeof pipeConfig, unknown> {
 }`,
           returns: "R",
           description:
-            "Passes the result of the previous operator as the context to the next operator",
+            "Passes the result of the previous `operator` as the `context` to the next `operator`",
         },
       ];
       this.examples = [
@@ -205,7 +205,7 @@ export class CondOpFactory extends FlowOpFactory<typeof condConfig, unknown> {
     if (import.meta.env.DEV) {
       this.signatures = [
         {
-          params: `interface CondConfig<R> {
+          params: `interface Config<R> {
   cases: [condition: any, then: R][];
   default?: R;
 }`,
@@ -434,12 +434,15 @@ interface Config {
           result: "<context>",
         },
         {
-          description: "Returns specified value",
+          description: "Returns nested value",
           code: `$op: get
-key: "token"
+key:
+  - some
+  - nested
 from:
-  token: some-token`,
-          result: "some-token",
+  some:
+    nested: value`,
+          result: "value",
         },
       ];
     }
@@ -561,12 +564,12 @@ export class TryOpFactory extends FlowOpFactory<typeof tryConfig, unknown> {
 }`,
           returns: ` R | C | F`,
           description:
-            "Catches and handles runtime errors. Works as follows:\n\
+            "Catches and handles runtime errors. Works as follows:\n\n\
 - Executes `do` block, returned value is rewritten as `context`\n\
   - If it fails, an error is stored in `scope`\n\
     - If `catch` block is provided, it is executed, returned value is rewritten as `context`\n\
 - If `finally` block is provided, it is executed, returned value is rewritten as `context`\n\
-- If an error is occurred, it is thrown\n\
+- If an error is occurred and `catch` block is not provided or it crashes, an error is thrown\n\
 - If no error is occurred, the `context` is returned",
         },
       ];

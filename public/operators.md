@@ -10,3 +10,5 @@ The operators signatures are described in `typescript`-like syntax with the foll
   - If `objects` have the same count of keys:
     - If keys are different, then `object` with the greatest uniq key is greater
     - If keys are the same, values are compared in alphabetical order of keys
+
+Also the truthiness and falseness of the values is the same as in JavaScript.

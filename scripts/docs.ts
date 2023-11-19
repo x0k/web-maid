@@ -1,6 +1,6 @@
 import { file, write } from "bun";
 
-import { details } from "../src/options/readme";
+import { details } from "../src/options/docs";
 
 try {
   const operatorsFile = file(import.meta.resolveSync("../public/operators.md"));

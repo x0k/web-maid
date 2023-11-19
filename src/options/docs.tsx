@@ -76,15 +76,15 @@ ${
   factory.signatures.length
     ? factory.signatures.map(renderSignature).join("\n\n")
     : renderFactorySchema(factory)
-}
+}${
+      factory.examples.length
+        ? `
 
 ### Examples
 
-${
-  factory.examples.length
-    ? factory.examples.map(renderExample).join("\n\n")
-    : "No examples provided"
-}`;
+${factory.examples.map(renderExample).join("\n\n")}`
+        : ""
+    }`;
   }
   //@ts-expect-error empty deps is ok for metadata extraction
   const operators = compileOperatorFactories({});

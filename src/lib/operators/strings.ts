@@ -20,7 +20,7 @@ export class JoinOpFactory extends TaskOpFactory<typeof joinConfig, string> {
   separator?: string
 }`,
           returns: `string`,
-          description: "Joins strings.",
+          description: "Joins an array of strings.",
         },
       ];
     }

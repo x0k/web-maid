@@ -85,7 +85,7 @@ export class SimplifyHtmlOpFactory extends ReadabilityOpFactory {
   baseUrl?: string;
   default?: D | string;
 }`,
-          returns: `D | string"`,
+          returns: `D | string`,
           description: "Returns a content of article object.",
         },
       ];
@@ -176,7 +176,7 @@ export class MetadataOpFactory extends BrowserFactory<
   image: string | null
   author: string | null
 }`,
-          description: "Returns HTML page metadata.",
+          description: "Returns a HTML page metadata.",
         },
       ];
     }

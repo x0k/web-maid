@@ -37,8 +37,8 @@ export class DefineOpFactory extends FlowOpFactory<
 }`,
           returns: "R",
           description:
-            "Defines a functions and/or constants. \
-If function or constant already exists in `scope` it will be overwritten. \
+            "Defines a `functions` and/or `constants`. \
+If `function` or `constant` already exists in `scope` it will be overwritten. \
 Definition affects only `scope` that passes for evaluation `for` key.",
         },
       ];
@@ -110,7 +110,7 @@ export class CallOpFactory extends FlowOpFactory<typeof callConfig, unknown> {
   arg?: any
 }`,
           returns: "unknown",
-          description: "Calls a function and returns its result.",
+          description: "Calls a `function` and returns its result.",
         },
       ];
       this.examples = [
@@ -168,8 +168,8 @@ export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
 }`,
           returns: "unknown",
           description:
-            "Returns a constant from a current scope. \
-If constant is not defined then `default` value is returned. \
+            "Returns a `constant` from a current `scope`. \
+If `constant` is not defined then `default` value is returned. \
 If `default` is not defined then an error is thrown.",
         },
       ];
@@ -219,8 +219,8 @@ export class ExecOpFactory extends FlowOpFactory<typeof execConfig, unknown> {
 }`,
           returns: "unknown",
           description:
-            "Executes an operator and returns its result. \
-Can be used to execute operators with computed `config`.",
+            "Executes an `operator` and returns its result. \
+Can be used to execute `operators` with computed `config`.",
         },
       ];
       this.examples = [
@@ -285,7 +285,7 @@ export class EvalOpFactory extends FlowOpFactory<typeof evalConfig, unknown> {
 }`,
           returns: `unknown`,
           description:
-            "Evaluates an expression on the current scope and returns its result.",
+            "Evaluates an expression on the current `scope` and returns its result.",
         },
       ];
       this.examples = [
@@ -328,7 +328,7 @@ export class ErrorOpFactory extends FlowOpFactory<typeof errorConfig, unknown> {
           params: `interface Config {}`,
           returns: "string",
           description:
-            "Returns an last caught by `try` operator stringified error in the current `scope`.",
+            "Returns a last caught by `try` operator stringified error in the current `scope`.",
         },
       ];
     }
