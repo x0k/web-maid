@@ -20,7 +20,7 @@ export let details = "";
 /* eslint-disable no-inner-declarations */
 if (import.meta.env.DEV) {
   function renderExample(example: OpExample) {
-    return `- ${example.description}
+    return `${example.description}
 
 \`\`\`yaml
 ${example.code}
@@ -34,7 +34,7 @@ ${example.result}
   }
 
   function renderSignature(signature: OpSignature) {
-    return `- ${signature.description}
+    return `${signature.description}
 
 \`\`\`typescript
 ${signature.params}
