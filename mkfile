@@ -1,12 +1,14 @@
 #!/bin/bash
 
+docs:
+  DEV=true bun scripts/docs.ts
+
 d:
   bun --bun run dev
 
 b:
   NODE_ENV=production bun --bun run build && \
-    DEV=true bun scripts/docs.ts
-
+    mk docs
 c:
   bun --bun run check
 
