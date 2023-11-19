@@ -13,7 +13,7 @@ import {
   TaskOpFactory,
 } from "@/lib/operator";
 
-import { compileOperatorFactories } from "@/shared/config/operator";
+import { compileOperatorFactories } from "./operator";
 
 export let details = "";
 
@@ -67,8 +67,6 @@ interface Config ${printNode(node)}
     factory: BaseOpFactory<ZodTypeAny, unknown>
   ) {
     return `## Operator \`${name}\`
-
----
 
 ### Signatures
 

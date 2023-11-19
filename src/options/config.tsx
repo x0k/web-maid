@@ -40,11 +40,11 @@ import {
 } from "@/shared/sandbox/remote-impl";
 import { useRootFactory } from "@/shared/react-root-factory";
 import { useFormShower } from "@/shared/react-form-shower";
-import { useOkShower } from '@/shared/react-ok-shower';
+import { useOkShower } from "@/shared/react-ok-shower";
+import { Docs } from "@/shared/config/docs";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
-import { Docs } from "./docs";
 
 const configModel = monaco.editor.createModel("", "yaml");
 const secretsModel = monaco.editor.createModel("", "yaml");
@@ -95,7 +95,7 @@ export function Config() {
           fetcher,
           logger,
           formShower,
-          okShower
+          okShower,
         })
       ),
     [sandbox, logger, formShower, okShower]
@@ -285,6 +285,15 @@ export function Config() {
               Reset
             </Button>
           )}
+          <Button
+            variant="contained"
+            size="small"
+            color="info"
+            target="_blank"
+            href={chrome.runtime.getURL("docs.html")}
+          >
+            Docs
+          </Button>
         </Box>
         {tabsPermission.data !== true ? (
           <Button

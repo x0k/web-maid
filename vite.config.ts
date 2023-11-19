@@ -4,6 +4,13 @@ import { crx } from "@crxjs/vite-plugin";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        docs: "docs.html",
+      },
+    },
+  },
   plugins: [
     react(),
     crx({
