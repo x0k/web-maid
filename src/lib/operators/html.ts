@@ -122,7 +122,7 @@ export class Html2MarkdownOpFactory extends BrowserFactory<
     if (import.meta.env.DEV) {
       this.signatures = [
         {
-          params: `interface Config<D> {
+          params: `interface Config {
   html: string;
   options?: {
     headingStyle?: "setext" | "atx" | undefined;
@@ -164,7 +164,7 @@ export class MetadataOpFactory extends BrowserFactory<
     if (import.meta.env.DEV) {
       this.signatures = [
         {
-          params: `interface Config<D> {
+          params: `interface Config {
   html: string
 }`,
           returns: `{
