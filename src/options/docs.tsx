@@ -49,7 +49,7 @@ ${signature.returns}
 
   function renderFactorySchema(factory: BaseOpFactory<ZodTypeAny, unknown>) {
     const { node } = zodToTs(factory.schema);
-    return `- Raw validation schema.
+    return `Raw validation schema.
 ${
   factory instanceof TaskOpFactory
     ? "This schema describes the shape of the evaluated input."
