@@ -15,8 +15,6 @@ Also the truthiness and falseness of the values is the same as in JavaScript.
 
 ## Operator `pipe`
 
----
-
 ### Signatures
 
 Passes the result of the previous `operator` as the `context` to the next `operator`
@@ -53,8 +51,6 @@ value
 ```
 
 ## Operator `and`
-
----
 
 ### Signatures
 
@@ -95,8 +91,6 @@ conditions:
 
 ## Operator `not`
 
----
-
 ### Signatures
 
 Takes truthy values to `false` and falsy values to `true`
@@ -129,8 +123,6 @@ false
 ```
 
 ## Operator `if`
-
----
 
 ### Signatures
 
@@ -168,8 +160,6 @@ null
 ```
 
 ## Operator `cond`
-
----
 
 ### Signatures
 
@@ -210,8 +200,6 @@ truthy
 
 ## Operator `lt`
 
----
-
 ### Signatures
 
 Returns `true` if `left` is less than `right`.
@@ -230,8 +218,6 @@ boolean
 ```
 
 ## Operator `lte`
-
----
 
 ### Signatures
 
@@ -252,8 +238,6 @@ boolean
 
 ## Operator `gt`
 
----
-
 ### Signatures
 
 Returns `true` if `left` is greater than `right`.
@@ -272,8 +256,6 @@ boolean
 ```
 
 ## Operator `gte`
-
----
 
 ### Signatures
 
@@ -294,8 +276,6 @@ boolean
 
 ## Operator `eq`
 
----
-
 ### Signatures
 
 Returns `true` if `left` is equal to `right`.
@@ -315,8 +295,6 @@ boolean
 
 ## Operator `neq`
 
----
-
 ### Signatures
 
 Returns `true` if `left` is not equal to `right`.
@@ -335,8 +313,6 @@ boolean
 ```
 
 ## Operator `get`
-
----
 
 ### Signatures
 
@@ -435,8 +411,6 @@ value
 
 ## Operator `update`
 
----
-
 ### Signatures
 
 Updates `source` array with `properties`
@@ -503,8 +477,6 @@ properties:
 
 ## Operator `try`
 
----
-
 ### Signatures
 
 Catches and handles runtime errors. Works as follows:
@@ -555,8 +527,6 @@ finally:
 
 ## Operator `throw`
 
----
-
 ### Signatures
 
 Throws a runtime error
@@ -574,8 +544,6 @@ never
 ```
 
 ## Operator `plus`
-
----
 
 ### Signatures
 
@@ -596,8 +564,6 @@ number
 
 ## Operator `minus`
 
----
-
 ### Signatures
 
 Returns the difference of `left` and `right`.
@@ -616,8 +582,6 @@ number
 ```
 
 ## Operator `mul`
-
----
 
 ### Signatures
 
@@ -638,8 +602,6 @@ number
 
 ## Operator `div`
 
----
-
 ### Signatures
 
 Returns the quotient of `left` and `right`.
@@ -658,8 +620,6 @@ number
 ```
 
 ## Operator `mod`
-
----
 
 ### Signatures
 
@@ -680,8 +640,6 @@ number
 
 ## Operator `pow`
 
----
-
 ### Signatures
 
 Returns the power of `left` and `right`.
@@ -700,8 +658,6 @@ number
 ```
 
 ## Operator `sys.define`
-
----
 
 ### Signatures
 
@@ -749,8 +705,6 @@ for:
 
 ## Operator `sys.call`
 
----
-
 ### Signatures
 
 Calls a `function` and returns its result.
@@ -794,8 +748,6 @@ for:
 
 ## Operator `sys.get`
 
----
-
 ### Signatures
 
 Returns a `constant` from a current `scope`. If `constant` is not defined then `default` value is returned. If `default` is not defined then an error is thrown.
@@ -814,8 +766,6 @@ unknown
 ```
 
 ## Operator `sys.exec`
-
----
 
 ### Signatures
 
@@ -858,8 +808,6 @@ value
 
 ## Operator `sys.eval`
 
----
-
 ### Signatures
 
 Evaluates an expression on the current `scope` and returns its result.
@@ -898,8 +846,6 @@ val
 
 ## Operator `sys.err`
 
----
-
 ### Signatures
 
 Returns a last caught by `try` operator stringified error in the current `scope`.
@@ -915,8 +861,6 @@ string
 ```
 
 ## Operator `template.render`
-
----
 
 ### Signatures
 
@@ -954,8 +898,6 @@ Hello, John!
 ```
 
 ## Operator `doc.get`
-
----
 
 ### Signatures
 
@@ -1021,8 +963,6 @@ key:
 
 ## Operator `doc.eval`
 
----
-
 ### Signatures
 
 Evaluates an javascript expression and returns its result. Since the `eval` is blocked by CSP, evaluation is performed in an isolated sandbox. If during the execution of the expression an error occurs, the `default` value is returned.
@@ -1084,8 +1024,6 @@ data:
 
 ## Operator `doc.selection`
 
----
-
 ### Signatures
 
 Returns the selection of current document in `text` or `html` format. If the selection is empty, the `default` value is returned.
@@ -1106,8 +1044,6 @@ D | string
 ```
 
 ## Operator `html.readability`
-
----
 
 ### Signatures
 
@@ -1149,8 +1085,6 @@ interface Config<D> {
 
 ## Operator `html.simplify`
 
----
-
 ### Signatures
 
 Returns a content of article object.
@@ -1170,8 +1104,6 @@ D | string
 ```
 
 ## Operator `html.markdown`
-
----
 
 ### Signatures
 
@@ -1210,8 +1142,6 @@ string
 
 ## Operator `html.metadata`
 
----
-
 ### Signatures
 
 Returns a HTML page metadata.
@@ -1238,8 +1168,6 @@ interface Config {
 
 ## Operator `str.join`
 
----
-
 ### Signatures
 
 Joins an array of strings.
@@ -1259,8 +1187,6 @@ string
 ```
 
 ## Operator `str.replace`
-
----
 
 ### Signatures
 
@@ -1282,8 +1208,6 @@ string
 
 ## Operator `str.replaceByRegExp`
 
----
-
 ### Signatures
 
 Replaces global regexp `pattern` with `replacement`
@@ -1303,8 +1227,6 @@ string
 ```
 
 ## Operator `fs.saveFile`
-
----
 
 ### Signatures
 
@@ -1326,8 +1248,6 @@ string
 
 ## Operator `fs.openFile`
 
----
-
 ### Signatures
 
 Open a file dialog. Returns the content of the selected file as string.
@@ -1348,8 +1268,6 @@ string
 
 ## Operator `json.stringify`
 
----
-
 ### Signatures
 
 Converts a `<json>` value to a JSON string.
@@ -1367,8 +1285,6 @@ string
 ```
 
 ## Operator `json.parse`
-
----
 
 ### Signatures
 
@@ -1388,8 +1304,6 @@ interface Config {
 
 ## Operator `jsonSchema.validate`
 
----
-
 ### Signatures
 
 Validates a `<json>` value against a provided JSON schema.
@@ -1408,8 +1322,6 @@ boolean
 ```
 
 ## Operator `jsonSchema.form`
-
----
 
 ### Signatures
 
@@ -1431,8 +1343,6 @@ interface Config {
 ```
 
 ## Operator `dbg.log`
-
----
 
 ### Signatures
 
@@ -1482,8 +1392,6 @@ value:
 ```
 
 ## Operator `http.request`
-
----
 
 ### Signatures
 
