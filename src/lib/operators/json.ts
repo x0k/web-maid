@@ -18,8 +18,8 @@ export class StringifyOpFactory extends TaskOpFactory<
       this.signatures = [
         {
           params: `interface Config {
-            value: <json>
-          }`,
+  value: <json>
+}`,
           returns: `string`,
           description: "Converts a `<json>` value to a JSON string.",
         },
@@ -44,8 +44,8 @@ export class ParseOpFactory extends TaskOpFactory<typeof parseConfig, unknown> {
       this.signatures = [
         {
           params: `interface Config {
-            value: string
-          }`,
+  value: string
+}`,
           returns: `<json>`,
           description: "Parses a JSON string.",
         },
