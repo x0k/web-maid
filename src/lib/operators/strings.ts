@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { TaskOpFactory } from "@/lib/operator";
 
 const joinConfig = z.object({
@@ -9,6 +10,21 @@ const joinConfig = z.object({
 export class JoinOpFactory extends TaskOpFactory<typeof joinConfig, string> {
   name = "join";
   readonly schema = joinConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  values: string[]
+  separator?: string
+}`,
+          returns: `string`,
+          description: "Joins strings.",
+        },
+      ];
+    }
+  }
   execute({ values, separator }: z.TypeOf<this["schema"]>): string {
     return values.join(separator);
   }
@@ -26,6 +42,22 @@ export class ReplaceOpFactory extends TaskOpFactory<
 > {
   name = "replace";
   schema = replaceConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value: string
+  pattern: string
+  replacement: string
+}`,
+          returns: `string`,
+          description: "Replaces `pattern` with `replacement`",
+        },
+      ];
+    }
+  }
   protected execute({
     value,
     pattern,
@@ -41,6 +73,22 @@ export class ReplaceByRegExpOpFactory extends TaskOpFactory<
 > {
   name = "replaceByRegExp";
   schema = replaceConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value: string
+  pattern: string
+  replacement: string
+}`,
+          returns: `string`,
+          description: "Replaces global regexp `pattern` with `replacement`",
+        },
+      ];
+    }
+  }
   protected execute({
     value,
     pattern,
