@@ -1,5 +1,4 @@
 import { forwardRef, useEffect, useRef } from "react";
-import { Box } from "@mui/material";
 
 import { monaco } from "@/lib/monaco";
 
@@ -38,7 +37,7 @@ export const Editor = forwardRef<
         editorRef.current.dispose();
       }
     };
-  // Ref can be a callback
+    // Ref can be a callback
   }, [model]);
-  return <Box width="auto" flexGrow={1} ref={boxRef} />;
+  return <div className="w-auto grow" ref={boxRef} />;
 });

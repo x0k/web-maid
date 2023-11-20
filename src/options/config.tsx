@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Box,
   Button,
   Checkbox,
   FormControlLabel,
@@ -176,15 +175,8 @@ export function Config() {
     }
   );
   return (
-    <Box
-      flexGrow={1}
-      display="grid"
-      gridTemplateColumns="1fr 1fr"
-      gridTemplateRows="auto 1fr"
-      overflow={"hidden"}
-      gap={2}
-    >
-      <Box gridRow="1 / 3" display="flex" flexDirection="column" gap={2}>
+    <div className="grow grid grid-cols-2 grid-rows-[auto_1fr] gap-4 overflow-hidden">
+      <div className="row-start-1 row-end-3 flex flex-col gap-4">
         {isSecretsEditor ? (
           <>
             <Row>
@@ -244,9 +236,9 @@ export function Config() {
             <Editor model={configModel} />
           </>
         )}
-      </Box>
-      <Box display="flex" flexDirection="column" gap={2}>
-        <Box display="flex" flexDirection="row" gap={2} alignItems="center">
+      </div>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-row gap-4 items-center">
           <Typography flexGrow={1} variant="h6">
             Execution
           </Typography>
@@ -294,7 +286,7 @@ export function Config() {
           >
             Docs
           </Button>
-        </Box>
+        </div>
         {tabsPermission.data !== true ? (
           <Button
             variant="contained"
@@ -317,8 +309,8 @@ export function Config() {
             onSelect={selectTab}
           />
         )}
-      </Box>
-      <Box display="flex" flexDirection="column" gap={2} overflow="auto">
+      </div>
+      <div className="flex flex-col gap-4 overflow-auto">
         {evalRunner.isMutating && (
           <LinearProgress style={{ marginBottom: 16 }} />
         )}
@@ -327,13 +319,13 @@ export function Config() {
         {evalRunner.isMutating ||
         evalRunner.data !== undefined ||
         evalRunner.error ? (
-          <Box height="100%" display="flex" flexDirection="column">
+          <div className="h-full flex flex-col">
             <Editor ref={logsEditorRef} model={logsModel} />
-          </Box>
+          </div>
         ) : (
           <Docs />
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
