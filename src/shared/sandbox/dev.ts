@@ -19,7 +19,9 @@ const handlers: {
 } = {
   [SandboxActionType.RenderTemplate]: ({ template, data }) =>
     Mustache.render(template, data),
-  [SandboxActionType.RunEval]: ({ expression }) => eval(expression),
+  [SandboxActionType.RunEval]: () => {
+    throw new Error("Eval is not supported in dev sandbox");
+  },
   [SandboxActionType.Validate]: ({ schema, data }) =>
     new Validator(schema).validate(data).valid,
   [SandboxActionType.ValidateSchema]: () => true,

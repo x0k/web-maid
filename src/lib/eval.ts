@@ -3,7 +3,5 @@ export function evalInScope<S>(js: string, scope: S) {
 }
 
 export function evalInContext<C>(js: string, context: C) {
-  return function () {
-    return eval(js);
-  }.call(context);
+  return new Function(`return (${js});`).call(context);
 }
