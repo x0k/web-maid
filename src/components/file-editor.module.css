@@ -1,0 +1,16 @@
+.tabs::-webkit-scrollbar {
+  /* Customize the scrollbar width */
+  height: 4px;
+  /* position: absolute;
+  bottom: 0; */
+}
+
+.tabs::-webkit-scrollbar-track {
+  /* Customize the scrollbar track */
+}
+
+.tabs::-webkit-scrollbar-thumb {
+  /* Customize the scrollbar thumb */
+  background-color: #888;
+  border-radius: 4px;
+}

@@ -41,6 +41,7 @@ import { useRootFactory } from "@/shared/react-root-factory";
 import { useFormShower } from "@/shared/react-form-shower";
 import { useOkShower } from "@/shared/react-ok-shower";
 import { Docs } from "@/shared/config/docs";
+import { EditorFile, FilesEditor } from "@/components/files-editor";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
@@ -174,6 +175,7 @@ export function Config() {
       onError: showError,
     }
   );
+  const [files, setFiles] = useState<EditorFile[]>([]);
   return (
     <div className="grow grid grid-cols-2 grid-rows-[auto_1fr] gap-4 overflow-hidden">
       <div className="row-start-1 row-end-3 flex flex-col gap-4">
@@ -233,7 +235,21 @@ export function Config() {
                 Edit secrets
               </Button>
             </Row>
-            <Editor model={configModel} />
+            <FilesEditor
+              files={files}
+              onCreateFile={() =>
+                setFiles((fs) =>
+                  fs.concat({
+                    id: Date.now().toString(16),
+                    name: `file-${fs.length + 1}`,
+                    content: "",
+                  })
+                )
+              }
+              onRemoveFile={(id) =>
+                setFiles((fs) => fs.filter((f) => f.id !== id))
+              }
+            />
           </>
         )}
       </div>
