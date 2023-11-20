@@ -1,15 +1,24 @@
+import { useEffect, useRef, useState } from "react";
 import {
-  Dispatch,
-  MutableRefObject,
-  SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { X, Plus, Pen, Undo, Save } from "lucide-react";
+  Plus,
+  Pen,
+  Undo,
+  Dot,
+  Save,
+  SaveAll,
+  Undo2,
+  Trash,
+} from "lucide-react";
 
 import { monaco } from "@/lib/monaco";
 import { Editor } from "@/components/editor";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import classes from "./file-editor.module.css";
 
@@ -23,6 +32,7 @@ export interface FilesEditorProps {
   files: EditorFile[];
   onCreateFile: () => void;
   onRemoveFile: (fileId: string) => void;
+  onSaveFiles: (files: EditorFile[]) => void;
 }
 
 interface InternalEditorFile {
@@ -38,70 +48,11 @@ interface FilesEditorState {
   active: InternalEditorFile | null;
 }
 
-interface StateButtonProps {
-  stateRef: MutableRefObject<FilesEditorState>;
-  file: InternalEditorFile;
-  setActiveFile: Dispatch<SetStateAction<InternalEditorFile | null>>;
-  setInternalFiles: Dispatch<SetStateAction<InternalEditorFile[]>>;
-  onRemoveFile: (fileId: string) => void;
-}
-
-function StatusButton({
-  file,
-  stateRef,
-  setActiveFile,
-  setInternalFiles,
-  onRemoveFile,
-}: StateButtonProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-  };
-  return (
-    <button
-      className="h-6 shrink-0 text-neutral-500 hover:bg-white/10 p-[3px] hover:text-neutral-300 rounded-md aspect-square"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={(e) => {
-        e.stopPropagation();
-        const internalFile = stateRef.current.files.get(file.id);
-        if (internalFile === undefined) {
-          return;
-        }
-        if (internalFile.isChanged) {
-          internalFile.isChanged = false;
-          internalFile.model.setValue(internalFile.initialContent);
-          if (stateRef.current.active === internalFile) {
-            setActiveFile({ ...internalFile });
-          } else {
-            setInternalFiles((files) => files.slice());
-          }
-        } else {
-          onRemoveFile(file.id);
-        }
-      }}
-    >
-      {file.isChanged ? (
-        isHovered ? (
-          <Undo size={18} />
-        ) : (
-          <Pen size={18} />
-        )
-      ) : (
-        <X size={18} />
-      )}
-    </button>
-  );
-}
-
 export function FilesEditor({
   files,
   onCreateFile,
   onRemoveFile,
+  onSaveFiles,
 }: FilesEditorProps) {
   const stateRef = useRef<FilesEditorState>({
     active: null,
@@ -175,9 +126,120 @@ export function FilesEditor({
       return () => disposable.dispose();
     }
   }, [activeFile?.model]);
+  const hasActive = activeFile !== null;
+  const isActiveChanged = hasActive && activeFile.isChanged;
+  const isSomeFileChanged =
+    isActiveChanged || internalFiles.some((f) => f.isChanged);
   return (
     <div className="flex flex-col grow">
       <div className="flex flex-row items-center bg-neutral-950">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="rounded-none" variant="default">
+              File
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="dark w-48">
+            <DropdownMenuItem onClick={onCreateFile}>
+              <Plus className="mr-2 h-4 w-4" />
+              <span>New</span>
+              {/* <DropdownMenuShortcut>⌘N</DropdownMenuShortcut> */}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!isActiveChanged}
+              onClick={() => {
+                if (activeFile) {
+                  onSaveFiles(
+                    internalFiles.map((f) => ({
+                      id: f.id,
+                      name: f.name,
+                      content:
+                        f.id === activeFile.id
+                          ? f.model.getValue()
+                          : f.initialContent,
+                    }))
+                  );
+                }
+              }}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              <span>Save</span>
+              {/* <DropdownMenuShortcut>⌘S</DropdownMenuShortcut> */}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!isSomeFileChanged}
+              onClick={() => {
+                if (isSomeFileChanged) {
+                  onSaveFiles(
+                    internalFiles.map((f) => ({
+                      id: f.id,
+                      name: f.name,
+                      content: f.isChanged
+                        ? f.model.getValue()
+                        : f.initialContent,
+                    }))
+                  );
+                }
+              }}
+            >
+              <SaveAll className="mr-2 h-4 w-4" />
+              <span>Save All</span>
+              {/* <DropdownMenuShortcut>⇧⌘S</DropdownMenuShortcut> */}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!isActiveChanged}
+              onClick={() => {
+                const { active } = stateRef.current;
+                if (!active?.isChanged) {
+                  return;
+                }
+                active.isChanged = false;
+                active.model.setValue(active.initialContent);
+                setActiveFile({ ...active });
+              }}
+            >
+              <Undo className="mr-2 h-4 w-4" />
+              <span>Reset</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!isSomeFileChanged}
+              onClick={() => {
+                let changed = 0;
+                for (const file of internalFiles) {
+                  if (file.isChanged) {
+                    changed++;
+                    file.isChanged = false;
+                    file.model.setValue(file.initialContent);
+                  }
+                }
+                if (changed > 0) {
+                  const { active } = stateRef.current;
+                  if (active) {
+                    setActiveFile({ ...active });
+                  } else {
+                    setInternalFiles((fs) => fs.slice());
+                  }
+                }
+              }}
+            >
+              <Undo2 className="mr-2 h-4 w-4" />
+              <span>Reset All</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!hasActive}
+              onClick={() => {
+                if (activeFile) {
+                  onRemoveFile(activeFile.id);
+                }
+              }}
+            >
+              <Trash className="mr-2 h-4 w-4" />
+              <span>Delete</span>
+              {/* <DropdownMenuShortcut>⌫</DropdownMenuShortcut> */}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <div
           className={`relative grow flex flex-row gap-[2px] flex-nowrap overflow-auto h-10 ${classes.tabs}`}
         >
@@ -186,7 +248,7 @@ export function FilesEditor({
             return (
               <div
                 key={file.id}
-                className={`relative shrink-0 flex flex-row gap-1 items-center max-w-[200px] h-full p-2 overflow-hidden ${
+                className={`cursor-pointer relative shrink-0 flex flex-row gap-2 items-center max-w-[200px] h-full p-2 overflow-hidden ${
                   isActive ? "bg-neutral-800" : "bg-neutral-700"
                 }`}
                 onClick={() => {
@@ -195,24 +257,15 @@ export function FilesEditor({
                 }}
               >
                 <p className="text-neutral-200 truncate w-full">{file.name}</p>
-                <StatusButton
-                  file={file}
-                  stateRef={stateRef}
-                  setActiveFile={setActiveFile}
-                  setInternalFiles={setInternalFiles}
-                  onRemoveFile={onRemoveFile}
-                />
+                {file.isChanged ? (
+                  <Pen className="text-neutral-500" />
+                ) : isActive ? (
+                  <Dot className="text-neutral-500" />
+                ) : null}
               </div>
             );
           })}
         </div>
-        <button
-          key="add-button"
-          className="shrink-0 aspect-square p-2 text-neutral-300 "
-          onClick={onCreateFile}
-        >
-          <Plus className="p-[3px] hover:bg-white/10 rounded-md" />
-        </button>
       </div>
       <Editor model={activeFile ? activeFile.model : null} />
     </div>

@@ -246,6 +246,7 @@ export function Config() {
                   })
                 )
               }
+              onSaveFiles={(files) => setFiles(files)}
               onRemoveFile={(id) =>
                 setFiles((fs) => fs.filter((f) => f.id !== id))
               }
