@@ -19,14 +19,14 @@ export default defineConfig({
         version: "1.0.0",
         name: "Scraper Extension",
         description: "Companion extension for the Scraper",
+        icons: {
+          "16": "public/icon16.png",
+          "32": "public/icon32.png",
+          "48": "public/icon48.png",
+          "128": "public/icon128.png",
+        },
         action: {
           default_title: "Scraper",
-          default_icon: {
-            "16": "images/icon-16.png",
-            "32": "images/icon-32.png",
-            "48": "images/icon-48.png",
-            "128": "images/icon-128.png",
-          },
         },
         background: {
           service_worker: "src/background.ts",
