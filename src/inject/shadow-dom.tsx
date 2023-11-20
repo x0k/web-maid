@@ -2,7 +2,6 @@ import ReactDOM from "react-dom/client";
 import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import styles from "@/shared/styles.css?inline";
 
 export function renderInShadowDom(
   container: HTMLElement,
@@ -10,7 +9,7 @@ export function renderInShadowDom(
 ) {
   const shadowContainer = container.attachShadow({ mode: "open" });
   const styleReset = document.createElement("style");
-  styleReset.innerHTML = `:host { all: initial; };${styles}`;
+  styleReset.innerHTML = `:host { all: initial; }`;
   shadowContainer.appendChild(styleReset);
   const emotionRoot = document.createElement("style");
   shadowContainer.appendChild(emotionRoot);
