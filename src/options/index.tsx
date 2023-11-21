@@ -2,9 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SnackbarProvider } from "notistack";
 
-import { Toaster } from '@/components/ui/toaster'
-import { ErrorAlert } from '@/components/alert-error';
+import { ErrorAlert } from "@/components/error-alert";
 
 import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
 import { SandboxContext } from "@/shared/sandbox/react-hooks";
@@ -37,7 +37,7 @@ connectToSandbox("sandbox.html", findAndBindIFrame(sandboxIFrameId))
             <OptionsPage />
           </QueryClientProvider>
         </SandboxContext.Provider>
-        <Toaster />
+        <SnackbarProvider />
       </React.StrictMode>
     ),
     (error) => <ErrorAlert error={error} />

@@ -22,7 +22,7 @@ import { prepareForSerialization } from "@/lib/serialization";
 import { stringifyError } from "@/lib/error";
 import { noop } from "@/lib/function/function";
 import { ContextActor, ContextRemoteActor } from "@/lib/actors/context";
-import { ErrorAlert } from "@/components/mui-error-alert";
+import { ErrorAlert } from "@/components/error-alert";
 
 import { useFormDataValidator } from "@/shared/sandbox/react-hooks";
 import { SandboxAction, SandboxActionResults } from "@/shared/sandbox/action";

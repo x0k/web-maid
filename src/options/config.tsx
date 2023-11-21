@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Button,
+  Checkbox,
+  FormControlLabel,
+  LinearProgress,
+} from "@mui/material";
+import { enqueueSnackbar } from "notistack";
 
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
@@ -21,10 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-
-import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/components/ui/use-toast";
+import { Button as RxBtn } from "@/components/ui/button";
+import { ErrorAlert } from "@/components/error-alert";
 
 import { useFormDataValidator, useSandbox } from "@/shared/sandbox/react-hooks";
 import { createOperatorResolver } from "@/shared/config/create";
@@ -55,7 +60,6 @@ import { Docs } from "@/shared/config/docs";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
-import { ErrorAlert } from "@/components/alert-error";
 import { CreateConfigFileForm } from "./create-config-file-form";
 
 const secretsModel = monaco.editor.createModel("", "yaml");
@@ -64,6 +68,19 @@ const logsModel = monaco.editor.createModel("", "yaml");
 const initialTabs: Tab[] = [];
 
 const fetcher = new Fetcher();
+
+function showError(err: unknown) {
+  enqueueSnackbar({
+    message: stringifyError(err),
+    variant: "error",
+  });
+}
+function showSuccess(message: string) {
+  enqueueSnackbar({
+    message,
+    variant: "success",
+  });
+}
 
 export function Config() {
   const sandbox = useSandbox();
@@ -100,20 +117,6 @@ export function Config() {
       actor.stop();
     };
   }, [actor]);
-  const { toast } = useToast();
-  function showError(err: unknown) {
-    toast({
-      title: "Error",
-      description: stringifyError(err),
-      variant: "destructive",
-    });
-  }
-  function showSuccess(message: string) {
-    toast({
-      title: "Success",
-      description: message,
-    });
-  }
 
   const queryClient = useQueryClient();
   const tabsPermission = useQuery({
@@ -204,8 +207,8 @@ export function Config() {
   const [toRemove, setToRemove] = useState<string>("");
   return (
     <>
-      <div className="grow grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-[auto_1fr] gap-4 overflow-hidden">
-        <div className="row-start-1 lg:row-end-3 flex flex-col gap-4 min-h-[45vh]">
+      <div className="grow grid grid-cols-1 lg:grid-cols-2 grid-rows-[1fr_auto_1fr] lg:grid-rows-[auto_1fr] gap-4 overflow-hidden">
+        <div className="row-start-1 lg:row-end-3 flex flex-col gap-4">
           {isSecretsEditor ? (
             <>
               <Row>
@@ -213,7 +216,10 @@ export function Config() {
                   Secrets
                 </h3>
                 <Button
+                  key="save-secrets"
                   color="primary"
+                  variant="contained"
+                  size="small"
                   onClick={() => {
                     secretsMutation.mutate(secretsModel.getValue());
                   }}
@@ -221,7 +227,10 @@ export function Config() {
                   Save
                 </Button>
                 <Button
+                  key="edit-config"
                   color="secondary"
+                  variant="contained"
+                  size="small"
                   onClick={() => {
                     setIsSecretsEditor(false);
                   }}
@@ -238,7 +247,10 @@ export function Config() {
                   Config
                 </h3>
                 <Button
+                  key="edit-secrets"
                   color="secondary"
+                  variant="contained"
+                  size="small"
                   onClick={() => {
                     setIsSecretsEditor(true);
                   }}
@@ -261,21 +273,17 @@ export function Config() {
             <h3 className="grow scroll-m-20 text-2xl font-semibold tracking-tight">
               Execution
             </h3>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="debug"
-                checked={debug}
-                onCheckedChange={(v) => setDebug(v === true)}
-              />
-              <label
-                htmlFor="debug"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Debug
-              </label>
-            </div>
+            <FormControlLabel
+              style={{ margin: 0, gap: 4 }}
+              control={<Checkbox style={{ padding: 4 }} />}
+              label="Debug"
+              checked={debug}
+              onChange={(_, v) => setDebug(v)}
+            />
             <Button
               color="warning"
+              variant="contained"
+              size="small"
               onClick={() => {
                 const main = configFiles.find((f) => f.id === "main");
                 if (!main) {
@@ -288,9 +296,9 @@ export function Config() {
                   (editorState.active?.isChanged ||
                     some((f) => f.isChanged, editorState.files.values()))
                 ) {
-                  toast({
-                    title: "Warning",
-                    description: "You have unsaved changes",
+                  enqueueSnackbar({
+                    message: "You have unsaved changes",
+                    variant: "warning",
                   });
                 }
                 evalMutation.mutate({
@@ -305,6 +313,8 @@ export function Config() {
             {Boolean(evalMutation.isSuccess || evalMutation.isError) && (
               <Button
                 color="error"
+                variant="contained"
+                size="small"
                 onClick={() => {
                   evalMutation.reset();
                   logsModel.setValue("");
@@ -314,15 +324,20 @@ export function Config() {
                 Reset
               </Button>
             )}
-            <Button color="info" asChild>
-              <a target="_blank" href={chrome.runtime.getURL("docs.html")}>
-                Docs
-              </a>
+            <Button
+              color="info"
+              size="small"
+              variant="contained"
+              target="_blank"
+              href={chrome.runtime.getURL("docs.html")}
+            >
+              Docs
             </Button>
           </div>
           {tabsPermission.data !== true ? (
             <Button
               color="success"
+              variant="contained"
               disabled={
                 tabsPermission.isLoading ||
                 requestForTabsPermissionMutation.isPending
@@ -342,6 +357,7 @@ export function Config() {
           )}
         </div>
         <div className="flex flex-col gap-4 overflow-auto">
+          {evalMutation.isPending && <LinearProgress />}
           {children}
           {evalMutation.isError && <ErrorAlert error={evalMutation.error} />}
           <div
@@ -377,7 +393,7 @@ export function Config() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
+            <RxBtn
               type="submit"
               onClick={async () => {
                 await removeConfigFileMutation.mutateAsync(toRemove);
@@ -385,7 +401,7 @@ export function Config() {
               }}
             >
               Remove
-            </Button>
+            </RxBtn>
           </DialogFooter>
         </DialogContent>
       </Dialog>
