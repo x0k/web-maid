@@ -3,7 +3,7 @@ import { forwardRef, useEffect, useRef } from "react";
 import { monaco } from "@/lib/monaco";
 
 export interface EditorProps {
-  model: monaco.editor.ITextModel;
+  model: monaco.editor.ITextModel | null;
 }
 
 export const Editor = forwardRef<
@@ -15,6 +15,7 @@ export const Editor = forwardRef<
   useEffect(() => {
     if (boxRef.current) {
       const editor = monaco.editor.create(boxRef.current, {
+        readOnly: model === null,
         minimap: {
           enabled: false,
         },
@@ -39,5 +40,5 @@ export const Editor = forwardRef<
     };
     // Ref can be a callback
   }, [model]);
-  return <div className="w-auto grow" ref={boxRef} />;
+  return <div className="w-auto grow bg-neutral-900" ref={boxRef} />;
 });

@@ -1,4 +1,4 @@
-import { nanoid } from "nanoid/non-secure";
+import { nanoid } from "nanoid";
 
 import { ActorId, IRemoteActor, MessageType } from "@/lib/actor";
 import { AsyncFactory } from "@/lib/factory";

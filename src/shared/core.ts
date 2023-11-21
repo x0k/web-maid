@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { isObject } from "@/lib/guards";
@@ -7,32 +8,63 @@ import { FactoryFn } from "@/lib/factory";
 import rawConfig from "./config.yml?raw";
 import { injectedConfigEval } from "./injected-config-eval";
 
-const localSettingsSchema = z.object({
+const serializedLocalSettingsSchema = z.object({
   secrets: z.string(),
 });
 
-const partialLocalSettingsSchema = localSettingsSchema.partial();
+const desizedLocalSettingsSchema = z
+  .object({
+    secrets: z.string(),
+  })
+  .partial();
 
-const syncSettingsSchema = z.object({
-  config: z.string(),
+const configFileSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  content: z.string(),
+  isRemovable: z.boolean(),
 });
 
-const partialSyncSettingsSchema = syncSettingsSchema.partial();
+export type ConfigFile = z.infer<typeof configFileSchema>;
+
+const configFilesSchema = z.array(configFileSchema);
+
+const serializedSyncSettingsSchema = z.object({
+  configFiles: z
+    .string()
+    .transform((v) => JSON.parse(v))
+    .refine((v): v is ConfigFile[] => configFilesSchema.safeParse(v).success),
+});
+
+export type SyncSettings = z.infer<typeof serializedSyncSettingsSchema>;
+
+const desiredSyncSettingsSchema = z
+  .object({
+    configFiles: configFilesSchema,
+  })
+  .partial()
+  .transform(({ configFiles, ...rest }) => ({
+    ...rest,
+    configFiles: JSON.stringify(configFiles),
+  }));
 
 export interface LocalSettings {
   secrets: string;
 }
 
-export interface SyncSettings {
-  config: string;
-}
-
-const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
+const DEFAULT_LOCAL_SETTINGS: z.infer<typeof desizedLocalSettingsSchema> = {
   secrets: "token: secret",
 };
 
-const DEFAULT_SYNC_SETTINGS: z.infer<typeof syncSettingsSchema> = {
-  config: rawConfig,
+const DEFAULT_SYNC_SETTINGS: z.infer<typeof desiredSyncSettingsSchema> = {
+  configFiles: JSON.stringify([
+    {
+      id: "main",
+      name: "main",
+      content: rawConfig,
+      isRemovable: false,
+    },
+  ]),
 };
 
 const tabSchema = z.object({
@@ -41,27 +73,54 @@ const tabSchema = z.object({
   favIconUrl: z.string().optional(),
 });
 
-const tabsSchema = z.array(tabSchema);
-
 export type Tab = z.infer<typeof tabSchema>;
+
+const tabsSchema = z.array(tabSchema);
 
 export async function loadSyncSettings(): Promise<SyncSettings> {
   const settings = await chrome.storage.sync.get(DEFAULT_SYNC_SETTINGS);
-  return syncSettingsSchema.parse(settings);
+  return serializedSyncSettingsSchema.parse(settings);
 }
 
 export async function saveSyncSettings(settings: Partial<SyncSettings>) {
-  const data = partialSyncSettingsSchema.parse(settings);
+  const data = desiredSyncSettingsSchema.parse(settings);
   await chrome.storage.sync.set(data);
+}
+
+export async function createConfigFile(name: string, content: string) {
+  const { configFiles } = await loadSyncSettings();
+  if (configFiles.some((file) => file.name === name)) {
+    throw new Error(`Config file with name "${name}" already exists`);
+  }
+  const id = nanoid();
+  const configFile: ConfigFile = {
+    id,
+    name,
+    content,
+    isRemovable: true,
+  };
+  await saveSyncSettings({
+    configFiles: [...configFiles, configFile],
+  });
+  return configFile;
+}
+
+export async function deleteConfigFile(id: string) {
+  const { configFiles } = await loadSyncSettings();
+  await saveSyncSettings({
+    configFiles: configFiles.filter(
+      (file) => file.id !== id || !file.isRemovable
+    ),
+  });
 }
 
 export async function loadLocalSettings(): Promise<LocalSettings> {
   const settings = await chrome.storage.local.get(DEFAULT_LOCAL_SETTINGS);
-  return localSettingsSchema.parse(settings);
+  return serializedLocalSettingsSchema.parse(settings);
 }
 
 export async function saveLocalSettings(settings: Partial<LocalSettings>) {
-  const data = partialLocalSettingsSchema.parse(settings);
+  const data = desizedLocalSettingsSchema.parse(settings);
   await chrome.storage.local.set(data);
 }
 
@@ -99,14 +158,14 @@ export interface ConfigRenderedData {
 export async function evalConfigInTab(
   tabId: number,
   contextId: string,
-  config: string,
+  configFiles: ConfigFile[],
   secrets: string,
   debug: boolean
 ): Promise<unknown> {
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
     func: injectedConfigEval,
-    args: [contextId, config, secrets, debug],
+    args: [contextId, configFiles, secrets, debug],
   });
   if (
     isObject(result) &&
@@ -123,15 +182,15 @@ export function makeIsomorphicConfigEval(
 ) {
   return async (
     debug: boolean,
-    config: string,
+    configFiles: ConfigFile[],
     secrets: string,
     contextId?: string,
     tabId?: number
   ) => {
     return tabId && contextId
-      ? evalConfigInTab(tabId, contextId, config, secrets, debug)
+      ? evalConfigInTab(tabId, contextId, configFiles, secrets, debug)
       : evalConfig({
-          config,
+          configFiles,
           secrets,
           operatorResolver: operatorResolverFactory(debug),
         });

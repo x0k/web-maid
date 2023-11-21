@@ -4,7 +4,7 @@ import Markdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { zodToTs, printNode } from "zod-to-ts";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   BaseOpFactory,
@@ -93,18 +93,23 @@ ${factory.examples.map(renderExample).join("\n\n")}`
   /* eslint-enable no-inner-declarations */
 }
 
-export const Docs = memo(() => {
-  const { data: preface } = useSWR(
-    "/operators.md",
-    (url) => fetch(url).then((res) => res.text()),
-    {
-      fallbackData: "# Operators\n\n",
-    }
-  );
+export interface DocsProps {
+  className?: string;
+}
+
+export const Docs = memo(({ className = "" }: DocsProps) => {
+  const { data: preface } = useQuery({
+    queryKey: ["/operators.md"],
+    queryFn: async () => {
+      const res = await fetch("/operators.md");
+      return res.text();
+    },
+    initialData: "# Operators\n\n",
+  });
   const content = useMemo(() => `${preface}\n${details}`, [preface]);
   return (
     <Markdown
-      className="prose max-w-none prose-pre:p-0"
+      className={`prose max-w-none prose-pre:p-0 ${className}`}
       components={{
         code(props) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars

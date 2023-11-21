@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
@@ -26,7 +27,7 @@ import {
   RemoteRenderer,
   RemoteValidator,
 } from "@/shared/sandbox/remote-impl";
-import { evalConfig } from "@/shared/config/eval";
+import { evalConfig, EvalConfigFile } from "@/shared/config/eval";
 
 import { sandboxIFrameId } from "./constants";
 import { Popup } from "./popup";
@@ -46,7 +47,7 @@ const extension = new ContextRemoteActor<
 >(remoteLogic, messageSender);
 
 interface InjectedConfigEvalOptions {
-  config: string;
+  configFiles: EvalConfigFile[]
   secrets: string;
   debug: boolean;
   contextId: string;
@@ -59,7 +60,19 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   container.style.top = "10px";
   container.style.right = "25px";
   container.style.zIndex = "9999999";
-  renderInShadowDom(container, <Popup sandbox={sandbox} />);
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
+  renderInShadowDom(
+    container,
+    <QueryClientProvider client={client}>
+      <Popup sandbox={sandbox} />
+    </QueryClientProvider>
+  );
   document.body.append(container);
   // For tests
   const evaluator = new RemoteEvaluator(sandboxIFrameId, sandbox);
@@ -67,13 +80,13 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   const validator = new RemoteValidator(sandboxIFrameId, sandbox);
   const INJECTED = {
     evalConfig: ({
-      config,
+      configFiles,
       contextId,
       debug,
       secrets,
     }: InjectedConfigEvalOptions) =>
       evalConfig({
-        config,
+        configFiles,
         secrets,
         operatorResolver: createOperatorResolver({
           debug,

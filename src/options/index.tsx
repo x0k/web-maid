@@ -1,11 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { SnackbarProvider } from "notistack";
 import { CssBaseline } from "@mui/material";
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SnackbarProvider } from "notistack";
 
 import { ErrorAlert } from "@/components/error-alert";
 
@@ -18,6 +15,14 @@ import { OptionsPage } from "./options";
 
 const root = document.getElementById("root")!;
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 connectToSandbox("sandbox.html", findAndBindIFrame(sandboxIFrameId))
   .then((sandbox) => {
     sandbox.start();
@@ -28,7 +33,9 @@ connectToSandbox("sandbox.html", findAndBindIFrame(sandboxIFrameId))
       <React.StrictMode>
         <CssBaseline />
         <SandboxContext.Provider value={sandbox}>
-          <OptionsPage />
+          <QueryClientProvider client={queryClient}>
+            <OptionsPage />
+          </QueryClientProvider>
         </SandboxContext.Provider>
         <SnackbarProvider
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
