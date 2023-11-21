@@ -93,7 +93,11 @@ ${factory.examples.map(renderExample).join("\n\n")}`
   /* eslint-enable no-inner-declarations */
 }
 
-export const Docs = memo(() => {
+export interface DocsProps {
+  className?: string;
+}
+
+export const Docs = memo(({ className = "" }: DocsProps) => {
   const { data: preface } = useQuery({
     queryKey: ["/operators.md"],
     queryFn: async () => {
@@ -105,7 +109,7 @@ export const Docs = memo(() => {
   const content = useMemo(() => `${preface}\n${details}`, [preface]);
   return (
     <Markdown
-      className="prose max-w-none prose-pre:p-0"
+      className={`prose max-w-none prose-pre:p-0 ${className}`}
       components={{
         code(props) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars

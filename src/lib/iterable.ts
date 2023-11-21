@@ -74,3 +74,13 @@ export function take<T>(n: number, iterable: Iterable<T>): T[] {
   for (let i = 0; i < n; i++) items[i] = iterator.next().value
   return items
 }
+
+export function some<T>(
+  predicate: (value: T) => boolean,
+  iterable: Iterable<T>
+): boolean {
+  for (const item of iterable) {
+    if (predicate(item)) return true
+  }
+  return false
+}

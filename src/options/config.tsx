@@ -12,10 +12,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
+import { some } from "@/lib/iterable";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 import { Row } from "@/components/row";
-import { EditorFile, FilesEditor } from "@/components/files-editor";
+import {
+  EditorFile,
+  FilesEditor,
+  FilesEditorState,
+} from "@/components/files-editor";
 
 import { useFormDataValidator, useSandbox } from "@/shared/sandbox/react-hooks";
 import { createOperatorResolver } from "@/shared/config/create";
@@ -137,9 +142,10 @@ export function Config() {
     },
     onError: showError,
   });
+
   const evalMutation = useMutation({
     mutationFn: ({ config, secrets }: { config: string; secrets: string }) =>
-      evalConfig(debug, config, secrets, contextId, selectedTab?.id),
+    evalConfig(debug, config, secrets, contextId, selectedTab?.id),
     onSuccess: (success) => {
       logger.log({ success });
     },
@@ -147,7 +153,7 @@ export function Config() {
       logger.log({ error });
     },
   });
-
+  
   const {
     data: { secrets },
   } = useQuery({
@@ -167,6 +173,10 @@ export function Config() {
     },
     onError: showError,
   });
+
+  const filesEditorStateRef = useRef<FilesEditorState>(null);
+  const showEditor =
+    evalMutation.isPending || evalMutation.isSuccess || evalMutation.isError;
   return (
     <div className="grow grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-[auto_1fr] gap-4 overflow-hidden">
       <div className="row-start-1 lg:row-end-3 flex flex-col gap-4 min-h-[45vh]">
@@ -217,6 +227,7 @@ export function Config() {
               </Button>
             </Row>
             <FilesEditor
+              ref={filesEditorStateRef}
               files={configFiles}
               onCreateFile={() => {
                 showError("Not implemented");
@@ -248,6 +259,17 @@ export function Config() {
               if (!main) {
                 showError("Main file not found");
                 return;
+              }
+              const { current: editorState } = filesEditorStateRef;
+              if (
+                editorState &&
+                (editorState.active?.isChanged ||
+                  some((f) => f.isChanged, editorState.files.values()))
+              ) {
+                enqueueSnackbar({
+                  variant: "warning",
+                  message: "You have unsaved changes",
+                });
               }
               evalMutation.mutate({
                 config: main.content,
@@ -311,15 +333,13 @@ export function Config() {
         )}
         {children}
         {evalMutation.isError && <ErrorAlert error={evalMutation.error} />}
-        {evalMutation.isPending ||
-        evalMutation.isSuccess ||
-        evalMutation.isError ? (
-          <div className="h-full flex flex-col">
-            <Editor ref={logsEditorRef} model={logsModel} />
-          </div>
-        ) : (
-          <Docs />
-        )}
+
+        <div
+          className={`h-full flex flex-col ${showEditor ? "block" : "hidden"}`}
+        >
+          <Editor ref={logsEditorRef} model={logsModel} />
+        </div>
+        <Docs className={showEditor ? "hidden" : "block"} />
       </div>
     </div>
   );

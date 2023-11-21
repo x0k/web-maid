@@ -12,7 +12,7 @@ const localSettingsSchema = z.object({
   secrets: z.string(),
 });
 
-const partialLocalSettingsSchema = localSettingsSchema.partial();
+const serializedLocalSettingsSchema = localSettingsSchema.partial();
 
 const configFileSchema = z.object({
   id: z.string(),
@@ -45,19 +45,19 @@ export interface LocalSettings {
   secrets: string;
 }
 
-const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
+const DEFAULT_LOCAL_SETTINGS: z.infer<typeof serializedLocalSettingsSchema> = {
   secrets: "token: secret",
 };
 
-const DEFAULT_SYNC_SETTINGS: z.infer<typeof syncSettingsSchema> = {
-  configFiles: [
+const DEFAULT_SYNC_SETTINGS: z.infer<typeof serializedSyncSettingsSchema> = {
+  configFiles: JSON.stringify([
     {
       id: "main",
       name: "main",
       content: rawConfig,
       isRemovable: false,
     },
-  ],
+  ]),
 };
 
 const tabSchema = z.object({
@@ -110,7 +110,7 @@ export async function loadLocalSettings(): Promise<LocalSettings> {
 }
 
 export async function saveLocalSettings(settings: Partial<LocalSettings>) {
-  const data = partialLocalSettingsSchema.parse(settings);
+  const data = serializedLocalSettingsSchema.parse(settings);
   await chrome.storage.local.set(data);
 }
 
