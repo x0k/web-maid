@@ -67,7 +67,7 @@ it("Should evaluate nested operators", async () => {
         inner: {
           [OPERATOR_KEY]: "not",
           value: {
-            [OPERATOR_KEY]: "ctx.get",
+            [OPERATOR_KEY]: "get",
           },
         },
       },
@@ -75,7 +75,7 @@ it("Should evaluate nested operators", async () => {
     functions: {
       sysGet: {
         [OPERATOR_KEY]: "sys.get",
-        const: "complex",
+        key: "complex",
       },
     },
     for: {
@@ -111,12 +111,12 @@ it("Should support recursion", async () => {
         condition: {
           [OPERATOR_KEY]: "lte",
           left: {
-            [OPERATOR_KEY]: "ctx.get",
+            [OPERATOR_KEY]: "get",
           },
           right: 1,
         },
         then: {
-          [OPERATOR_KEY]: "ctx.get",
+          [OPERATOR_KEY]: "get",
         },
         else: {
           [OPERATOR_KEY]: "plus",
@@ -126,7 +126,7 @@ it("Should support recursion", async () => {
             arg: {
               [OPERATOR_KEY]: "minus",
               left: {
-                [OPERATOR_KEY]: "ctx.get",
+                [OPERATOR_KEY]: "get",
               },
               right: 1,
             },
@@ -137,7 +137,7 @@ it("Should support recursion", async () => {
             arg: {
               [OPERATOR_KEY]: "minus",
               left: {
-                [OPERATOR_KEY]: "ctx.get",
+                [OPERATOR_KEY]: "get",
               },
               right: 2,
             },
@@ -167,7 +167,7 @@ it("Should handle exec operator", async () => {
     op: "plus",
     config: {
       left: {
-        [OPERATOR_KEY]: "ctx.get",
+        [OPERATOR_KEY]: "get",
       },
       right: 1,
     },
@@ -190,7 +190,7 @@ it("Should handle eval operator", async () => {
       value: JSON.stringify({
         [OPERATOR_KEY]: "plus",
         left: {
-          [OPERATOR_KEY]: "ctx.get",
+          [OPERATOR_KEY]: "get",
         },
         right: 1,
       }),
