@@ -8,11 +8,15 @@ import { FactoryFn } from "@/lib/factory";
 import rawConfig from "./config.yml?raw";
 import { injectedConfigEval } from "./injected-config-eval";
 
-const localSettingsSchema = z.object({
+const serializedLocalSettingsSchema = z.object({
   secrets: z.string(),
 });
 
-const serializedLocalSettingsSchema = localSettingsSchema.partial();
+const desizedLocalSettingsSchema = z
+  .object({
+    secrets: z.string(),
+  })
+  .partial();
 
 const configFileSchema = z.object({
   id: z.string(),
@@ -25,16 +29,19 @@ export type ConfigFile = z.infer<typeof configFileSchema>;
 
 const configFilesSchema = z.array(configFileSchema);
 
-const syncSettingsSchema = z.object({
+const serializedSyncSettingsSchema = z.object({
   configFiles: z
     .string()
     .transform((v) => JSON.parse(v))
     .refine((v): v is ConfigFile[] => configFilesSchema.safeParse(v).success),
 });
 
-export type SyncSettings = z.infer<typeof syncSettingsSchema>;
+export type SyncSettings = z.infer<typeof serializedSyncSettingsSchema>;
 
-const serializedSyncSettingsSchema = syncSettingsSchema
+const desiredSyncSettingsSchema = z
+  .object({
+    configFiles: configFilesSchema,
+  })
   .partial()
   .transform(({ configFiles, ...rest }) => ({
     ...rest,
@@ -45,11 +52,11 @@ export interface LocalSettings {
   secrets: string;
 }
 
-const DEFAULT_LOCAL_SETTINGS: z.infer<typeof serializedLocalSettingsSchema> = {
+const DEFAULT_LOCAL_SETTINGS: z.infer<typeof desizedLocalSettingsSchema> = {
   secrets: "token: secret",
 };
 
-const DEFAULT_SYNC_SETTINGS: z.infer<typeof serializedSyncSettingsSchema> = {
+const DEFAULT_SYNC_SETTINGS: z.infer<typeof desiredSyncSettingsSchema> = {
   configFiles: JSON.stringify([
     {
       id: "main",
@@ -72,11 +79,11 @@ const tabsSchema = z.array(tabSchema);
 
 export async function loadSyncSettings(): Promise<SyncSettings> {
   const settings = await chrome.storage.sync.get(DEFAULT_SYNC_SETTINGS);
-  return syncSettingsSchema.parse(settings);
+  return serializedSyncSettingsSchema.parse(settings);
 }
 
 export async function saveSyncSettings(settings: Partial<SyncSettings>) {
-  const data = serializedSyncSettingsSchema.parse(settings);
+  const data = desiredSyncSettingsSchema.parse(settings);
   await chrome.storage.sync.set(data);
 }
 
@@ -106,11 +113,11 @@ export async function deleteConfigFile(id: string) {
 
 export async function loadLocalSettings(): Promise<LocalSettings> {
   const settings = await chrome.storage.local.get(DEFAULT_LOCAL_SETTINGS);
-  return localSettingsSchema.parse(settings);
+  return serializedLocalSettingsSchema.parse(settings);
 }
 
 export async function saveLocalSettings(settings: Partial<LocalSettings>) {
-  const data = serializedLocalSettingsSchema.parse(settings);
+  const data = desizedLocalSettingsSchema.parse(settings);
   await chrome.storage.local.set(data);
 }
 

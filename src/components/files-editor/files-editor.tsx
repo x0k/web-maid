@@ -159,9 +159,9 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
                 <span>Reset All</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                disabled={!hasActive}
+                disabled={!hasActive || !active.isRemovable}
                 onClick={() => {
-                  if (active) {
+                  if (active?.isRemovable) {
                     onRemoveFile(active.id);
                   }
                 }}

@@ -1,14 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { SnackbarProvider } from "notistack";
 import { CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
 
-import { ErrorAlert } from "@/components/error-alert";
+import { Toaster } from '@/components/ui/toaster'
+import { ErrorAlert } from '@/components/alert-error';
 
 import { connectToSandbox, findAndBindIFrame } from "@/shared/sandbox/connect";
 import { SandboxContext } from "@/shared/sandbox/react-hooks";
@@ -41,9 +37,7 @@ connectToSandbox("sandbox.html", findAndBindIFrame(sandboxIFrameId))
             <OptionsPage />
           </QueryClientProvider>
         </SandboxContext.Provider>
-        <SnackbarProvider
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        />
+        <Toaster />
       </React.StrictMode>
     ),
     (error) => <ErrorAlert error={error} />
