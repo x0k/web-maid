@@ -45,6 +45,7 @@ import {
   saveLocalSettings,
   createConfigFile,
   deleteConfigFile,
+  ConfigFile,
 } from "@/shared/core";
 import { useContextActor, useExtensionActorLogic } from "@/shared/react-hooks";
 import { Fetcher } from "@/shared/fetcher";
@@ -170,8 +171,8 @@ export function Config() {
   });
 
   const evalMutation = useMutation({
-    mutationFn: ({ config, secrets }: { config: string; secrets: string }) =>
-      evalConfig(debug, config, secrets, contextId, selectedTab?.id),
+    mutationFn: ({ configFiles, secrets }: { configFiles: ConfigFile[]; secrets: string }) =>
+      evalConfig(debug, configFiles, secrets, contextId, selectedTab?.id),
     onSuccess: (success) => {
       logger.log({ success });
     },
@@ -285,11 +286,6 @@ export function Config() {
               variant="contained"
               size="small"
               onClick={() => {
-                const main = configFiles.find((f) => f.id === "main");
-                if (!main) {
-                  showError("Main file not found");
-                  return;
-                }
                 const { current: editorState } = filesEditorStateRef;
                 if (
                   editorState &&
@@ -302,7 +298,7 @@ export function Config() {
                   });
                 }
                 evalMutation.mutate({
-                  config: main.content,
+                  configFiles,
                   secrets: secretsModel.getValue(),
                 });
               }}
@@ -388,7 +384,7 @@ export function Config() {
           <DialogHeader>
             <DialogTitle>Remove file</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove "
+              Do you really want to remove "
               {filesEditorStateRef.current?.filesMap.get(toRemove)?.name}"?
             </DialogDescription>
           </DialogHeader>

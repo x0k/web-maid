@@ -105,11 +105,7 @@ export function Popup({ sandbox }: PopupProps) {
         loadLocalSettings(),
         loadSyncSettings(),
       ] as const);
-      const main = sync.configFiles.find((f) => f.id === "main");
-      if (!main) {
-        throw new Error("Main config not found");
-      }
-      return evalConfig(debug, main.content, local.secrets);
+      return evalConfig(debug, sync.configFiles, local.secrets);
     },
     onSuccess() {
       callbackRef.current = setTimeout(() => {

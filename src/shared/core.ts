@@ -155,14 +155,14 @@ export interface ConfigRenderedData {
 export async function evalConfigInTab(
   tabId: number,
   contextId: string,
-  config: string,
+  configFiles: ConfigFile[],
   secrets: string,
   debug: boolean
 ): Promise<unknown> {
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
     func: injectedConfigEval,
-    args: [contextId, config, secrets, debug],
+    args: [contextId, configFiles, secrets, debug],
   });
   if (
     isObject(result) &&
@@ -179,15 +179,15 @@ export function makeIsomorphicConfigEval(
 ) {
   return async (
     debug: boolean,
-    config: string,
+    configFiles: ConfigFile[],
     secrets: string,
     contextId?: string,
     tabId?: number
   ) => {
     return tabId && contextId
-      ? evalConfigInTab(tabId, contextId, config, secrets, debug)
+      ? evalConfigInTab(tabId, contextId, configFiles, secrets, debug)
       : evalConfig({
-          config,
+          configFiles,
           secrets,
           operatorResolver: operatorResolverFactory(debug),
         });

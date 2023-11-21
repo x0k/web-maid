@@ -27,7 +27,7 @@ import {
   RemoteRenderer,
   RemoteValidator,
 } from "@/shared/sandbox/remote-impl";
-import { evalConfig } from "@/shared/config/eval";
+import { evalConfig, EvalConfigFile } from "@/shared/config/eval";
 
 import { sandboxIFrameId } from "./constants";
 import { Popup } from "./popup";
@@ -47,7 +47,7 @@ const extension = new ContextRemoteActor<
 >(remoteLogic, messageSender);
 
 interface InjectedConfigEvalOptions {
-  config: string;
+  configFiles: EvalConfigFile[]
   secrets: string;
   debug: boolean;
   contextId: string;
@@ -80,13 +80,13 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   const validator = new RemoteValidator(sandboxIFrameId, sandbox);
   const INJECTED = {
     evalConfig: ({
-      config,
+      configFiles,
       contextId,
       debug,
       secrets,
     }: InjectedConfigEvalOptions) =>
       evalConfig({
-        config,
+        configFiles,
         secrets,
         operatorResolver: createOperatorResolver({
           debug,

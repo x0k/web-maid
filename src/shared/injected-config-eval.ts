@@ -1,7 +1,9 @@
+import type { ConfigFile } from './core';
+
 // Type only imports
 export async function injectedConfigEval(
   contextId: string,
-  config: string,
+  configFiles: ConfigFile[],
   secrets: string,
   debug: boolean
 ) {
@@ -10,7 +12,7 @@ export async function injectedConfigEval(
   };
   try {
     return await evalConfig({
-      config,
+      configFiles,
       secrets,
       debug,
       contextId,
