@@ -14,7 +14,12 @@ import {
 import { Input } from "@/components/ui/input";
 
 const createFileFormSchema = z.object({
-  name: z.string().min(1),
+  name: z
+    .string()
+    .min(1)
+    .refine((value) => value !== "main", {
+      message: "File name cannot be 'main'",
+    }),
 });
 
 export interface CreateConfigFileFormProps {

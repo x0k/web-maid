@@ -88,6 +88,10 @@ export async function saveSyncSettings(settings: Partial<SyncSettings>) {
 }
 
 export async function createConfigFile(name: string, content: string) {
+  const { configFiles } = await loadSyncSettings();
+  if (configFiles.some((file) => file.name === name)) {
+    throw new Error(`Config file with name "${name}" already exists`);
+  }
   const id = nanoid();
   const configFile: ConfigFile = {
     id,
@@ -95,7 +99,6 @@ export async function createConfigFile(name: string, content: string) {
     content,
     isRemovable: true,
   };
-  const { configFiles } = await loadSyncSettings();
   await saveSyncSettings({
     configFiles: [...configFiles, configFile],
   });

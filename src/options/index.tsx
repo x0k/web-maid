@@ -37,7 +37,9 @@ connectToSandbox("sandbox.html", findAndBindIFrame(sandboxIFrameId))
             <OptionsPage />
           </QueryClientProvider>
         </SandboxContext.Provider>
-        <SnackbarProvider />
+        <SnackbarProvider
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        />
       </React.StrictMode>
     ),
     (error) => <ErrorAlert error={error} />
