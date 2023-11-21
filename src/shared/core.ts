@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { isObject } from "@/lib/guards";
@@ -13,18 +14,35 @@ const localSettingsSchema = z.object({
 
 const partialLocalSettingsSchema = localSettingsSchema.partial();
 
-const syncSettingsSchema = z.object({
-  config: z.string(),
+const configFileSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  content: z.string(),
+  isRemovable: z.boolean(),
 });
 
-const partialSyncSettingsSchema = syncSettingsSchema.partial();
+export type ConfigFile = z.infer<typeof configFileSchema>;
+
+const configFilesSchema = z.array(configFileSchema);
+
+const syncSettingsSchema = z.object({
+  configFiles: z
+    .string()
+    .transform((v) => JSON.parse(v))
+    .refine((v): v is ConfigFile[] => configFilesSchema.safeParse(v).success),
+});
+
+export type SyncSettings = z.infer<typeof syncSettingsSchema>;
+
+const serializedSyncSettingsSchema = syncSettingsSchema
+  .partial()
+  .transform(({ configFiles, ...rest }) => ({
+    ...rest,
+    configFiles: JSON.stringify(configFiles),
+  }));
 
 export interface LocalSettings {
   secrets: string;
-}
-
-export interface SyncSettings {
-  config: string;
 }
 
 const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
@@ -32,7 +50,14 @@ const DEFAULT_LOCAL_SETTINGS: z.infer<typeof localSettingsSchema> = {
 };
 
 const DEFAULT_SYNC_SETTINGS: z.infer<typeof syncSettingsSchema> = {
-  config: rawConfig,
+  configFiles: [
+    {
+      id: "main",
+      name: "main",
+      content: rawConfig,
+      isRemovable: false,
+    },
+  ],
 };
 
 const tabSchema = z.object({
@@ -41,9 +66,9 @@ const tabSchema = z.object({
   favIconUrl: z.string().optional(),
 });
 
-const tabsSchema = z.array(tabSchema);
-
 export type Tab = z.infer<typeof tabSchema>;
+
+const tabsSchema = z.array(tabSchema);
 
 export async function loadSyncSettings(): Promise<SyncSettings> {
   const settings = await chrome.storage.sync.get(DEFAULT_SYNC_SETTINGS);
@@ -51,8 +76,32 @@ export async function loadSyncSettings(): Promise<SyncSettings> {
 }
 
 export async function saveSyncSettings(settings: Partial<SyncSettings>) {
-  const data = partialSyncSettingsSchema.parse(settings);
+  const data = serializedSyncSettingsSchema.parse(settings);
   await chrome.storage.sync.set(data);
+}
+
+export async function createConfigFile(name: string, content: string) {
+  const id = nanoid();
+  const configFile: ConfigFile = {
+    id,
+    name,
+    content,
+    isRemovable: true,
+  };
+  const { configFiles } = await loadSyncSettings();
+  await saveSyncSettings({
+    configFiles: [...configFiles, configFile],
+  });
+  return configFile;
+}
+
+export async function deleteConfigFile(id: string) {
+  const { configFiles } = await loadSyncSettings();
+  await saveSyncSettings({
+    configFiles: configFiles.filter(
+      (file) => file.id !== id || !file.isRemovable
+    ),
+  });
 }
 
 export async function loadLocalSettings(): Promise<LocalSettings> {

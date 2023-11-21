@@ -1,12 +1,12 @@
-import { forwardRef, useCallback, useRef } from "react";
+import { forwardRef, useCallback } from "react";
 import FormRef, { IChangeEvent } from "@rjsf/core";
 import MuiForm from "@rjsf/mui";
-import { ErrorSchema, RJSFSchema, UiSchema, ValidationData } from "@rjsf/utils";
+import { RJSFSchema, UiSchema, ValidationData } from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
-import useSWRMutation from "swr/mutation";
 
 import type { AsyncFactory } from "@/lib/factory";
 import { stringifyError } from "@/lib/error";
+import { useMutation } from "@tanstack/react-query";
 
 export interface FormDataValidatorData<T> {
   formData: T | undefined;
@@ -45,44 +45,39 @@ export const Form = forwardRef<FormRef<unknown>, FormProps<unknown>>(
     },
     ref
   ) => {
-    const idRef = useRef(Date.now().toString(16));
-    async function runValidation(
-      _: string,
-      { arg }: { arg: IChangeEvent<unknown> }
-    ): Promise<{
-      arg: IChangeEvent<unknown>;
-      errorSchema: ErrorSchema<unknown>;
-    }> {
-      const { formData, schema, uiSchema } = arg;
-      try {
-        const { errorSchema } = await asyncValidator.Create({
-          formData,
-          schema,
-          uiSchema,
-        });
-        return { arg, errorSchema };
-      } catch (e) {
-        return {
-          arg,
-          errorSchema: {
-            __errors: [stringifyError(e)],
-          },
-        };
-      }
-    }
-    const submit = useSWRMutation(idRef.current, runValidation, {
-      onSuccess({ arg, errorSchema }) {
+    const submitMutation = useMutation({
+      mutationFn: async ({
+        formData,
+        schema,
+        uiSchema,
+      }: IChangeEvent<unknown>) => {
+        try {
+          const { errorSchema } = await asyncValidator.Create({
+            formData,
+            schema,
+            uiSchema,
+          });
+          return { errorSchema };
+        } catch (e) {
+          return {
+            errorSchema: {
+              __errors: [stringifyError(e)],
+            },
+          };
+        }
+      },
+      onSuccess: ({ errorSchema }, event) => {
         if (Object.keys(errorSchema).length > 0) {
           return;
         }
-        onSubmit?.(arg);
+        onSubmit?.(event);
       },
     });
     const formSubmitHandler = useCallback(
       (event: IChangeEvent<unknown>) => {
-        submit.trigger(event);
+        submitMutation.mutate(event);
       },
-      [submit.trigger]
+      [submitMutation.mutate]
     );
     return (
       <MuiForm
@@ -95,7 +90,7 @@ export const Form = forwardRef<FormRef<unknown>, FormProps<unknown>>(
         children={children}
         validator={validator}
         noValidate
-        extraErrors={submit.data?.errorSchema}
+        extraErrors={submitMutation.data?.errorSchema}
         onSubmit={formSubmitHandler}
       />
     );

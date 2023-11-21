@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
@@ -59,7 +60,19 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   container.style.top = "10px";
   container.style.right = "25px";
   container.style.zIndex = "9999999";
-  renderInShadowDom(container, <Popup sandbox={sandbox} />);
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
+  renderInShadowDom(
+    container,
+    <QueryClientProvider client={client}>
+      <Popup sandbox={sandbox} />
+    </QueryClientProvider>
+  );
   document.body.append(container);
   // For tests
   const evaluator = new RemoteEvaluator(sandboxIFrameId, sandbox);

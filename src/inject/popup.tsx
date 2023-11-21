@@ -9,9 +9,9 @@ import {
   Typography,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
-import useSWRMutation from "swr/mutation";
 import { stringify } from "yaml";
 import { nanoid } from "nanoid";
+import { useMutation } from "@tanstack/react-query";
 
 import {
   IRemoteActor,
@@ -50,7 +50,7 @@ import {
   loadSyncSettings,
   makeIsomorphicConfigEval,
 } from "@/shared/core";
-import { useOkShower } from '@/shared/react-ok-shower';
+import { useOkShower } from "@/shared/react-ok-shower";
 
 import { sandboxIFrameId } from "./constants";
 
@@ -97,30 +97,31 @@ export function Popup({ sandbox }: PopupProps) {
   );
   const [isVisible, setIsVisible] = useState(false);
   const callbackRef = useRef<NodeJS.Timeout>();
-  const evaluator = useSWRMutation(
-    "config",
-    async (_, { arg: debug }: { arg: boolean }) => {
+  const evalMutation = useMutation({
+    mutationFn: async (debug: boolean) => {
       clearTimeout(callbackRef.current);
       setIsVisible(true);
       const [local, sync] = await Promise.all([
         loadLocalSettings(),
         loadSyncSettings(),
       ] as const);
-      return evalConfig(debug, sync.config, local.secrets);
+      const main = sync.configFiles.find((f) => f.id === "main");
+      if (!main) {
+        throw new Error("Main config not found");
+      }
+      return evalConfig(debug, main.content, local.secrets);
     },
-    {
-      onSuccess() {
-        callbackRef.current = setTimeout(() => {
-          closePopup();
-        }, 2000);
-      },
-    }
-  );
+    onSuccess() {
+      callbackRef.current = setTimeout(() => {
+        closePopup();
+      }, 2000);
+    },
+  });
   const closePopup = useCallback(() => {
     setIsVisible(false);
-    evaluator.reset();
+    evalMutation.reset();
     clear();
-  }, [evaluator, clear]);
+  }, [evalMutation, clear]);
   const tabLogic = useMemo(
     () =>
       makeActorLogic<
@@ -130,12 +131,12 @@ export function Popup({ sandbox }: PopupProps) {
         chrome.runtime.MessageSender
       >(
         {
-          [TabActionType.RunConfig]: () => evaluator.trigger(false),
+          [TabActionType.RunConfig]: () => evalMutation.mutate(false),
         },
         noop,
         stringifyError
       ),
-    [evaluator]
+    [evalMutation]
   );
   const tabActor = useMemo(
     () =>
@@ -197,11 +198,11 @@ export function Popup({ sandbox }: PopupProps) {
         <Close />
       </IconButton>
       <Box display={"flex"} flexDirection={"column"} gap={2} width={500}>
-        {evaluator.isMutating ? (
+        {evalMutation.isPending ? (
           <Typography pb={2}>In progress...</Typography>
-        ) : evaluator.error ? (
+        ) : evalMutation.error ? (
           <>
-            <ErrorAlert error={evaluator.error} />
+            <ErrorAlert error={evalMutation.error} />
             <Box
               display="flex"
               flexDirection="column"
@@ -212,7 +213,7 @@ export function Popup({ sandbox }: PopupProps) {
                 color="error"
                 variant="contained"
                 fullWidth
-                onClick={() => evaluator.trigger(true)}
+                onClick={() => evalMutation.mutate(true)}
               >
                 Retry with debug
               </Button>
@@ -225,7 +226,7 @@ export function Popup({ sandbox }: PopupProps) {
           <Alert severity="success">
             <AlertTitle>Success</AlertTitle>
             <pre>
-              <code>{stringify(evaluator.data)}</code>
+              <code>{stringify(evalMutation.data)}</code>
             </pre>
           </Alert>
         )}

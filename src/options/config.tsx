@@ -7,8 +7,7 @@ import {
   Typography,
 } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
-import useSWRMutation from "swr/mutation";
-import useSWR from "swr";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
@@ -16,6 +15,7 @@ import { useMonacoLogger } from "@/lib/react-monaco-logger";
 import { Editor } from "@/components/editor";
 import { ErrorAlert } from "@/components/error-alert";
 import { Row } from "@/components/row";
+import { EditorFile, FilesEditor } from "@/components/files-editor";
 
 import { useFormDataValidator, useSandbox } from "@/shared/sandbox/react-hooks";
 import { createOperatorResolver } from "@/shared/config/create";
@@ -41,12 +41,10 @@ import { useRootFactory } from "@/shared/react-root-factory";
 import { useFormShower } from "@/shared/react-form-shower";
 import { useOkShower } from "@/shared/react-ok-shower";
 import { Docs } from "@/shared/config/docs";
-import { EditorFile, FilesEditor } from "@/components/files-editor";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
 
-const configModel = monaco.editor.createModel("", "yaml");
 const secretsModel = monaco.editor.createModel("", "yaml");
 const logsModel = monaco.editor.createModel("", "yaml");
 
@@ -62,14 +60,6 @@ function showSuccess(message: string) {
     variant: "success",
     message,
   });
-}
-
-async function saveConfig(_: string, { arg }: { arg: string }) {
-  await saveSyncSettings({ config: arg });
-}
-
-async function saveSecrets(_: string, { arg }: { arg: string }) {
-  await saveLocalSettings({ secrets: arg });
 }
 
 const initialTabs: Tab[] = [];
@@ -102,21 +92,6 @@ export function Config() {
   );
   const [debug, setDebug] = useState(true);
   const [selectedTab, selectTab] = useState<Tab | null>(null);
-  const evalRunner = useSWRMutation(
-    [debug, selectedTab],
-    (
-      [debug, tab],
-      { arg: { config, secrets } }: { arg: { config: string; secrets: string } }
-    ) => evalConfig(debug, config, secrets, contextId, tab?.id),
-    {
-      onSuccess(result) {
-        logger.log({ success: result });
-      },
-      onError(error) {
-        logger.log({ error });
-      },
-    }
-  );
 
   const logic = useExtensionActorLogic(formShower, okShower, logger, fetcher);
   const actor = useContextActor(contextId, logic);
@@ -127,58 +102,74 @@ export function Config() {
     };
   }, [actor]);
 
-  const tabsPermission = useSWR("tabs/permission", checkForTabsPermission, {
-    revalidateOnFocus: false,
+  const queryClient = useQueryClient();
+  const tabsPermission = useQuery({
+    queryKey: ["tabs", "permission"],
+    queryFn: checkForTabsPermission,
   });
-  const requestForTabsPermissionMutation = useSWRMutation(
-    "tabs/permission",
-    () => requestForTabsPermission(),
-    {
-      onSuccess: (result) => {
-        tabsPermission.mutate(result);
-      },
-      onError: showError,
-    }
-  );
-  const tabs = useSWR(() => (tabsPermission.data ? "tabs" : null), getAllTabs, {
-    fallbackData: initialTabs,
+  const requestForTabsPermissionMutation = useMutation({
+    mutationFn: requestForTabsPermission,
+    onSuccess: (result) => {
+      queryClient.setQueryData(["tabs", "permission"], result);
+    },
+    onError: showError,
+  });
+  const tabs = useQuery({
+    queryKey: ["tabs"],
+    queryFn: getAllTabs,
+    initialData: initialTabs,
+    enabled: tabsPermission.data,
   });
 
   const [isSecretsEditor, setIsSecretsEditor] = useState(false);
-  useSWR("settings/sync", loadSyncSettings, {
-    revalidateOnFocus: false,
-    onSuccess({ config }) {
-      configModel.setValue(config);
+  const {
+    data: { configFiles },
+  } = useQuery({
+    queryKey: ["settings", "sync"],
+    queryFn: loadSyncSettings,
+    initialData: { configFiles: [] },
+  });
+  const saveConfigFilesMutation = useMutation({
+    mutationFn: (configFiles: EditorFile[]) =>
+      saveSyncSettings({ configFiles }),
+    onSuccess: () => {
+      showSuccess("Config files saved");
     },
     onError: showError,
   });
-  const configMutation = useSWRMutation("settings/sync/config", saveConfig, {
-    onSuccess() {
-      showSuccess("Config saved");
+  const evalMutation = useMutation({
+    mutationFn: ({ config, secrets }: { config: string; secrets: string }) =>
+      evalConfig(debug, config, secrets, contextId, selectedTab?.id),
+    onSuccess: (success) => {
+      logger.log({ success });
+    },
+    onError: (error) => {
+      logger.log({ error });
+    },
+  });
+
+  const {
+    data: { secrets },
+  } = useQuery({
+    queryKey: ["settings", "local"],
+    queryFn: loadLocalSettings,
+    initialData: {
+      secrets: "",
+    },
+  });
+  useEffect(() => {
+    secretsModel.setValue(secrets);
+  }, [secrets]);
+  const secretsMutation = useMutation({
+    mutationFn: (secrets: string) => saveLocalSettings({ secrets }),
+    onSuccess: () => {
+      showSuccess("Secrets saved");
     },
     onError: showError,
   });
-  useSWR("settings/local", loadLocalSettings, {
-    revalidateOnFocus: false,
-    onSuccess({ secrets }) {
-      secretsModel.setValue(secrets);
-    },
-    onError: showError,
-  });
-  const secretsMutation = useSWRMutation(
-    "settings/local/secrets",
-    saveSecrets,
-    {
-      onSuccess() {
-        showSuccess("Secrets saved");
-      },
-      onError: showError,
-    }
-  );
-  const [files, setFiles] = useState<EditorFile[]>([]);
   return (
-    <div className="grow grid grid-cols-2 grid-rows-[auto_1fr] gap-4 overflow-hidden">
-      <div className="row-start-1 row-end-3 flex flex-col gap-4">
+    <div className="grow grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-[auto_1fr] gap-4 overflow-hidden">
+      <div className="row-start-1 lg:row-end-3 flex flex-col gap-4 min-h-[45vh]">
         {isSecretsEditor ? (
           <>
             <Row>
@@ -190,7 +181,7 @@ export function Config() {
                 color="primary"
                 size="small"
                 onClick={() => {
-                  secretsMutation.trigger(secretsModel.getValue());
+                  secretsMutation.mutate(secretsModel.getValue());
                 }}
               >
                 Save
@@ -216,16 +207,6 @@ export function Config() {
               </Typography>
               <Button
                 variant="contained"
-                color="primary"
-                size="small"
-                onClick={() => {
-                  configMutation.trigger(configModel.getValue());
-                }}
-              >
-                Save
-              </Button>
-              <Button
-                variant="contained"
                 color="secondary"
                 size="small"
                 onClick={() => {
@@ -236,20 +217,12 @@ export function Config() {
               </Button>
             </Row>
             <FilesEditor
-              files={files}
-              onCreateFile={() =>
-                setFiles((fs) =>
-                  fs.concat({
-                    id: Date.now().toString(16),
-                    name: `file-${fs.length + 1}`,
-                    content: "",
-                  })
-                )
-              }
-              onSaveFiles={(files) => setFiles(files)}
-              onRemoveFile={(id) =>
-                setFiles((fs) => fs.filter((f) => f.id !== id))
-              }
+              files={configFiles}
+              onCreateFile={() => {
+                showError("Not implemented");
+              }}
+              onSaveFiles={saveConfigFilesMutation.mutate}
+              onRemoveFile={(id) => showError(`Not implemented: ${id}`)}
             />
           </>
         )}
@@ -271,22 +244,27 @@ export function Config() {
             color="warning"
             size="small"
             onClick={() => {
-              evalRunner.trigger({
-                config: configModel.getValue(),
+              const main = configFiles.find((f) => f.id === "main");
+              if (!main) {
+                showError("Main file not found");
+                return;
+              }
+              evalMutation.mutate({
+                config: main.content,
                 secrets: secretsModel.getValue(),
               });
             }}
-            disabled={evalRunner.isMutating}
+            disabled={evalMutation.isPending}
           >
             Test
           </Button>
-          {Boolean(evalRunner.data !== undefined || evalRunner.error) && (
+          {Boolean(evalMutation.isSuccess || evalMutation.isError) && (
             <Button
               variant="contained"
               color="error"
               size="small"
               onClick={() => {
-                evalRunner.reset();
+                evalMutation.reset();
                 logsModel.setValue("");
                 clearRoot();
               }}
@@ -311,9 +289,9 @@ export function Config() {
             size="large"
             disabled={
               tabsPermission.isLoading ||
-              requestForTabsPermissionMutation.isMutating
+              requestForTabsPermissionMutation.isPending
             }
-            onClick={() => requestForTabsPermissionMutation.trigger()}
+            onClick={() => requestForTabsPermissionMutation.mutate()}
           >
             Grant permissions to execute on opened tabs
           </Button>
@@ -328,14 +306,14 @@ export function Config() {
         )}
       </div>
       <div className="flex flex-col gap-4 overflow-auto">
-        {evalRunner.isMutating && (
+        {evalMutation.isPending && (
           <LinearProgress style={{ marginBottom: 16 }} />
         )}
         {children}
-        {evalRunner.error && <ErrorAlert error={evalRunner.error} />}
-        {evalRunner.isMutating ||
-        evalRunner.data !== undefined ||
-        evalRunner.error ? (
+        {evalMutation.isError && <ErrorAlert error={evalMutation.error} />}
+        {evalMutation.isPending ||
+        evalMutation.isSuccess ||
+        evalMutation.isError ? (
           <div className="h-full flex flex-col">
             <Editor ref={logsEditorRef} model={logsModel} />
           </div>

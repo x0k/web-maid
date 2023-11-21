@@ -26,6 +26,7 @@ export interface EditorFile {
   id: string;
   name: string;
   content: string;
+  isRemovable: boolean;
 }
 
 export interface FilesEditorProps {
@@ -40,6 +41,7 @@ interface InternalEditorFile {
   name: string;
   initialContent: string;
   isChanged: boolean;
+  isRemovable: boolean;
   model: monaco.editor.ITextModel;
 }
 
@@ -76,6 +78,7 @@ export function FilesEditor({
           id: file.id,
           name: file.name,
           initialContent: file.content,
+          isRemovable: file.isRemovable,
           model: monaco.editor.createModel(file.content, "yaml"),
           isChanged: false,
         };
@@ -135,7 +138,7 @@ export function FilesEditor({
       <div className="flex flex-row items-center bg-neutral-950">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="rounded-none" variant="default">
+            <Button className="dark rounded-none" variant="link">
               File
             </Button>
           </DropdownMenuTrigger>
@@ -153,6 +156,7 @@ export function FilesEditor({
                     internalFiles.map((f) => ({
                       id: f.id,
                       name: f.name,
+                      isRemovable: f.isRemovable,
                       content:
                         f.id === activeFile.id
                           ? f.model.getValue()
@@ -174,6 +178,7 @@ export function FilesEditor({
                     internalFiles.map((f) => ({
                       id: f.id,
                       name: f.name,
+                      isRemovable: f.isRemovable,
                       content: f.isChanged
                         ? f.model.getValue()
                         : f.initialContent,
