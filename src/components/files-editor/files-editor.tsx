@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import {
   Plus,
   Pen,
@@ -10,7 +10,6 @@ import {
   Trash,
 } from "lucide-react";
 
-import { monaco } from "@/lib/monaco";
 import { Editor } from "@/components/editor";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,14 +19,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import classes from "./file-editor.module.css";
-
-export interface EditorFile {
-  id: string;
-  name: string;
-  content: string;
-  isRemovable: boolean;
-}
+import classes from "./styles.module.css";
+import {
+  EditorFile,
+  FilesEditorState,
+  InternalEditorFile,
+  resetAllFiles,
+  resetFile,
+  saveAllFiles,
+  saveFile,
+  updateEditorState,
+} from "./core";
 
 export interface FilesEditorProps {
   files: EditorFile[];
@@ -36,32 +38,15 @@ export interface FilesEditorProps {
   onSaveFiles: (files: EditorFile[]) => void;
 }
 
-interface InternalEditorFile {
-  id: string;
-  name: string;
-  initialContent: string;
-  isChanged: boolean;
-  isRemovable: boolean;
-  model: monaco.editor.ITextModel;
-}
-
-export interface FilesEditorState {
-  files: Map<string, InternalEditorFile>;
-  active: InternalEditorFile | null;
-}
-
 export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
-  ({ files, onCreateFile, onRemoveFile, onSaveFiles }, ref) => {
+  ({ files: editorFiles, onCreateFile, onRemoveFile, onSaveFiles }, ref) => {
     const stateRef = useRef<FilesEditorState>({
       active: null,
-      files: new Map<string, InternalEditorFile>(),
+      filesMap: new Map<string, InternalEditorFile>(),
+      files: [],
     });
-    const [internalFiles, setInternalFiles] = useState<InternalEditorFile[]>(
-      []
-    );
-    const [activeFile, setActiveFile] = useState<InternalEditorFile | null>(
-      null
-    );
+    const [, setState] = useState(0);
+    const rerender = useCallback(() => setState(Date.now()), []);
     useEffect(() => {
       if (ref) {
         if (typeof ref === "function") {
@@ -72,54 +57,15 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
       }
     }, [ref]);
     useEffect(() => {
-      const {
-        current,
-        current: { files: ifs },
-      } = stateRef;
-      const visited = new Set<string>();
-      const nextFiles: InternalEditorFile[] = [];
-      let newFile: InternalEditorFile | undefined;
-      for (const file of files) {
-        visited.add(file.id);
-        const internalFile = ifs.get(file.id);
-        if (!internalFile) {
-          newFile = {
-            id: file.id,
-            name: file.name,
-            initialContent: file.content,
-            isRemovable: file.isRemovable,
-            model: monaco.editor.createModel(file.content, "yaml"),
-            isChanged: false,
-          };
-          ifs.set(file.id, newFile);
-          nextFiles.push(newFile);
-        } else {
-          internalFile.name = file.name;
-          internalFile.initialContent = file.content;
-          internalFile.isChanged =
-            internalFile.model.getValue() !== file.content;
-          nextFiles.push(internalFile);
-        }
-      }
-      for (const id of ifs.keys()) {
-        if (!visited.has(id)) {
-          ifs.get(id)!.model.dispose();
-          ifs.delete(id);
-        }
-      }
-      setInternalFiles(nextFiles);
-      if (newFile) {
-        current.active = newFile;
-        setActiveFile(newFile);
-      } else if (!current.active || !visited.has(current.active.id)) {
-        const activeFile = nextFiles.length > 0 ? nextFiles[0] : null;
-        current.active = activeFile;
-        setActiveFile(activeFile);
-      }
-    }, [files]);
+      updateEditorState(stateRef.current, editorFiles);
+      rerender();
+    }, [editorFiles, rerender]);
     useEffect(() => {
-      if (activeFile) {
-        const disposable = activeFile.model.onDidChangeContent((e) => {
+      const {
+        current: { active },
+      } = stateRef;
+      if (active) {
+        const disposable = active.model.onDidChangeContent((e) => {
           const { active } = stateRef.current;
           if (active === null || e.isFlush) {
             return;
@@ -128,21 +74,23 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
             if (e.isUndoing) {
               if (active.model.getValue() == active!.initialContent) {
                 active.isChanged = false;
-                setActiveFile({ ...active });
+                rerender();
               }
             }
           } else {
             active.isChanged = true;
-            setActiveFile({ ...active });
+            rerender();
           }
         });
         return () => disposable.dispose();
       }
-    }, [activeFile?.model]);
-    const hasActive = activeFile !== null;
-    const isActiveChanged = hasActive && activeFile.isChanged;
-    const isSomeFileChanged =
-      isActiveChanged || internalFiles.some((f) => f.isChanged);
+    }, [stateRef.current.active?.model, rerender]);
+    const {
+      current: { active, files },
+    } = stateRef;
+    const hasActive = active !== null;
+    const isActiveChanged = hasActive && active.isChanged;
+    const isSomeFileChanged = isActiveChanged || files.some((f) => f.isChanged);
     return (
       <div className="flex flex-col grow">
         <div className="flex flex-row items-center bg-neutral-950">
@@ -161,18 +109,8 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
               <DropdownMenuItem
                 disabled={!isActiveChanged}
                 onClick={() => {
-                  if (activeFile) {
-                    onSaveFiles(
-                      internalFiles.map((f) => ({
-                        id: f.id,
-                        name: f.name,
-                        isRemovable: f.isRemovable,
-                        content:
-                          f.id === activeFile.id
-                            ? f.model.getValue()
-                            : f.initialContent,
-                      }))
-                    );
+                  if (active?.isChanged) {
+                    onSaveFiles(saveFile(active, stateRef.current));
                   }
                 }}
               >
@@ -184,16 +122,7 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
                 disabled={!isSomeFileChanged}
                 onClick={() => {
                   if (isSomeFileChanged) {
-                    onSaveFiles(
-                      internalFiles.map((f) => ({
-                        id: f.id,
-                        name: f.name,
-                        isRemovable: f.isRemovable,
-                        content: f.isChanged
-                          ? f.model.getValue()
-                          : f.initialContent,
-                      }))
-                    );
+                    onSaveFiles(saveAllFiles(stateRef.current));
                   }
                 }}
               >
@@ -204,13 +133,11 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
               <DropdownMenuItem
                 disabled={!isActiveChanged}
                 onClick={() => {
-                  const { active } = stateRef.current;
                   if (!active?.isChanged) {
                     return;
                   }
-                  active.isChanged = false;
-                  active.model.setValue(active.initialContent);
-                  setActiveFile({ ...active });
+                  resetFile(active);
+                  rerender();
                 }}
               >
                 <Undo className="mr-2 h-4 w-4" />
@@ -219,21 +146,12 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
               <DropdownMenuItem
                 disabled={!isSomeFileChanged}
                 onClick={() => {
-                  let changed = 0;
-                  for (const file of internalFiles) {
-                    if (file.isChanged) {
-                      changed++;
-                      file.isChanged = false;
-                      file.model.setValue(file.initialContent);
-                    }
+                  if (!isSomeFileChanged) {
+                    return;
                   }
+                  const changed = resetAllFiles(stateRef.current);
                   if (changed > 0) {
-                    const { active } = stateRef.current;
-                    if (active) {
-                      setActiveFile({ ...active });
-                    } else {
-                      setInternalFiles((fs) => fs.slice());
-                    }
+                    rerender();
                   }
                 }}
               >
@@ -243,8 +161,8 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
               <DropdownMenuItem
                 disabled={!hasActive}
                 onClick={() => {
-                  if (activeFile) {
-                    onRemoveFile(activeFile.id);
+                  if (active) {
+                    onRemoveFile(active.id);
                   }
                 }}
               >
@@ -258,8 +176,8 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
           <div
             className={`relative grow flex flex-row gap-[2px] flex-nowrap overflow-auto h-10 ${classes.tabs}`}
           >
-            {internalFiles.map((file) => {
-              const isActive = file.id === activeFile?.id;
+            {files.map((file) => {
+              const isActive = file.id === active?.id;
               return (
                 <div
                   key={file.id}
@@ -267,8 +185,11 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
                     isActive ? "bg-neutral-800" : "bg-neutral-700"
                   }`}
                   onClick={() => {
+                    if (active === file) {
+                      return;
+                    }
                     stateRef.current.active = file;
-                    setActiveFile(file);
+                    rerender();
                   }}
                 >
                   <p className="text-neutral-200 truncate w-full">
@@ -284,7 +205,7 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
             })}
           </div>
         </div>
-        <Editor model={activeFile ? activeFile.model : null} />
+        <Editor model={active ? active.model : null} />
       </div>
     );
   }
