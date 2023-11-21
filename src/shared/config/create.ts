@@ -9,7 +9,7 @@ import {
 import { AsyncValidatorData, ShowFormData } from "@/lib/operators/json-schema";
 import { TemplateRendererData } from "@/lib/operators/template";
 import { FetcherData } from "@/lib/operators/http";
-import { EvaluatorData } from '@/lib/operators/document';
+import { EvaluatorData } from "@/lib/operators/document";
 
 import { compileOperatorFactories } from "./operator";
 
@@ -46,7 +46,7 @@ export function createOperatorResolver({
       logger,
       operatorsFactory: {
         Create(config): ScopedOp<unknown> {
-          return operatorsFactory.Create(config);
+          return operatorsFactory(config);
         },
       },
       operatorResolver: {

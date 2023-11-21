@@ -30,7 +30,7 @@ beforeEach(() => {
       logger: {} as unknown as ILogger,
       operatorsFactory: {
         Create(config): ScopedOp<unknown> {
-          return composed.Create(config);
+          return composed(config);
         },
       },
       operatorResolver: {

@@ -1,7 +1,7 @@
 import { type TypeOf, type ZodType } from "zod";
 
 import { isObject } from "@/lib/guards";
-import { Factory } from "@/lib/factory";
+import { Factory, FactoryFn } from "@/lib/factory";
 
 import { ILogger } from "./logger";
 
@@ -121,24 +121,22 @@ export abstract class TaskOpFactory<S extends ZodType, R> extends BaseOpFactory<
 
 export function makeComposedFactory<T extends Record<string, unknown>, R>(
   factories: Record<string, Factory<T, R>>
-): Factory<T, R> {
-  return {
-    Create(value) {
-      const name = value[OPERATOR_KEY];
-      if (typeof name !== "string") {
-        throw new Error(`Invalid operator name: ${name}`);
-      }
-      const f = factories[name];
-      if (!f) {
-        throw new Error(`Unknown operator: ${name}`);
-      }
-      return f.Create(value);
-    },
+): FactoryFn<T, R> {
+  return (value) => {
+    const name = value[OPERATOR_KEY];
+    if (typeof name !== "string") {
+      throw new Error(`Invalid operator name: ${name}`);
+    }
+    const f = factories[name];
+    if (!f) {
+      throw new Error(`Unknown operator: ${name}`);
+    }
+    return f.Create(value);
   };
 }
 
 export function makeOperatorResolver<R>(
-  factory: Factory<Record<string, unknown>, R>
+  factory: FactoryFn<Record<string, unknown>, R>
 ) {
   return <C>(context: C) => {
     if (
@@ -146,65 +144,63 @@ export function makeOperatorResolver<R>(
       context !== null &&
       OPERATOR_KEY in context
     ) {
-      return factory.Create(context);
+      return factory(context);
     }
     return context;
   };
 }
 
 export function makeDebugFactory<T extends Record<string, unknown>, R>(
-  factory: Factory<T, R>,
+  factory: FactoryFn<T, R>,
   logger: ILogger
-): Factory<T, R> {
+): FactoryFn<T, R> {
   let counter = 0;
-  return {
-    Create(config) {
-      const factoryResult = factory.Create(config);
-      if (typeof factoryResult !== "function") {
-        return factoryResult;
-      }
-      const operator = `${config[OPERATOR_KEY]}#${counter++}`;
-      const fn = function (...args: unknown[]) {
-        logger.log({
-          executing: operator,
-          config,
-          scope: args[0],
-        });
-        try {
-          const returns = factoryResult(...args);
-          if (returns instanceof Promise) {
-            return returns.then(
-              (returns) => {
-                logger.log({
-                  operator,
-                  returns,
-                });
-                return returns;
-              },
-              (error) => {
-                logger.log({
-                  operator,
-                  error,
-                });
-                return Promise.reject(error);
-              }
-            );
-          }
-          logger.log({
-            operator,
-            returns,
-          });
-          return returns;
-        } catch (error) {
-          logger.log({
-            operator,
-            error,
-          });
-          throw error;
+  return (config) => {
+    const factoryResult = factory(config);
+    if (typeof factoryResult !== "function") {
+      return factoryResult;
+    }
+    const operator = `${config[OPERATOR_KEY]}#${counter++}`;
+    const fn = function (...args: unknown[]) {
+      logger.log({
+        executing: operator,
+        config,
+        scope: args[0],
+      });
+      try {
+        const returns = factoryResult(...args);
+        if (returns instanceof Promise) {
+          return returns.then(
+            (returns) => {
+              logger.log({
+                operator,
+                returns,
+              });
+              return returns;
+            },
+            (error) => {
+              logger.log({
+                operator,
+                error,
+              });
+              return Promise.reject(error);
+            }
+          );
         }
-      };
-      fn.toString = () => `<${operator}>`;
-      return fn as R;
-    },
+        logger.log({
+          operator,
+          returns,
+        });
+        return returns;
+      } catch (error) {
+        logger.log({
+          operator,
+          error,
+        });
+        throw error;
+      }
+    };
+    fn.toString = () => `<${operator}>`;
+    return fn as R;
   };
 }
