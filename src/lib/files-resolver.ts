@@ -10,48 +10,49 @@ export interface ResolvableFile<T> {
   content: JsonLike<T>;
 }
 
-export function makePathResolver<T, R>(
-  files: ResolvableFile<T>[],
-  fileHandler: (content: JsonLike<T>, file: ResolvableFile<T>) => R,
-  currentFile: ResolvableFile<T>
-) {
+export function makePathResolverFactory<T, R>(files: ResolvableFile<T>[]) {
   const filesMap = new Map(files.map((file) => [file.name, file]));
   const resultsCache = new Map<string, R>();
-  const selectorsCache = new Map<string, JsonLike<T>>();
-  return (path: string) => {
-    if (!(path.startsWith("./") || path.startsWith("#"))) {
-      throw new Error("Invalid path");
-    }
-    if (resultsCache.has(path)) {
-      return resultsCache.get(path);
-    }
-    const [filePath, selector] = path.split("#");
-    let file = currentFile;
-    if (filePath) {
-      const simplePath = path.substring(2);
-      const resolvedFile = filesMap.get(simplePath);
-      if (resolvedFile === undefined) {
-        throw new Error("File not found");
+  const inRun = new Set<string>();
+  return (
+    fileHandler: (content: JsonLike<T>, file: ResolvableFile<T>) => R,
+    currentFile: ResolvableFile<T>,
+  ) => {
+    return (path: string) => {
+      if (!(path.startsWith("./") || path.startsWith("#"))) {
+        throw new Error("Invalid path");
       }
-      file = resolvedFile;
-    }
-    let selected = file.content;
-    if (selector) {
-      const cached = selectorsCache.get(`${file.name}#${selector}`);
-      if (cached !== undefined) {
-        selected = cached;
-      } else {
+      const [filePath = '', selector = ''] = path.split("#");
+      let file = currentFile;
+      if (filePath) {
+        const simplePath = filePath.substring(2);
+        const resolvedFile = filesMap.get(simplePath);
+        if (resolvedFile === undefined) {
+          throw new Error(`File not found: "${filePath}"`);
+        }
+        file = resolvedFile;
+      }
+      const normalizedPath = `${file.name}#${selector}`;
+      if (resultsCache.has(normalizedPath)) {
+        return resultsCache.get(normalizedPath)!;
+      }
+      if (inRun.has(normalizedPath)) {
+        throw new Error(`Cyclic reference: ${normalizedPath}`);
+      }
+      inRun.add(normalizedPath);
+      let selected = file.content;
+      if (selector) {
         const selection = jp.value(file.content, selector);
         if (selection === undefined) {
-          throw new Error("Selector result is undefined");
+          throw new Error(`Result of selector "${selector}" for file "${file.name}" is undefined`);
         }
-        selectorsCache.set(`${file.name}#${selector}`, selection);
         selected = selection;
       }
-    }
-    const result = fileHandler(selected, file);
-    resultsCache.set(path, result);
-    return result;
+      const result = fileHandler(selected, file);
+      resultsCache.set(normalizedPath, result);
+      inRun.delete(normalizedPath);
+      return result;
+    };
   };
 }
 
