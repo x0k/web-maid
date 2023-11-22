@@ -2,6 +2,14 @@ import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { crx } from "@crxjs/vite-plugin";
+import { version } from "./package.json";
+
+// Convert from Semver (example: 0.1.0-beta6)
+const [major, minor, patch, label = "0"] = version
+  // can only contain digits, dots, or dash
+  .replace(/[^\d.-]+/g, "")
+  // split into version parts
+  .split(/[.-]/);
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,9 +25,11 @@ export default defineConfig({
     crx({
       manifest: {
         manifest_version: 3,
-        version: "1.0.0",
+        // up to four numbers separated by dots
+        version: `${major}.${minor}.${patch}.${label}`,
+        version_name: version,
         name: "Scraper Extension",
-        description: "Companion extension for the Scraper",
+        description: "Extension to scrape data from web pages in free form",
         icons: {
           "16": "public/icon16.png",
           "32": "public/icon32.png",
