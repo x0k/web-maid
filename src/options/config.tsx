@@ -171,8 +171,13 @@ export function Config() {
   });
 
   const evalMutation = useMutation({
-    mutationFn: ({ configFiles, secrets }: { configFiles: ConfigFile[]; secrets: string }) =>
-      evalConfig(debug, configFiles, secrets, contextId, selectedTab?.id),
+    mutationFn: ({
+      configFiles,
+      secrets,
+    }: {
+      configFiles: ConfigFile[];
+      secrets: string;
+    }) => evalConfig(debug, configFiles, secrets, contextId, selectedTab?.id),
     onSuccess: (success) => {
       logger.log({ success });
     },
@@ -281,6 +286,22 @@ export function Config() {
               checked={debug}
               onChange={(_, v) => setDebug(v)}
             />
+            <Button
+              color="warning"
+              variant="contained"
+              size="small"
+              onClick={() => {
+                if (selectedTab === null) {
+                  return;
+                }
+                chrome.scripting.executeScript({
+                  target: { tabId: selectedTab.id },
+                  files: ["test.js"],
+                });
+              }}
+            >
+              Test inject
+            </Button>
             <Button
               color="warning"
               variant="contained"

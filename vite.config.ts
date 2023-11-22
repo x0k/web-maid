@@ -9,7 +9,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         docs: "docs.html",
-      },
+      }
     },
   },
   plugins: [
@@ -38,21 +38,15 @@ export default defineConfig({
         permissions: ["storage", "activeTab", "scripting"],
         //@ts-expect-error wrong types
         optional_host_permissions: ["https://*/*", "http://*/*"],
-        content_scripts: [
-          {
-            matches: ["https://*/*", "http://*/*"],
-            js: ["src/inject/index.tsx"],
-          },
-        ],
         sandbox: {
           pages: ["sandbox.html"],
         },
-        web_accessible_resources: [
-          {
-            resources: ["sandbox.html"],
-            matches: ["<all_urls>"],
-          },
-        ],
+        // web_accessible_resources: [
+        //   {
+        //     resources: ["sandbox.html"],
+        //     matches: ["<all_urls>"],
+        //   },
+        // ],
       },
     }),
   ],

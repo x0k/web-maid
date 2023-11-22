@@ -14,3 +14,6 @@ c:
 
 t:
   bun run test
+
+inject:
+  bun --bun vite --config inject.vite.config.ts build
