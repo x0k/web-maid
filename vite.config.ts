@@ -2,6 +2,7 @@ import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { crx } from "@crxjs/vite-plugin";
+
 import { version } from "./package.json";
 
 // Convert from Semver (example: 0.1.0-beta6)
@@ -12,7 +13,7 @@ const [major, minor, patch, label = "0"] = version
   .split(/[.-]/);
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   build: {
     rollupOptions: {
       input: {
@@ -30,11 +31,16 @@ export default defineConfig({
         version_name: version,
         name: "Scraper Extension",
         description: "Extension to scrape data from web pages in free form",
-        icons: {
+        icons: command === "build" ? {
           "16": "public/icon16.png",
           "32": "public/icon32.png",
           "48": "public/icon48.png",
           "128": "public/icon128.png",
+        } : {
+          "16": "public/icon16.dev.png",
+          "32": "public/icon32.dev.png",
+          "48": "public/icon48.dev.png",
+          "128": "public/icon128.dev.png",
         },
         action: {
           default_title: "Scraper",
@@ -71,4 +77,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-});
+}));
