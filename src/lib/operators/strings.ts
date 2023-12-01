@@ -99,10 +99,148 @@ export class ReplaceByRegExpOpFactory extends TaskOpFactory<
   }
 }
 
+const matchConfig = z.object({
+  value: z.string(),
+  pattern: z.string(),
+  flags: z.string().default(""),
+  all: z.boolean().default(false),
+});
+
+export class MatchOpFactory extends TaskOpFactory<typeof matchConfig, unknown> {
+  name = "match";
+  schema = matchConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value: string
+  pattern: string
+  flags?: string
+  all?: boolean
+}`,
+          returns: `null | string[] | string[][]`,
+          description:
+            "Returns an array of matches of `pattern` in `value` with `flags`.\n\
+Behaves like `javascript` `String.prototype.match` or `String.prototype.matchAll` when `all` is `true.",
+        },
+      ];
+    }
+  }
+
+  protected execute({ value, pattern, flags, all }: z.TypeOf<this["schema"]>) {
+    const regex = new RegExp(pattern, flags);
+    if (all) {
+      return [...value.matchAll(regex)];
+    }
+    return value.match(regex);
+  }
+}
+
+const splitConfig = z.object({
+  value: z.string(),
+  separator: z.string(),
+  limit: z.number().optional(),
+});
+
+export class SplitOpFactory extends TaskOpFactory<
+  typeof splitConfig,
+  string[]
+> {
+  name = "split";
+  schema = splitConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value: string
+  separator: string
+  limit?: number
+}`,
+          returns: `string[]`,
+          description: "Splits `value` by `separator`",
+        },
+      ];
+    }
+  }
+  protected execute({ value, separator, limit }: z.TypeOf<this["schema"]>) {
+    return value.split(separator, limit);
+  }
+}
+
+export class SplitByRegExpOpFactory extends TaskOpFactory<
+  typeof splitConfig,
+  string[]
+> {
+  name = "splitByRegExp";
+  schema = splitConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value: string
+  separator: string
+  limit?: number
+}`,
+          returns: `string[]`,
+          description: "Splits `value` by regexp `separator`",
+        },
+      ];
+    }
+  }
+  protected execute({ value, separator, limit }: z.TypeOf<this["schema"]>) {
+    return value.split(new RegExp(separator), limit);
+  }
+}
+
+const searchConfig = z.object({
+  value: z.string(),
+  pattern: z.string(),
+  flags: z.string().default(""),
+});
+
+export class SearchOpFactory extends TaskOpFactory<
+  typeof searchConfig,
+  number
+> {
+  name = "search";
+  schema = searchConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value: string
+  pattern: string
+  flags?: string
+}`,
+          returns: `number`,
+          description:
+            "Returns the index of the first match of `pattern` in `value` with `flags`",
+        },
+      ];
+    }
+  }
+  protected execute({ value, pattern, flags }: z.TypeOf<this["schema"]>) {
+    const regex = new RegExp(pattern, flags);
+    return value.search(regex);
+  }
+}
+
 export function stringsOperatorsFactories() {
   return [
     new JoinOpFactory(),
     new ReplaceOpFactory(),
     new ReplaceByRegExpOpFactory(),
+    new MatchOpFactory(),
+    new SplitOpFactory(),
+    new SplitByRegExpOpFactory(),
+    new SearchOpFactory(),
   ];
 }
