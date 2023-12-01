@@ -1,0 +1,29 @@
+$op: pipe
+do:
+  - $op: doc.get
+    key:
+      - documentElement
+      - outerHTML
+  - $op: str.match
+    value:
+      $op: get
+    pattern: "\"captionTracks\":(\\[.*?\\])"
+  - $op: if
+    condition:
+      $op: eq
+      left: null
+      right:
+        $op: get
+    then:
+      $op: throw
+      error: Caption not found
+    else:
+      $op: get
+  - $op: json.parse
+    value:
+      $op: str.join
+      values:
+        - "{"
+        - $op: get
+          key: 0
+        - "}"
