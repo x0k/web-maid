@@ -89,6 +89,45 @@ conditions:
 0
 ```
 
+## Operator `or`
+
+### Signatures
+
+Evaluates conditions one by one.
+If any of the conditions succeeds, returns the result of the succeeded condition,
+otherwise returns the result of the last condition.
+
+```typescript
+interface Config<R> {
+  conditions: R[]
+}
+```
+
+**Returns:**
+
+```typescript
+R
+```
+
+### Examples
+
+Basic usage
+
+```yaml
+$op: or
+conditions:
+  - 0
+  - null
+  - string
+  - true
+```
+
+**Result:**
+
+```yaml
+string
+```
+
 ## Operator `not`
 
 ### Signatures
@@ -657,6 +696,77 @@ interface Config {
 number
 ```
 
+## Operator `array.index`
+
+### Signatures
+
+Returns the `index` of the current element in the processed `array`.Throws an error if called outside `array` method.
+
+```typescript
+interface Config {}
+```
+
+**Returns:**
+
+```typescript
+number
+```
+
+## Operator `array.current`
+
+### Signatures
+
+Returns the current `array`.Throws an error if called outside `array` method.
+
+```typescript
+interface Config {}
+```
+
+**Returns:**
+
+```typescript
+unknown[]
+```
+
+## Operator `array.find`
+
+### Signatures
+
+Finds an element in an array that matches the predicate. Returns `null` if not found.
+
+```typescript
+interface Config {
+  source?: unknown[]
+  predicate: (value: unknown) => unknown
+}
+```
+
+**Returns:**
+
+```typescript
+unknown | null
+```
+
+### Examples
+
+Basic usage
+
+```yaml
+$op: find$op: array.find
+source: [1, 2, 3]
+predicate:
+  $op: eq
+  left: 2
+  right:
+    $op: get
+```
+
+**Result:**
+
+```yaml
+2
+```
+
 ## Operator `sys.define`
 
 ### Signatures
@@ -976,7 +1086,7 @@ There are several ways to inject `data` into the expression:
 interface Config {
   expression: string
   /** @default {} */
-  data?: Record<string, any>
+  data?: unknown
   /** @default "context" */
   injectAs?: "context" | "scope"
   default?: any
@@ -1224,6 +1334,88 @@ interface Config {
 
 ```typescript
 string
+```
+
+## Operator `str.match`
+
+### Signatures
+
+Returns an array of matches of `pattern` in `value` with `flags`.
+Behaves like `javascript` `String.prototype.match` or `String.prototype.matchAll` when `all` is `true.
+
+```typescript
+interface Config {
+  value: string
+  pattern: string
+  flags?: string
+  all?: boolean
+}
+```
+
+**Returns:**
+
+```typescript
+null | string[] | string[][]
+```
+
+## Operator `str.split`
+
+### Signatures
+
+Splits `value` by `separator`
+
+```typescript
+interface Config {
+  value: string
+  separator: string
+  limit?: number
+}
+```
+
+**Returns:**
+
+```typescript
+string[]
+```
+
+## Operator `str.splitByRegExp`
+
+### Signatures
+
+Splits `value` by regexp `separator`
+
+```typescript
+interface Config {
+  value: string
+  separator: string
+  limit?: number
+}
+```
+
+**Returns:**
+
+```typescript
+string[]
+```
+
+## Operator `str.search`
+
+### Signatures
+
+Returns the index of the first match of `pattern` in `value` with `flags`
+
+```typescript
+interface Config {
+  value: string
+  pattern: string
+  flags?: string
+}
+```
+
+**Returns:**
+
+```typescript
+number
 ```
 
 ## Operator `fs.saveFile`

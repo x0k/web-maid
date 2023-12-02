@@ -26,7 +26,7 @@ const frameId = new URL(window.location.href).searchParams.get("id");
 
 const evaluators: Record<
   RunEvalAction["injectAs"],
-  (expression: string, data: Record<string, unknown>) => unknown
+  (expression: string, data: unknown) => unknown
 > = {
   context: evalInContext,
   scope: evalInScope,

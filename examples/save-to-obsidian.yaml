@@ -1,9 +1,9 @@
 # Extracts data from page and saves it to Obsidian vault
 # via https://github.com/coddingtonbear/obsidian-local-rest-api
+#
+# Expects `token` key in initial context.
 $op: sys.define
 constants:
-  # API key in the 'Local REST API' section of your settings in Obsidian.
-  # Save it as `token` in `secrets`
   token:
     $op: get
     key: token
