@@ -75,14 +75,14 @@ key:
 const injectAsConfig = z.enum(["context", "scope"]).default("context");
 const jsEvalConfig = z.object({
   expression: z.string(),
-  data: z.record(z.unknown()).default({}),
+  data: z.unknown().default({}),
   injectAs: injectAsConfig,
   default: z.unknown().optional(),
 });
 
 export interface EvaluatorData {
   expression: string;
-  data: Record<string, unknown>;
+  data: unknown
   injectAs: "context" | "scope";
 }
 
@@ -103,7 +103,7 @@ export class JsEvalOpFactory extends BrowserFactory<
           params: `interface Config {
   expression: string
   /** @default {} */
-  data?: Record<string, any>
+  data?: unknown
   /** @default "context" */
   injectAs?: "context" | "scope"
   default?: any

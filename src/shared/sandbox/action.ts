@@ -10,7 +10,8 @@ export enum SandboxActionType {
   ValidateFormData = "formData::validate",
 }
 
-export interface AbstractSandboxAction<T extends SandboxActionType> extends Request<T> {}
+export interface AbstractSandboxAction<T extends SandboxActionType>
+  extends Request<T> {}
 
 export interface RenderTemplateAction
   extends AbstractSandboxAction<SandboxActionType.RenderTemplate> {
@@ -18,13 +19,15 @@ export interface RenderTemplateAction
   data: unknown;
 }
 
-export interface RunEvalAction extends AbstractSandboxAction<SandboxActionType.RunEval> {
+export interface RunEvalAction
+  extends AbstractSandboxAction<SandboxActionType.RunEval> {
   expression: string;
-  data: Record<string, unknown>;
+  data: unknown;
   injectAs: "context" | "scope";
 }
 
-export interface ValidateAction extends AbstractSandboxAction<SandboxActionType.Validate> {
+export interface ValidateAction
+  extends AbstractSandboxAction<SandboxActionType.Validate> {
   schema: Record<string, unknown>;
   data: unknown;
 }
