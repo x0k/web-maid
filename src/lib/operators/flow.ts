@@ -646,7 +646,8 @@ export class ThrowOpFactory extends FlowOpFactory<typeof throwConfig, unknown> {
     }
   }
   protected create({ error }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
-    return (scope) => evalInScope(error, scope).then(Promise.reject);
+    return (scope) =>
+      evalInScope(error, scope).then(Promise.reject.bind(Promise));
   }
 }
 
