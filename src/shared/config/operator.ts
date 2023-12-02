@@ -25,6 +25,7 @@ import {
   TemplateRendererData,
 } from "@/lib/operators/template";
 import { mathOperatorsFactories } from "@/lib/operators/math";
+import { arrayOperatorsFactories } from "@/lib/operators/array";
 
 export interface OperatorFactoryConfig {
   window: Window;
@@ -73,6 +74,7 @@ export function compileOperatorFactories({
   const factories: Record<string, BaseOpFactory<ZodTypeAny, unknown>> = {};
   assign(factories, flowOperatorsFactories());
   assign(factories, mathOperatorsFactories());
+  assignWithPrefix("array.", factories, arrayOperatorsFactories());
   assignWithPrefix(
     "sys.",
     factories,
