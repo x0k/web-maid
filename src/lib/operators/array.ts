@@ -117,6 +117,7 @@ predicate:
           return array[i];
         }
       }
+      return null;
     };
   }
 }
