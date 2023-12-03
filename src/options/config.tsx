@@ -58,7 +58,6 @@ import {
 import { useRootFactory } from "@/shared/react-root-factory";
 import { useFormShower } from "@/shared/react-form-shower";
 import { useOkShower } from "@/shared/react-ok-shower";
-import { Docs } from "@/shared/config/docs";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
