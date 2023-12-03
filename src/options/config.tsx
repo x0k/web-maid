@@ -11,7 +11,6 @@ import { enqueueSnackbar } from "notistack";
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
-import { some } from "@/lib/iterable";
 
 import { Editor } from "@/components/editor";
 import { Row } from "@/components/row";
@@ -20,6 +19,7 @@ import {
   FilesEditor,
   FilesEditorState,
   saveAllFiles,
+  someFileChanged,
 } from "@/components/files-editor";
 import {
   Dialog,
@@ -306,11 +306,7 @@ export function Config() {
               size="small"
               onClick={() => {
                 const { current: editorState } = filesEditorStateRef;
-                if (
-                  editorState &&
-                  (editorState.active?.isChanged ||
-                    some((f) => f.isChanged, editorState.files.values()))
-                ) {
+                if (editorState && someFileChanged(editorState)) {
                   enqueueSnackbar({
                     message: "You have unsaved changes",
                     variant: "warning",
