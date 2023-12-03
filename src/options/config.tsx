@@ -19,6 +19,7 @@ import {
   EditorFile,
   FilesEditor,
   FilesEditorState,
+  saveAllFiles,
 } from "@/components/files-editor";
 import {
   Dialog,
@@ -171,8 +172,13 @@ export function Config() {
   });
 
   const evalMutation = useMutation({
-    mutationFn: ({ configFiles, secrets }: { configFiles: ConfigFile[]; secrets: string }) =>
-      evalConfig(debug, configFiles, secrets, contextId, selectedTab?.id),
+    mutationFn: ({
+      configFiles,
+      secrets,
+    }: {
+      configFiles: ConfigFile[];
+      secrets: string;
+    }) => evalConfig(debug, configFiles, secrets, contextId, selectedTab?.id),
     onSuccess: (success) => {
       logger.log({ success });
     },
@@ -297,8 +303,12 @@ export function Config() {
                     variant: "warning",
                   });
                 }
+                // Run unsaved files
+                const filesToRun = editorState
+                  ? saveAllFiles(editorState)
+                  : configFiles;
                 evalMutation.mutate({
-                  configFiles,
+                  configFiles: filesToRun,
                   secrets: secretsModel.getValue(),
                 });
               }}
