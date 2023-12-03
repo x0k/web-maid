@@ -17,6 +17,7 @@ export interface InternalEditorFile {
 }
 
 export interface FilesEditorState {
+  editor: monaco.editor.IStandaloneCodeEditor | null;
   filesMap: Map<string, InternalEditorFile>;
   files: InternalEditorFile[];
   active: InternalEditorFile | null;
@@ -77,15 +78,15 @@ export function updateEditorState(
   }
 }
 
-export function saveFile(
-  file: InternalEditorFile,
-  { files }: FilesEditorState
-): EditorFile[] {
+export function saveActiveFile({
+  files,
+  active,
+}: FilesEditorState): EditorFile[] {
   return files.map((f) => ({
     id: f.id,
     name: f.name,
     isRemovable: f.isRemovable,
-    content: f.id === file.id ? file.model.getValue() : f.initialContent,
+    content: f.id === active?.id ? active.model.getValue() : f.initialContent,
   }));
 }
 
@@ -98,9 +99,13 @@ export function saveAllFiles({ files }: FilesEditorState): EditorFile[] {
   }));
 }
 
-export function resetFile(file: InternalEditorFile) {
-  file.model.setValue(file.initialContent);
-  file.isChanged = false;
+export function resetActiveFile({ active }: FilesEditorState) {
+  if (!active) {
+    return false;
+  }
+  active.model.setValue(active.initialContent);
+  active.isChanged = false;
+  return true;
 }
 
 export function resetAllFiles({ files }: FilesEditorState) {
@@ -113,4 +118,16 @@ export function resetAllFiles({ files }: FilesEditorState) {
     }
   }
   return updated;
+}
+
+export function activeFileChanged(state: FilesEditorState) {
+  return state.active && state.active.isChanged;
+}
+
+export function someFileChanged(state: FilesEditorState) {
+  return activeFileChanged(state) || state.files.some((f) => f.isChanged);
+}
+
+export function activeFileRemovable({ active }: FilesEditorState) {
+  return active && active.isRemovable && active.id
 }
