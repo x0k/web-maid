@@ -1,20 +1,24 @@
 import { file, write } from "bun";
 import path from "node:path";
 
-import { details } from "../src/shared/config/docs";
+import { data, renderOperator } from "../src/shared/config/docs";
 
 try {
-  const operatorsFile = file(import.meta.resolveSync("../public/operators.md"));
-  const preface = await operatorsFile.text();
   await write(
-    path.join(import.meta.dir, "../dist/operators.md"),
-    `${preface}\n${details}`
+    path.join(import.meta.dir, "../dist/operators.json"),
+    JSON.stringify(data)
   );
+  console.log("dist/operators.json is ok");
+  const operatorsFile = file(
+    import.meta.resolveSync("../src/shared/config/docs-preface.md")
+  );
+  const preface = await operatorsFile.text();
+  const details = data.map(renderOperator).join("\n\n");
   await write(
     path.join(import.meta.dir, "../docs/operators.md"),
     `${preface}\n${details}`
   );
-  console.log("wrote operators.md");
+  console.log("docs/operators.md is ok");
 } catch (e) {
   console.error(e);
 }
