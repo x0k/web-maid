@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -211,7 +211,20 @@ export function Config() {
   const showEditor =
     evalMutation.isPending || evalMutation.isSuccess || evalMutation.isError;
   const [isCreateOpen, setCreateOpen] = useState(false);
+  const openCreateDialog = useCallback(() => setCreateOpen(true), []);
+  const delayedEditorFocus = useCallback(
+    () => setTimeout(() => filesEditorStateRef.current?.editor?.focus(), 100),
+    []
+  );
+  const closeCreateDialog = useCallback(() => {
+    setCreateOpen(false);
+    delayedEditorFocus();
+  }, [delayedEditorFocus]);
   const [toRemove, setToRemove] = useState<string>("");
+  const closeRemoveDialog = useCallback(() => {
+    setToRemove("");
+    delayedEditorFocus();
+  }, [delayedEditorFocus]);
   return (
     <>
       <div className="grow grid grid-cols-1 lg:grid-cols-2 grid-rows-[1fr_auto_1fr] lg:grid-rows-[auto_1fr] gap-4 overflow-hidden">
@@ -268,9 +281,9 @@ export function Config() {
               <FilesEditor
                 ref={filesEditorStateRef}
                 files={configFiles}
-                onCreateFile={() => setCreateOpen(true)}
+                onCreateFile={openCreateDialog}
                 onSaveFiles={saveConfigFilesMutation.mutate}
-                onRemoveFile={(id) => setToRemove(id)}
+                onRemoveFile={setToRemove}
               />
             </>
           )}
@@ -376,7 +389,7 @@ export function Config() {
           <Docs className={showEditor ? "hidden" : "block"} />
         </div>
       </div>
-      <Dialog open={isCreateOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={closeCreateDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Create a new file</DialogTitle>
@@ -384,12 +397,12 @@ export function Config() {
           <CreateConfigFileForm
             onSubmit={async ({ name }) => {
               await createConfigFileMutation.mutateAsync(name);
-              setCreateOpen(false);
+              closeCreateDialog();
             }}
           />
         </DialogContent>
       </Dialog>
-      <Dialog open={toRemove !== ""} onOpenChange={() => setToRemove("")}>
+      <Dialog open={toRemove !== ""} onOpenChange={closeRemoveDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Remove file</DialogTitle>
@@ -403,7 +416,7 @@ export function Config() {
               type="submit"
               onClick={async () => {
                 await removeConfigFileMutation.mutateAsync(toRemove);
-                setToRemove("");
+                closeRemoveDialog();
               }}
             >
               Remove
