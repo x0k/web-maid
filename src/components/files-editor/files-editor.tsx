@@ -10,6 +10,7 @@ import {
   Trash,
 } from "lucide-react";
 
+import { monaco } from "@/lib/monaco";
 import { Editor } from "@/components/editor";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,6 +92,31 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
     const hasActive = active !== null;
     const isActiveChanged = hasActive && active.isChanged;
     const isSomeFileChanged = isActiveChanged || files.some((f) => f.isChanged);
+    const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
+    useEffect(() => {
+      const { current: editor } = editorRef;
+      if (!editor) {
+        return;
+      }
+      const saveAction = editor.addAction({
+        //@ts-expect-error tps
+        precondition: null,
+        id: "files-editor-save",
+        label: "Save file",
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+        run: () => {
+          const {
+            current: { active },
+          } = stateRef;
+          if (active?.isChanged) {
+            onSaveFiles(saveFile(active, stateRef.current));
+          }
+        },
+      });
+      return () => {
+        saveAction.dispose();
+      };
+    }, []);
     return (
       <div className="flex flex-col grow">
         <div className="flex flex-row items-center bg-neutral-950">
@@ -205,7 +231,7 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
             })}
           </div>
         </div>
-        <Editor model={active ? active.model : null} />
+        <Editor ref={editorRef} model={active ? active.model : null} />
       </div>
     );
   }
