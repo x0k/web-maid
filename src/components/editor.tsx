@@ -3,6 +3,7 @@ import { forwardRef, useEffect, useRef } from "react";
 import { monaco } from "@/lib/monaco";
 
 export interface EditorProps {
+  className?: string;
   model: monaco.editor.ITextModel | null;
   actions?: monaco.editor.IActionDescriptor[];
 }
@@ -10,7 +11,7 @@ export interface EditorProps {
 export const Editor = forwardRef<
   monaco.editor.IStandaloneCodeEditor,
   EditorProps
->(({ model, actions }, ref) => {
+>(({ model, actions, className = "" }, ref) => {
   const boxRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>();
   useEffect(() => {
@@ -50,5 +51,5 @@ export const Editor = forwardRef<
     };
     // Ref can be a callback
   }, [model, actions]);
-  return <div className="w-auto grow bg-neutral-900" ref={boxRef} />;
+  return <div className={`h-full bg-neutral-900 ${className}`} ref={boxRef} />;
 });

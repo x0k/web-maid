@@ -63,6 +63,7 @@ import { Docs } from "@/shared/config/docs";
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
 import { CreateConfigFileForm } from "./create-config-file-form";
+import { SearchableDocs } from "./searchable-docs";
 
 const secretsModel = monaco.editor.createModel("", "yaml");
 const logsModel = monaco.editor.createModel("", "yaml");
@@ -375,14 +376,12 @@ export function Config() {
           {evalMutation.isPending && <LinearProgress />}
           {children}
           {evalMutation.isError && <ErrorAlert error={evalMutation.error} />}
-          <div
-            className={`h-full flex flex-col ${
-              showEditor ? "block" : "hidden"
-            }`}
-          >
-            <Editor ref={logsEditorRef} model={logsModel} />
-          </div>
-          <Docs className={showEditor ? "hidden" : "block"} />
+          <Editor
+            className={showEditor ? "block" : "hidden"}
+            ref={logsEditorRef}
+            model={logsModel}
+          />
+          <SearchableDocs className={showEditor ? "hidden" : "block"} />
         </div>
       </div>
       <Dialog open={isCreateOpen} onOpenChange={closeCreateDialog}>
