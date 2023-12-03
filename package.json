@@ -36,6 +36,7 @@
     "is-relative-url": "^4.0.0",
     "jsonpath": "^1.1.1",
     "lucide-react": "^0.294.0",
+    "match-sorter": "^6.3.1",
     "mime": "^4.0.0",
     "monaco-editor": "^0.44.0",
     "monaco-yaml": "^5.1.0",

@@ -5,6 +5,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { zodToTs, printNode } from "zod-to-ts";
 import { useQuery } from "@tanstack/react-query";
+import { matchSorter } from "match-sorter";
 
 import {
   BaseOpFactory,
@@ -14,8 +15,15 @@ import {
 } from "@/lib/operator";
 
 import { compileOperatorFactories } from "./operator";
+import preface from "./docs-preface.md?raw";
 
-export let details = "";
+export interface OperatorInfo {
+  name: string;
+  signatures: string;
+  examples: string;
+}
+
+export let data: OperatorInfo[] = [];
 
 /* eslint-disable no-inner-declarations */
 if (import.meta.env.DEV) {
@@ -62,51 +70,78 @@ interface Config ${printNode(node)}
 \`\`\``;
   }
 
-  function renderFactory(
-    name: string,
+  function prerenderFactory(
+    fullName: string,
     factory: BaseOpFactory<ZodTypeAny, unknown>
-  ) {
-    return `## Operator \`${name}\`
+  ): OperatorInfo {
+    return {
+      name: fullName,
+      signatures: factory.signatures.length
+        ? factory.signatures.map(renderSignature).join("\n\n")
+        : renderFactorySchema(factory),
+      examples: factory.examples.length
+        ? factory.examples.map(renderExample).join("\n\n")
+        : "",
+    };
+  }
+  //@ts-expect-error empty deps is ok for metadata extraction
+  const factories = compileOperatorFactories({});
+  data = Object.entries(factories).map(([name, factory]) =>
+    prerenderFactory(name, factory)
+  );
+}
+
+export function renderOperator(operator: OperatorInfo) {
+  return `## Operator \`${operator.name}\`
 
 ### Signatures
 
-${
-  factory.signatures.length
-    ? factory.signatures.map(renderSignature).join("\n\n")
-    : renderFactorySchema(factory)
-}${
-      factory.examples.length
-        ? `
+${operator.signatures}${
+    operator.examples
+      ? `
 
 ### Examples
 
-${factory.examples.map(renderExample).join("\n\n")}`
-        : ""
-    }`;
-  }
-  //@ts-expect-error empty deps is ok for metadata extraction
-  const operators = compileOperatorFactories({});
-
-  details = Object.keys(operators)
-    .map((key) => renderFactory(key, operators[key]))
-    .join("\n\n");
-  /* eslint-enable no-inner-declarations */
+${operator.examples}`
+      : ""
+  }`;
 }
 
 export interface DocsProps {
   className?: string;
+  search?: string;
 }
 
-export const Docs = memo(({ className = "" }: DocsProps) => {
-  const { data: preface } = useQuery({
-    queryKey: ["/operators.md"],
-    queryFn: async () => {
-      const res = await fetch("/operators.md");
-      return res.text();
-    },
-    initialData: "# Operators\n\n",
+export const Docs = memo(({ className = "", search = "" }: DocsProps) => {
+  const { data: operators } = useQuery<OperatorInfo[]>({
+    queryKey: ["/operators.json"],
+    queryFn: () => fetch("/operators.json").then((res) => res.json()),
+    initialData: data,
+    enabled: import.meta.env.PROD,
   });
-  const content = useMemo(() => `${preface}\n${details}`, [preface]);
+  const renders = useMemo(() => {
+    const renders: Record<string, string> = {};
+    for (const op of operators) {
+      renders[op.name] = renderOperator(op);
+    }
+    return renders;
+  }, []);
+  const fullRender = useMemo(
+    () => `${preface}\n${operators.map((op) => renders[op.name]).join("\n\n")}`,
+    [operators, renders]
+  );
+  const content = useMemo(() => {
+    if (search.trim() === "") {
+      return fullRender;
+    }
+    const matched = matchSorter(operators, search, {
+      keys: ["name", "signatures", "examples"],
+    });
+    return (
+      matched.map((op) => renders[op.name]).join("\n\n") ||
+      `Nothing found for "${search}"`
+    );
+  }, [search, operators, renders, fullRender]);
   return (
     <Markdown
       className={`prose max-w-none prose-pre:p-0 ${className}`}
