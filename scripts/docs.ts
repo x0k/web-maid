@@ -8,7 +8,7 @@ try {
     path.join(import.meta.dir, "../dist/operators.json"),
     JSON.stringify(data)
   );
-  console.log("dist/operators.json ok");
+  console.log("dist/operators.json is ok");
   const operatorsFile = file(
     import.meta.resolveSync("../src/shared/config/docs-preface.md")
   );
@@ -18,7 +18,7 @@ try {
     path.join(import.meta.dir, "../docs/operators.md"),
     `${preface}\n${details}`
   );
-  console.log("docs/operators.md ok");
+  console.log("docs/operators.md is ok");
 } catch (e) {
   console.error(e);
 }
