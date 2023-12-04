@@ -1,7 +1,7 @@
 import { file, write } from "bun";
 import path from "node:path";
 
-import { data, renderOperator } from "../src/shared/config/docs";
+import { data, renderOperator } from "../src/shared/config/operators-info";
 
 try {
   await write(

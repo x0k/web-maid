@@ -1,6 +1,7 @@
 import { memo, useMemo } from "react";
 
-import { OperatorInfo, useOperators } from "@/shared/config/docs";
+import { OperatorInfo } from "@/shared/config/operators-info";
+import { useOperators } from '@/shared/config/react-operators-info';
 
 export interface SideBarProps {
   search: string;
