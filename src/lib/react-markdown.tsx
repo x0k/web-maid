@@ -13,6 +13,7 @@ export function makeCustomHeading(level: number, updateProps: UpdateProps) {
 }
 
 export function code(props: HTMLAttributes<HTMLElement> & ExtraProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { children, className, node, ...rest } = props;
   const match = /language-(\w+)/.exec(className || "");
   return match ? (

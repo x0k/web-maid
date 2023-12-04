@@ -41,5 +41,5 @@ export class ReactMonacoLogger implements ILogger {
 export function useMonacoLogger(
   editorRef: RefObject<monaco.editor.IStandaloneCodeEditor>
 ) {
-  return useMemo(() => new ReactMonacoLogger(editorRef), []);
+  return useMemo(() => new ReactMonacoLogger(editorRef), [editorRef]);
 }

@@ -24,7 +24,7 @@ export const Docs = memo(({ className = "", search = "" }: DocsProps) => {
       slugs[op.name] = op.slug;
     }
     return { renders, slugs };
-  }, []);
+  }, [operators]);
   const injectId = useCallback(
     (props: JSX.IntrinsicElements["h1"]) => {
       const text = extractTextContent(props.children);

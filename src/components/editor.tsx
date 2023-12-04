@@ -15,7 +15,7 @@ export const Editor = forwardRef<
   const boxRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>();
   useEffect(() => {
-    let disposables: monaco.IDisposable[] = [];
+    const disposables: monaco.IDisposable[] = [];
     if (boxRef.current) {
       const editor = monaco.editor.create(boxRef.current, {
         readOnly: model === null,
@@ -49,7 +49,6 @@ export const Editor = forwardRef<
         editorRef.current.dispose();
       }
     };
-    // Ref can be a callback
-  }, [model, actions]);
+  }, [model, actions, ref]);
   return <div className={`h-full bg-neutral-900 ${className}`} ref={boxRef} />;
 });

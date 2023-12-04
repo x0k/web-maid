@@ -61,6 +61,9 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
       files: [],
       activeFileIndex: -1,
     });
+    const setEditorRef = useCallback((ref: monaco.editor.IStandaloneCodeEditor | null) => {
+      stateRef.current.editor = ref;
+    }, [])
     const [, setState] = useState(0);
     const rerender = useCallback(() => setState(Date.now()), []);
     useEffect(() => {
@@ -76,12 +79,12 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
       updateEditorState(stateRef.current, editorFiles);
       rerender();
     }, [editorFiles, rerender]);
+    const activeFileModel = activeFile(stateRef.current)?.model;
     useEffect(() => {
-      const active = activeFile(stateRef.current);
-      if (!active) {
+      if (!activeFileModel) {
         return;
       }
-      const disposable = active.model.onDidChangeContent((e) => {
+      const disposable = activeFileModel.onDidChangeContent((e) => {
         const active = activeFile(stateRef.current);
         if (active === null || e.isFlush) {
           return;
@@ -101,7 +104,7 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
       return () => disposable.dispose();
       // the model change itself does not trigger the effect
       // but the condition will be checked on other component updates
-    }, [activeFile(stateRef.current)?.model, rerender]);
+    }, [activeFileModel, rerender]);
 
     const { save, saveAll, reset, resetAll, remove } = useMemo(
       () => ({
@@ -139,7 +142,7 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
           }
         },
       }),
-      [rerender, onRemoveFile]
+      [rerender, onRemoveFile, onSaveFiles]
     );
     const actions: monaco.editor.IActionDescriptor[] = useMemo(
       () => [
@@ -272,9 +275,7 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
           </div>
         </div>
         <Editor
-          ref={(editor) => {
-            stateRef.current.editor = editor;
-          }}
+          ref={setEditorRef}
           actions={actions}
           model={activeFile(stateRef.current)?.model ?? null}
         />
