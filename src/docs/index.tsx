@@ -4,7 +4,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "@/shared/styles.css";
 
-import { DocsPage } from './docs-page';
+import { DocsPage } from "./docs-page";
+
+if (import.meta.env.MODE !== "production") {
+  document.title = `[${import.meta.env.MODE}] ${document.title}`;
+}
 
 const root = document.getElementById("root")!;
 
