@@ -13,6 +13,10 @@ import "@/shared/styles.css";
 import { sandboxIFrameId } from "./constants";
 import { OptionsPage } from "./options";
 
+if (import.meta.env.MODE !== "production") {
+  document.title = `[${import.meta.env.MODE}] ${document.title}`;
+}
+
 const root = document.getElementById("root")!;
 
 const queryClient = new QueryClient({

@@ -13,68 +13,73 @@ const [major, minor, patch, label = "0"] = version
   .split(/[.-]/);
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command }) => ({
-  build: {
-    rollupOptions: {
-      input: {
-        docs: "docs.html",
+export default defineConfig(({ mode }) => {
+  return {
+    build: {
+      rollupOptions: {
+        input: {
+          docs: "docs.html",
+        },
       },
     },
-  },
-  plugins: [
-    react(),
-    crx({
-      manifest: {
-        manifest_version: 3,
-        // up to four numbers separated by dots
-        version: `${major}.${minor}.${patch}.${label}`,
-        version_name: version,
-        name: "Scraper Extension",
-        description: "Extension to scrape data from web pages in free form",
-        icons: command === "build" ? {
-          "16": "public/icon16.png",
-          "32": "public/icon32.png",
-          "48": "public/icon48.png",
-          "128": "public/icon128.png",
-        } : {
-          "16": "public/icon16.dev.png",
-          "32": "public/icon32.dev.png",
-          "48": "public/icon48.dev.png",
-          "128": "public/icon128.dev.png",
-        },
-        action: {
-          default_title: "Scraper",
-        },
-        background: {
-          service_worker: "src/background.ts",
-          type: "module",
-        },
-        options_page: "options.html",
-        optional_permissions: ["tabs"],
-        permissions: ["storage", "activeTab", "scripting"],
-        //@ts-expect-error wrong types
-        optional_host_permissions: ["https://*/*", "http://*/*"],
-        content_scripts: [
-          {
-            matches: ["https://*/*", "http://*/*"],
-            js: ["src/inject/index.tsx"],
+    plugins: [
+      react(),
+      crx({
+        manifest: {
+          manifest_version: 3,
+          // up to four numbers separated by dots
+          version: `${major}.${minor}.${patch}.${label}`,
+          version_name: version,
+          name: mode === "production" ? "Scraper Extension" : "[DEV] Scraper Extension",
+          description: "Extension to scrape data from web pages in free form",
+          icons:
+            mode === "production"
+              ? {
+                  "16": "public/icon16.png",
+                  "32": "public/icon32.png",
+                  "48": "public/icon48.png",
+                  "128": "public/icon128.png",
+                }
+              : {
+                  "16": "public/icon16.dev.png",
+                  "32": "public/icon32.dev.png",
+                  "48": "public/icon48.dev.png",
+                  "128": "public/icon128.dev.png",
+                },
+          action: {
+            default_title: "Scraper",
           },
-        ],
-        sandbox: {
-          pages: ["sandbox.html"],
-        },
-        web_accessible_resources: [
-          {
-            resources: ["sandbox.html"],
-            matches: ["<all_urls>"],
+          background: {
+            service_worker: "src/background.ts",
+            type: "module",
           },
-        ],
+          options_page: "options.html",
+          optional_permissions: ["tabs"],
+          permissions: ["storage", "activeTab", "scripting"],
+          //@ts-expect-error wrong types
+          optional_host_permissions: ["https://*/*", "http://*/*"],
+          content_scripts: [
+            {
+              matches: ["https://*/*", "http://*/*"],
+              js: ["src/inject/index.tsx"],
+            },
+          ],
+          sandbox: {
+            pages: ["sandbox.html"],
+          },
+          web_accessible_resources: [
+            {
+              resources: ["sandbox.html"],
+              matches: ["<all_urls>"],
+            },
+          ],
+        },
+      }),
+    ],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
       },
-    }),
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
     },
-  },
-}));
+  };
+});

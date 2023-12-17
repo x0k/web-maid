@@ -52,7 +52,7 @@ import {
 } from "@/shared/core";
 import { useOkShower } from "@/shared/react-ok-shower";
 
-import { sandboxIFrameId } from "./constants";
+import { SANDBOX_IFRAME_ID } from "./constants";
 
 export interface PopupProps {
   sandbox: IRemoteActor<SandboxAction, SandboxActionResults>;
@@ -76,7 +76,7 @@ function stopPropagation(e: KeyboardEvent) {
 
 export function Popup({ sandbox }: PopupProps) {
   const [rootFactoryRef, children, clear] = useRootFactory();
-  const formDataValidator = useFormDataValidator(sandboxIFrameId, sandbox);
+  const formDataValidator = useFormDataValidator(SANDBOX_IFRAME_ID, sandbox);
   const formShower = useFormShower(rootFactoryRef.current, formDataValidator);
   const okShower = useOkShower(rootFactoryRef.current);
   const evalConfig = useMemo(
@@ -84,9 +84,9 @@ export function Popup({ sandbox }: PopupProps) {
       makeIsomorphicConfigEval((debug) =>
         createOperatorResolver({
           debug,
-          evaluator: new RemoteEvaluator(sandboxIFrameId, sandbox),
-          rendered: new RemoteRenderer(sandboxIFrameId, sandbox),
-          validator: new RemoteValidator(sandboxIFrameId, sandbox),
+          evaluator: new RemoteEvaluator(SANDBOX_IFRAME_ID, sandbox),
+          rendered: new RemoteRenderer(SANDBOX_IFRAME_ID, sandbox),
+          validator: new RemoteValidator(SANDBOX_IFRAME_ID, sandbox),
           formShower,
           okShower,
           fetcher: new RemoteFetcher(BACKGROUND_ACTOR_ID, background),
