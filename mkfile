@@ -21,7 +21,7 @@ b:
 
 # production build
 build:
-  bun --bun run build && \
+  bun run build && \
     mk docs
 
 tag:
