@@ -14,9 +14,14 @@ d:
 docs:
   DEV=true bun scripts/docs.ts
 
-# build
+# dev build for features testing that don't work with dev server (sandboxes)
 b:
-  NODE_ENV=production bun --bun run build && \
+  bun --bun run build --mode test && \
+    mk docs
+
+# production build
+build:
+  bun --bun run build && \
     mk docs
 
 tag:
@@ -30,4 +35,4 @@ pack:
     --pack-extension=/usr/src/app/dist --pack-extension-key=/usr/src/key.pem
 
 release:
-  mk b && mk pack && mk tag
+  mk build && mk pack && mk tag
