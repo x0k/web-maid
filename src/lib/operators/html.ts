@@ -52,6 +52,8 @@ export class ReadabilityOpFactory extends BrowserFactory<
   siteName: string;
   /** content language */
   lang: string;
+  /** published time */
+  publishedTime: string;
 } | D | string"`,
           description: "Returns an article object.",
         },
