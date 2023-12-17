@@ -9,7 +9,7 @@ t:
   bun run test
 
 d:
-  bun --bun run dev
+  bun --bun run dev || mk docs
 
 docs:
   DEV=true bun scripts/docs.ts

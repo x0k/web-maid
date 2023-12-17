@@ -1190,6 +1190,8 @@ interface Config<D> {
   siteName: string;
   /** content language */
   lang: string;
+  /** published time */
+  publishedTime: string;
 } | D | string"
 ```
 
