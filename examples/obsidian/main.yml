@@ -1,0 +1,80 @@
+$op: sys.define
+constants:
+  token:
+    $op: get
+    key: obsidian-token
+  html:
+    $op: doc.get
+    key:
+      - documentElement
+      - outerHTML
+for:
+  $op: pipe
+  do:
+    - $op: doc.get
+      key:
+        - location
+        - hostname
+    # Extraction of text content depending on the current site
+    - $op: cond
+      cases:
+        - - $op: eq
+            left: www.youtube.com
+            right:
+              $op: get
+          - $op: sys.define
+            constants:
+              lang: en
+            for:
+              $ref: ./youtube-captions
+      default:
+        $op: html.markdown
+        html:
+          $op: html.simplify
+          html:
+            $op: sys.get
+            key: html
+    - url:
+        $op: doc.get
+        key:
+          - location
+          - href
+      metadata:
+        $op: html.metadata
+        html:
+          $op: sys.get
+          key: html
+      selection:
+        $op: doc.selection
+      text:
+        $op: get
+    - $op: sys.define
+      constants:
+        # token already defined
+        title:
+          $op: get
+          key:
+            - metadata
+            - title
+        content:
+          $op: template.render
+          template: |
+            ---
+            page-title: {{json metadata.title}}
+            url: {{url}}
+            published: "{{metadata.publishedDate}}"
+            modified: "{{metadata.modifiedDate}}"
+            date: "{{metadata.date}}"
+            description: {{json metadata.description}}
+            author: {{metadata.author}}
+            image: {{metadata.image}}
+            reviewed: false
+            ---
+            {{#if selection}}
+
+            {{quote selection}}
+            {{/if}}
+
+            {{text}}
+      for:
+        $ref: ./save-to-obsidian

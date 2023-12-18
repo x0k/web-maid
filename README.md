@@ -80,6 +80,10 @@ $ref: "./<filename>#<selector>"
 - `<selector>` is [JSONPath](https://github.com/dchester/jsonpath) selector
 - One of the parameters can be omitted (e.g. `./<filename>`, `#<selector>`)
 
+## Examples
+
+- [Save web content to Obsidian](examples/obsidian/)
+
 ## Things to do before release 1.x
 
 - Configure Vite to create a separate injection script instead of `content_script`
