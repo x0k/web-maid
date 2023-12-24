@@ -110,7 +110,7 @@ export function Popup({ sandbox }: PopupProps) {
     onSuccess() {
       callbackRef.current = setTimeout(() => {
         closePopup();
-      }, 2000);
+      }, 5000);
     },
   });
   const closePopup = useCallback(() => {
