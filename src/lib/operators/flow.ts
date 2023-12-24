@@ -700,6 +700,35 @@ export class ThrowOpFactory extends FlowOpFactory<typeof throwConfig, unknown> {
   }
 }
 
+const doConfig = z.object({
+  effect: z.unknown(),
+});
+
+export class DoOpFactory extends FlowOpFactory<typeof doConfig, unknown> {
+  name = "throw";
+  schema = doConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface DoConfig {
+  effect: any;
+}`,
+          returns: "<context>",
+          description: "Performs a side effect and returns the original `context`",
+        },
+      ];
+    }
+  }
+  protected create({ effect }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      await evalInScope(effect, scope);
+      return scope.context;
+    }
+  }
+}
+
 export function flowOperatorsFactories() {
   return [
     new PipeOpFactory(),
@@ -718,5 +747,6 @@ export function flowOperatorsFactories() {
     new UpdateOpFactory(),
     new TryOpFactory(),
     new ThrowOpFactory(),
+    new DoOpFactory(),
   ];
 }
