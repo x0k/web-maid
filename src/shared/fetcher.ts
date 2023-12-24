@@ -16,6 +16,9 @@ export class Fetcher implements AsyncFactory<FetcherData, unknown> {
       headers,
       body,
     });
+    if (!response.ok) {
+      throw new Error(`${response.status} ${response.statusText}`);
+    }
     if (as) {
       return response[as]();
     }
