@@ -9,14 +9,14 @@ t:
   bun run test
 
 d:
-  bun --bun run dev || mk docs
+  MODE=DEV bun --bun run dev || mk docs
 
 docs:
   DEV=true bun scripts/docs.ts
 
 # dev build for features testing that don't work with dev server (sandboxes)
 b:
-  bun --bun run build --mode test && \
+  MODE=TEST bun run build --mode test && \
     mk docs
 
 # production build

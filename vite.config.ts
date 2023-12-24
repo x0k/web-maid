@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
           // up to four numbers separated by dots
           version: `${major}.${minor}.${patch}.${label}`,
           version_name: version,
-          name: mode === "production" ? "Scraper Extension" : "[DEV] Scraper Extension",
+          name: mode === "production" ? "Scraper Extension" : `[${process.env.MODE}] Scraper Extension`,
           description: "Extension to scrape data from web pages in free form",
           icons:
             mode === "production"
