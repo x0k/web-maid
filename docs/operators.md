@@ -582,6 +582,24 @@ interface ThrowConfig {
 never
 ```
 
+## Operator `do`
+
+### Signatures
+
+Performs a side effect and returns the original `context`
+
+```typescript
+interface DoConfig {
+  effect: any;
+}
+```
+
+**Returns:**
+
+```typescript
+<context>
+```
+
 ## Operator `plus`
 
 ### Signatures

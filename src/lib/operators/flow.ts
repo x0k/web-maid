@@ -705,7 +705,7 @@ const doConfig = z.object({
 });
 
 export class DoOpFactory extends FlowOpFactory<typeof doConfig, unknown> {
-  name = "throw";
+  name = "do";
   schema = doConfig;
   constructor() {
     super();
