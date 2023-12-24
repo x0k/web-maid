@@ -8,6 +8,9 @@ constants:
     key:
       - documentElement
       - outerHTML
+functions:
+  obsidianRequest:
+    $ref: ./obsidian-request
 for:
   $op: pipe
   do:
@@ -48,33 +51,83 @@ for:
         $op: doc.selection
       text:
         $op: get
-    - $op: sys.define
-      constants:
-        # token already defined
-        title:
-          $op: get
-          key:
-            - metadata
-            - title
-        content:
-          $op: template.render
-          template: |
-            ---
-            page-title: {{json metadata.title}}
-            url: {{url}}
-            published: "{{metadata.publishedDate}}"
-            modified: "{{metadata.modifiedDate}}"
-            date: "{{metadata.date}}"
-            description: {{json metadata.description}}
-            author: {{metadata.author}}
-            image: {{metadata.image}}
-            reviewed: false
-            ---
-            {{#if selection}}
+      # Note title as file name with folder
+    - fileName:
+        $op: str.join
+        values:
+          - /web/
+          - $op: str.replaceByRegExp
+            value:
+              $op: get
+              key:
+                - metadata
+                - title
+            pattern: "[/\\?%*:|\"<>#]"
+            replacement: ""
+          - ".md"
+      # Note content
+      content:
+        $op: template.render
+        template: |
+          ---
+          page-title: {{json metadata.title}}
+          url: {{url}}
+          published: "{{metadata.publishedDate}}"
+          modified: "{{metadata.modifiedDate}}"
+          date: "{{metadata.date}}"
+          description: {{json metadata.description}}
+          author: {{metadata.author}}
+          image: {{metadata.image}}
+          reviewed: false
+          ---
+          {{#if selection}}
 
-            {{quote selection}}
-            {{/if}}
+          {{quote selection}}
+          {{/if}}
 
-            {{text}}
-      for:
-        $ref: ./save-to-obsidian
+          {{text}}
+    # Save note to Obsidian
+    - $op: do
+      effect:
+        $op: sys.call
+        fn: obsidianRequest
+        arg:
+          token:
+            $op: sys.get
+            key: token
+          method: POST
+          path:
+            $op: str.join
+            values:
+              - /vault/
+              - $op: get
+                key: fileName
+          headers:
+            Content-Type: text/markdown
+          body:
+            $op: get
+            key: content
+    # Open note in Obsidian
+    - $op: do
+      effect:
+        $op: sys.call
+        fn: obsidianRequest
+        arg:
+          token:
+            $op: sys.get
+            key: token
+          method: POST
+          path:
+            $op: str.join
+            values:
+              - /open/
+              - $op: get
+                key: fileName
+          # Currently obsidian-local-rest-api@2.0.3 returns response with `json` content type
+          # and `0` content length. Which causes an error while parsing the response.
+          as: text
+    - $op: str.join
+      values:
+        - "Saved to Obsidian: "
+        - $op: get
+          key: fileName
