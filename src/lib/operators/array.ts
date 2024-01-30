@@ -76,7 +76,7 @@ export class FindOpFactory extends FlowOpFactory<typeof findSchema, unknown> {
       this.signatures = [
         {
           params: `interface Config {
-  source?: unknown[]
+  source?: unknown[] // defaults to <context>
   predicate: (value: unknown) => unknown
 }`,
           returns: "unknown | null",
@@ -122,6 +122,46 @@ predicate:
   }
 }
 
+const lengthConfig = z.object({
+  value: z.array(z.unknown()).optional(),
+});
+
+export class LengthOpFactory extends FlowOpFactory<
+  typeof lengthConfig,
+  number
+> {
+  name = "length";
+  schema = lengthConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value?: unknown[] // defaults to <context>
+}`,
+          returns: "number",
+          description: "Returns the length of `value`",
+        },
+      ];
+    }
+  }
+  protected create({ value }: z.TypeOf<this["schema"]>): ScopedOp<number> {
+    return async (scope) => {
+      const array = value ? await evalInScope(value, scope) : scope.context;
+      if (!Array.isArray(array)) {
+        throw new Error("Value must be an array");
+      }
+      return array.length;
+    };
+  }
+}
+
 export function arrayOperatorsFactories() {
-  return [new IndexOpFactory(), new CurrentOpFactory(), new FindOpFactory()];
+  return [
+    new LengthOpFactory(),
+    new IndexOpFactory(),
+    new CurrentOpFactory(),
+    new FindOpFactory(),
+  ];
 }

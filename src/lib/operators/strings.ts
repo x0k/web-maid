@@ -285,8 +285,41 @@ export class CompressOpFactory extends TaskOpFactory<
   }
 }
 
+const lengthConfig = z.object({
+  value: z.string(),
+})
+
+export class LengthOpFactory extends TaskOpFactory<
+  typeof lengthConfig,
+  number
+> {
+  name = "length";
+  schema = lengthConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value: string // defaults to <context>
+}`,
+          returns: `number`,
+          description: "Returns the length of `value`",
+        },
+      ];
+    }
+  }
+  async patchConfig (config: Record<string, unknown>, scope: Scope<unknown>) {
+      config.value ??= scope.context
+  }
+  execute({ value }: z.TypeOf<this["schema"]>): number {
+    return value.length;
+  }
+}
+
 export function stringsOperatorsFactories() {
   return [
+    new LengthOpFactory(),
     new JoinOpFactory(),
     new ReplaceOpFactory(),
     new ReplaceByRegExpOpFactory(),
