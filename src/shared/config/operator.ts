@@ -26,6 +26,7 @@ import {
 } from "@/lib/operators/template";
 import { mathOperatorsFactories } from "@/lib/operators/math";
 import { arrayOperatorsFactories } from "@/lib/operators/array";
+import { browserOperatorsFactories } from "@/lib/operators/browser";
 
 export interface OperatorFactoryConfig {
   window: Window;
@@ -90,6 +91,7 @@ export function compileOperatorFactories({
     factories,
     documentOperatorsFactories(window, evaluator)
   );
+  assignWithPrefix("browser.", factories, browserOperatorsFactories(window));
   assignWithPrefix("html.", factories, htmlOperatorsFactories(window));
   assignWithPrefix("str.", factories, stringsOperatorsFactories());
   assignWithPrefix("fs.", factories, fsOperatorsFactories(okShower));
