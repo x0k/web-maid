@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { compressToUTF16, decompressFromUTF16 } from "lz-string";
 
 import { isObject } from "@/lib/guards";
 import { evalConfig } from "@/shared/config/eval";
@@ -32,7 +33,7 @@ export type ConfigFile = z.infer<typeof configFileSchema>;
 const configFilesSchema = z.array(configFileSchema);
 
 const serializedSyncSettingsSchemaV1 = z.object({
-  version: z.undefined(),
+  version: z.literal(1).default(1),
   configFiles: z
     .string()
     .transform((v) => JSON.parse(v))
@@ -47,6 +48,8 @@ const configFilesAndVersionSchema = z.object({
   configFiles: configFilesSchema,
 });
 
+const VERSION_KEY = "version";
+const CONFIG_FILES_ORDER_KEY = "configFilesOrder";
 const CONFIG_FILE_PREFIX = "$file-";
 
 function configFileKey(configFileId: string): string {
@@ -57,45 +60,43 @@ function isConfigFileKey(configFileKey: string): boolean {
   return configFileKey.startsWith(CONFIG_FILE_PREFIX);
 }
 
+function configFileId(configFileKey: string): string {
+  return configFileKey.slice(CONFIG_FILE_PREFIX.length);
+}
+
 const serializedSyncSettingsSchemaV2 = z
   .record(z.string())
   .transform((v) => {
     let version = 0;
-    const configFiles: unknown[] = [];
+    let configFiles: string[] = [];
+    const files: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(v)) {
-      if (key === "version") {
+      if (key === VERSION_KEY) {
         version = Number(value);
         continue;
       }
+      if (key === CONFIG_FILES_ORDER_KEY) {
+        configFiles = JSON.parse(value);
+        continue;
+      }
       if (isConfigFileKey(key)) {
-        configFiles.push(JSON.parse(value));
+        files[configFileId(key)] = JSON.parse(decompressFromUTF16(value));
       }
     }
-    return { version, configFiles };
+    return { version, configFiles: configFiles.map((file) => files[file]) };
   })
   .refine(
     (v): v is z.infer<typeof configFilesAndVersionSchema> =>
       configFilesAndVersionSchema.safeParse(v).success
   );
 
-export type SyncSettings = z.infer<typeof serializedSyncSettingsSchemaV2>;
+type SyncSettingsV1 = z.infer<typeof serializedSyncSettingsSchemaV1>;
+type SyncSettingsV2 = z.infer<typeof serializedSyncSettingsSchemaV2>;
+type SyncSettingsUnion = SyncSettingsV1 | SyncSettingsV2;
 
-function parseSyncSettings(settings: Record<string, unknown>): SyncSettings {
-  console.log(settings);
-  switch (settings.version) {
-    case "2":
-      return serializedSyncSettingsSchemaV2.parse(settings);
-    case undefined: {
-      const { configFiles } = serializedSyncSettingsSchemaV1.parse(settings);
-      return {
-        version: 2,
-        configFiles: configFiles,
-      };
-    }
-    default:
-      throw new Error(`Unsupported sync settings version: ${settings.version}`);
-  }
-}
+export type SyncSettings = SyncSettingsV2;
+
+const LATEST_SYNC_SETTINGS_VERSION = 2;
 
 const desiredSyncSettingsSchema = z
   .object({
@@ -104,29 +105,32 @@ const desiredSyncSettingsSchema = z
   })
   .partial()
   .transform(({ version = 2, configFiles = [] }) => {
-    const base: { version: string } & Record<string, string> = {
-      version: String(version),
-    };
+    const files: Record<string, string> = {};
+    const filesOrder: string[] = [];
     for (const file of configFiles) {
-      base[configFileKey(file.id)] = JSON.stringify(file);
+      filesOrder.push(file.id);
+      files[configFileKey(file.id)] = compressToUTF16(JSON.stringify(file));
     }
-    return base;
+    return {
+      ...files,
+      [VERSION_KEY]: String(version),
+      [CONFIG_FILES_ORDER_KEY]: JSON.stringify(filesOrder),
+    };
   });
 
 const DEFAULT_LOCAL_SETTINGS: z.infer<typeof desiredLocalSettingsSchema> = {
   secrets: "token: secret",
 };
 
-// desiredSyncSettingsSchemaV1
-const DEFAULT_SYNC_SETTINGS = {
-  version: "1",
+const DEFAULT_SYNC_SETTINGS: SyncSettings = {
+  version: 2,
   configFiles: [
-    JSON.stringify({
+    {
       id: "main",
       name: "main",
       content: rawConfig,
       isRemovable: false,
-    }),
+    },
   ],
 };
 
@@ -140,9 +144,49 @@ export type Tab = z.infer<typeof tabSchema>;
 
 const tabsSchema = z.array(tabSchema);
 
+function parseSettings(settings: Record<string, unknown>): SyncSettingsUnion {
+  switch (settings[VERSION_KEY]) {
+    case "2":
+      return serializedSyncSettingsSchemaV2.parse(settings);
+    default:
+      return serializedSyncSettingsSchemaV1.parse(settings);
+  }
+}
+
+const migrations = [
+  {
+    version: 2,
+    migrate(settings: SyncSettingsV1): SyncSettingsV2 {
+      return {
+        version: 2,
+        configFiles: settings.configFiles,
+      };
+    },
+  },
+];
+
+export async function migrateSyncSettings(): Promise<void> {
+  const settings = await chrome.storage.sync.get(null);
+  if (Object.keys(settings).length === 0) {
+    await saveSyncSettings(DEFAULT_SYNC_SETTINGS);
+    return;
+  }
+  let parsedSettings = parseSettings(settings);
+  if (parsedSettings.version === LATEST_SYNC_SETTINGS_VERSION) {
+    return;
+  }
+  for (const migration of migrations) {
+    if (parsedSettings.version < migration.version) {
+      parsedSettings = migration.migrate(parsedSettings as never);
+    }
+  }
+  await chrome.storage.sync.clear();
+  await saveSyncSettings(parsedSettings as SyncSettings);
+}
+
 export async function loadSyncSettings(): Promise<SyncSettings> {
   const settings = await chrome.storage.sync.get(null);
-  return parseSyncSettings({ ...DEFAULT_SYNC_SETTINGS, ...settings });
+  return serializedSyncSettingsSchemaV2.parse(settings);
 }
 
 export async function saveSyncSettings(settings: Partial<SyncSettings>) {
@@ -163,12 +207,24 @@ export async function createConfigFile(name: string, content: string) {
     isRemovable: true,
   };
   await chrome.storage.sync.set({
-    [configFileKey(configFile.id)]: JSON.stringify(configFile),
+    [CONFIG_FILES_ORDER_KEY]: JSON.stringify(
+      configFiles.map((file) => file.id).concat(id)
+    ),
+    [configFileKey(configFile.id)]: compressToUTF16(JSON.stringify(configFile)),
   });
   return configFile;
 }
 
 export async function deleteConfigFile(id: string) {
+  const { configFiles } = await loadSyncSettings();
+  if (!configFiles.some((file) => file.id === id)) {
+    throw new Error(`Config file with id "${id}" does not exist`);
+  }
+  await chrome.storage.sync.set({
+    [CONFIG_FILES_ORDER_KEY]: JSON.stringify(
+      configFiles.filter((file) => file.id !== id).map((file) => file.id)
+    ),
+  });
   await chrome.storage.sync.remove(configFileKey(id));
 }
 
