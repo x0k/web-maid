@@ -82,8 +82,8 @@ $ref: "./<filename>#<selector>"
 
 ## Examples
 
-- [Save web content to Obsidian](examples/obsidian/README.md)
-- [Render json as a table](examples/json-to-table/README.md)
+- [Save web content to Obsidian](examples/obsidian/)
+- [Render json as a table](examples/json-to-table/)
 
 ## Things to do before release 1.x
 
