@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { compressToEncodedURIComponent } from "lz-string";
 
-import { TaskOpFactory } from "@/lib/operator";
+import { Scope, TaskOpFactory } from "@/lib/operator";
 
 const joinConfig = z.object({
   values: z.array(z.string()),
@@ -233,6 +234,57 @@ export class SearchOpFactory extends TaskOpFactory<
   }
 }
 
+const formatEnum = z.enum(["encodedURIComponent"]);
+const compressConfig = z.object({
+  value: z.string(),
+  format: formatEnum.default("encodedURIComponent"),
+});
+
+export class CompressOpFactory extends TaskOpFactory<
+  typeof compressConfig,
+  string
+> {
+  name = "compress";
+  schema = compressConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  value: string // defaults to <context>
+  format?: 'encodedURIComponent'
+}`,
+          returns: `string`,
+          description: "Compresses `value` as `format`.",
+        },
+      ];
+      this.examples = [
+        {
+          description: "Basic usage",
+          code: `$op: pipe
+  do:
+    - "Hello, World!"
+    - $op: str.compress
+`,
+          result: "BIUwNmD2A0AEDqkBOYAmBCIA",
+        }
+      ]
+    }
+  }
+  async patchConfig (config: Record<string, unknown>, scope: Scope<unknown>) {
+      config.value ??= scope.context
+  }
+  execute({ value, format }: z.TypeOf<this["schema"]>): string {
+    switch (format) {
+      case "encodedURIComponent":
+        return compressToEncodedURIComponent(value);
+      default:
+        throw new Error(`Unsupported format: ${formatEnum}`);
+    }
+  }
+}
+
 export function stringsOperatorsFactories() {
   return [
     new JoinOpFactory(),
@@ -242,5 +294,6 @@ export function stringsOperatorsFactories() {
     new SplitOpFactory(),
     new SplitByRegExpOpFactory(),
     new SearchOpFactory(),
+    new CompressOpFactory(),
   ];
 }
