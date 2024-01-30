@@ -714,6 +714,24 @@ interface Config {
 number
 ```
 
+## Operator `array.length`
+
+### Signatures
+
+Returns the length of `value`
+
+```typescript
+interface Config {
+  value?: unknown[] // defaults to <context>
+}
+```
+
+**Returns:**
+
+```typescript
+number
+```
+
 ## Operator `array.index`
 
 ### Signatures
@@ -754,7 +772,7 @@ Finds an element in an array that matches the predicate. Returns `null` if not f
 
 ```typescript
 interface Config {
-  source?: unknown[]
+  source?: unknown[] // defaults to <context>
   predicate: (value: unknown) => unknown
 }
 ```
@@ -1171,6 +1189,40 @@ interface Config<D> {
 D | string
 ```
 
+## Operator `browser.open`
+
+### Signatures
+
+Loads a specified resource into a new or existing browsing context.
+
+```typescript
+interface Config {
+  url?: string;
+  target?: string;
+  windowFeatures?: Record<string, unknown>;
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+### Examples
+
+Opens blank tab
+
+```yaml
+$op: browser.open
+```
+
+**Result:**
+
+```yaml
+<boolean>
+```
+
 ## Operator `html.readability`
 
 ### Signatures
@@ -1294,6 +1346,24 @@ interface Config {
   image: string | null
   author: string | null
 }
+```
+
+## Operator `str.length`
+
+### Signatures
+
+Returns the length of `value`
+
+```typescript
+interface Config {
+  value: string // defaults to <context>
+}
+```
+
+**Returns:**
+
+```typescript
+number
 ```
 
 ## Operator `str.join`
@@ -1436,6 +1506,43 @@ interface Config {
 
 ```typescript
 number
+```
+
+## Operator `str.compress`
+
+### Signatures
+
+Compresses `value` as `format`.
+
+```typescript
+interface Config {
+  value: string // defaults to <context>
+  format?: 'encodedURIComponent'
+}
+```
+
+**Returns:**
+
+```typescript
+string
+```
+
+### Examples
+
+Basic usage
+
+```yaml
+$op: pipe
+  do:
+    - "Hello, World!"
+    - $op: str.compress
+
+```
+
+**Result:**
+
+```yaml
+BIUwNmD2A0AEDqkBOYAmBCIA
 ```
 
 ## Operator `fs.saveFile`
