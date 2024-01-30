@@ -12,7 +12,9 @@ const serializedLocalSettingsSchema = z.object({
   secrets: z.string(),
 });
 
-const desizedLocalSettingsSchema = z
+export type LocalSettings = z.infer<typeof serializedLocalSettingsSchema>;
+
+const desiredLocalSettingsSchema = z
   .object({
     secrets: z.string(),
   })
@@ -29,42 +31,103 @@ export type ConfigFile = z.infer<typeof configFileSchema>;
 
 const configFilesSchema = z.array(configFileSchema);
 
-const serializedSyncSettingsSchema = z.object({
+const serializedSyncSettingsSchemaV1 = z.object({
+  version: z.undefined(),
   configFiles: z
     .string()
     .transform((v) => JSON.parse(v))
-    .refine((v): v is ConfigFile[] => configFilesSchema.safeParse(v).success),
+    .refine(
+      (v): v is z.infer<typeof configFilesSchema> =>
+        configFilesSchema.safeParse(v).success
+    ),
 });
 
-export type SyncSettings = z.infer<typeof serializedSyncSettingsSchema>;
+const configFilesAndVersionSchema = z.object({
+  version: z.literal(2),
+  configFiles: configFilesSchema,
+});
+
+const CONFIG_FILE_PREFIX = "$file-";
+
+function configFileKey(configFileId: string): string {
+  return `${CONFIG_FILE_PREFIX}${configFileId}`;
+}
+
+function isConfigFileKey(configFileKey: string): boolean {
+  return configFileKey.startsWith(CONFIG_FILE_PREFIX);
+}
+
+const serializedSyncSettingsSchemaV2 = z
+  .record(z.string())
+  .transform((v) => {
+    let version = 0;
+    const configFiles: unknown[] = [];
+    for (const [key, value] of Object.entries(v)) {
+      if (key === "version") {
+        version = Number(value);
+        continue;
+      }
+      if (isConfigFileKey(key)) {
+        configFiles.push(JSON.parse(value));
+      }
+    }
+    return { version, configFiles };
+  })
+  .refine(
+    (v): v is z.infer<typeof configFilesAndVersionSchema> =>
+      configFilesAndVersionSchema.safeParse(v).success
+  );
+
+export type SyncSettings = z.infer<typeof serializedSyncSettingsSchemaV2>;
+
+function parseSyncSettings(settings: Record<string, unknown>): SyncSettings {
+  console.log(settings);
+  switch (settings.version) {
+    case "2":
+      return serializedSyncSettingsSchemaV2.parse(settings);
+    case undefined: {
+      const { configFiles } = serializedSyncSettingsSchemaV1.parse(settings);
+      return {
+        version: 2,
+        configFiles: configFiles,
+      };
+    }
+    default:
+      throw new Error(`Unsupported sync settings version: ${settings.version}`);
+  }
+}
 
 const desiredSyncSettingsSchema = z
   .object({
+    version: z.literal(2),
     configFiles: configFilesSchema,
   })
   .partial()
-  .transform(({ configFiles, ...rest }) => ({
-    ...rest,
-    configFiles: JSON.stringify(configFiles),
-  }));
+  .transform(({ version = 2, configFiles = [] }) => {
+    const base: { version: string } & Record<string, string> = {
+      version: String(version),
+    };
+    for (const file of configFiles) {
+      base[configFileKey(file.id)] = JSON.stringify(file);
+    }
+    return base;
+  });
 
-export interface LocalSettings {
-  secrets: string;
-}
-
-const DEFAULT_LOCAL_SETTINGS: z.infer<typeof desizedLocalSettingsSchema> = {
+const DEFAULT_LOCAL_SETTINGS: z.infer<typeof desiredLocalSettingsSchema> = {
   secrets: "token: secret",
 };
 
-const DEFAULT_SYNC_SETTINGS: z.infer<typeof desiredSyncSettingsSchema> = {
-  configFiles: JSON.stringify([
-    {
+// desiredSyncSettingsSchemaV1
+const DEFAULT_SYNC_SETTINGS = {
+  version: "1",
+  configFiles: [
+    JSON.stringify({
       id: "main",
       name: "main",
       content: rawConfig,
       isRemovable: false,
-    },
-  ]),
+    }),
+  ],
 };
 
 const tabSchema = z.object({
@@ -78,8 +141,8 @@ export type Tab = z.infer<typeof tabSchema>;
 const tabsSchema = z.array(tabSchema);
 
 export async function loadSyncSettings(): Promise<SyncSettings> {
-  const settings = await chrome.storage.sync.get(DEFAULT_SYNC_SETTINGS);
-  return serializedSyncSettingsSchema.parse(settings);
+  const settings = await chrome.storage.sync.get(null);
+  return parseSyncSettings({ ...DEFAULT_SYNC_SETTINGS, ...settings });
 }
 
 export async function saveSyncSettings(settings: Partial<SyncSettings>) {
@@ -99,19 +162,14 @@ export async function createConfigFile(name: string, content: string) {
     content,
     isRemovable: true,
   };
-  await saveSyncSettings({
-    configFiles: [...configFiles, configFile],
+  await chrome.storage.sync.set({
+    [configFileKey(configFile.id)]: JSON.stringify(configFile),
   });
   return configFile;
 }
 
 export async function deleteConfigFile(id: string) {
-  const { configFiles } = await loadSyncSettings();
-  await saveSyncSettings({
-    configFiles: configFiles.filter(
-      (file) => file.id !== id || !file.isRemovable
-    ),
-  });
+  await chrome.storage.sync.remove(configFileKey(id));
 }
 
 export async function loadLocalSettings(): Promise<LocalSettings> {
@@ -120,7 +178,7 @@ export async function loadLocalSettings(): Promise<LocalSettings> {
 }
 
 export async function saveLocalSettings(settings: Partial<LocalSettings>) {
-  const data = desizedLocalSettingsSchema.parse(settings);
+  const data = desiredLocalSettingsSchema.parse(settings);
   await chrome.storage.local.set(data);
 }
 

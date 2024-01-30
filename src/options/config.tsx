@@ -145,7 +145,7 @@ export function Config() {
   } = useQuery({
     queryKey: ["settings", "sync"],
     queryFn: loadSyncSettings,
-    initialData: { configFiles: [] },
+    initialData: { version: 2, configFiles: [] },
   });
   const saveConfigFilesMutation = useMutation({
     mutationFn: (configFiles: EditorFile[]) =>
