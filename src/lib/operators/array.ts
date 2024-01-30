@@ -87,7 +87,7 @@ export class FindOpFactory extends FlowOpFactory<typeof findSchema, unknown> {
       this.examples = [
         {
           description: "Basic usage",
-          code: `$op: find$op: array.find
+          code: `$op: array.find
 source: [1, 2, 3]
 predicate:
   $op: eq

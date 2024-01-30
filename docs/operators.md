@@ -770,7 +770,7 @@ unknown | null
 Basic usage
 
 ```yaml
-$op: find$op: array.find
+$op: array.find
 source: [1, 2, 3]
 predicate:
   $op: eq
