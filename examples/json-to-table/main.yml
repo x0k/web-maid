@@ -5,7 +5,7 @@ constants:
     key:
       - body
       - firstChild
-      - textContent
+      - innerText
 for:
   $op: pipe
   do:
