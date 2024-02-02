@@ -12,6 +12,8 @@ const [major, minor, patch, label = "0"] = version
   // split into version parts
   .split(/[.-]/);
 
+const name = "WebMaid";
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   return {
@@ -30,8 +32,8 @@ export default defineConfig(({ mode }) => {
           // up to four numbers separated by dots
           version: `${major}.${minor}.${patch}.${label}`,
           version_name: version,
-          name: mode === "production" ? "Scraper Extension" : `[${process.env.MODE}] Scraper Extension`,
-          description: "Extension to scrape data from web pages in free form",
+          name: mode === "production" ? name : `[${process.env.MODE}] ${name}`,
+          description: "Automation in the browser",
           icons:
             mode === "production"
               ? {
@@ -47,7 +49,7 @@ export default defineConfig(({ mode }) => {
                   "128": "public/icon128.dev.png",
                 },
           action: {
-            default_title: "Scraper",
+            default_title: name,
           },
           background: {
             service_worker: "src/background/index.ts",

@@ -10,13 +10,13 @@ export async function injectedConfigEval(
 ) {
   function readInjection(maxScansCount: number) {
     return (
-      window.__SCRAPER_EXTENSION__ ||
+      window.__WEB_MAID__INJECTION ||
       new Promise<Injected | undefined>((resolve) => {
         let scansCount = 1;
         const interval = setInterval(() => {
-          if (window.__SCRAPER_EXTENSION__ || scansCount++ > maxScansCount) {
+          if (window.__WEB_MAID__INJECTION || scansCount++ > maxScansCount) {
             clearInterval(interval);
-            resolve(window.__SCRAPER_EXTENSION__);
+            resolve(window.__WEB_MAID__INJECTION);
           }
         }, 100);
       })

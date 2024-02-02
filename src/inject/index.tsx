@@ -103,11 +103,11 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
 
 export type Injected = ReturnType<typeof inject>;
 
-window.__SCRAPER_EXTENSION__ ??= connectToSandbox(
+window.__WEB_MAID__INJECTION ??= connectToSandbox(
   "sandbox.html",
   createAndMountIFrame(SANDBOX_IFRAME_ID)
 ).then(inject, (error) => {
   console.error(error);
-  window.__SCRAPER_EXTENSION__ = undefined;
+  window.__WEB_MAID__INJECTION = undefined;
   throw error;
 });
