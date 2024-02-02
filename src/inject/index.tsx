@@ -29,21 +29,8 @@ import { SANDBOX_IFRAME_ID } from "./constants";
 import { Popup } from "./popup";
 import { renderInShadowDom } from "./shadow-dom";
 
-const messageSender = {
-  sendMessage(msg: unknown) {
-    return chrome.runtime.sendMessage(prepareForSerialization(msg));
-  },
-};
-const remoteLogic = makeRemoteActorLogic(stringifyError);
-
-const extension = new ContextRemoteActor<
-  ExtensionAction,
-  ExtensionActionResults,
-  string
->(remoteLogic, messageSender);
-
 interface InjectedConfigEvalOptions {
-  configFiles: EvalConfigFile[]
+  configFiles: EvalConfigFile[];
   secrets: string;
   debug: boolean;
   contextId: string;
@@ -51,6 +38,21 @@ interface InjectedConfigEvalOptions {
 
 function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   sandbox.start();
+
+  const messageSender = {
+    sendMessage(msg: unknown) {
+      return chrome.runtime.sendMessage(prepareForSerialization(msg));
+    },
+  };
+  const remoteLogic = makeRemoteActorLogic(stringifyError);
+
+  const extension = new ContextRemoteActor<
+    ExtensionAction,
+    ExtensionActionResults,
+    string
+  >(remoteLogic, messageSender);
+  extension.start();
+
   const container = document.createElement("div");
   container.style.position = "fixed";
   container.style.top = "10px";
@@ -74,7 +76,7 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   const evaluator = new RemoteEvaluator(SANDBOX_IFRAME_ID, sandbox);
   const rendered = new RemoteRenderer(SANDBOX_IFRAME_ID, sandbox);
   const validator = new RemoteValidator(SANDBOX_IFRAME_ID, sandbox);
-  const INJECTED = {
+  return {
     evalConfig: ({
       configFiles,
       contextId,
@@ -96,14 +98,16 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
         }),
       }),
     stringifyError,
-  };
-  window.__SCRAPER_EXTENSION__ = INJECTED;
-  extension.start();
-  return INJECTED;
+  }
 }
 
 export type Injected = ReturnType<typeof inject>;
 
-connectToSandbox("sandbox.html", createAndMountIFrame(SANDBOX_IFRAME_ID)).then(
-  inject
-);
+window.__SCRAPER_EXTENSION__ ??= connectToSandbox(
+  "sandbox.html",
+  createAndMountIFrame(SANDBOX_IFRAME_ID)
+).then(inject, (error) => {
+  console.error(error);
+  window.__SCRAPER_EXTENSION__ = undefined;
+  throw error;
+});

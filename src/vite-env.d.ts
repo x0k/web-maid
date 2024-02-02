@@ -4,6 +4,6 @@ import type { Injected } from "./inject";
 
 declare global {
   interface Window {
-    __SCRAPER_EXTENSION__: Injected;
+    __SCRAPER_EXTENSION__: Promise<Injected> | undefined;
   }
 }

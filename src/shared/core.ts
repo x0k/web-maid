@@ -6,6 +6,9 @@ import { isObject } from "@/lib/guards";
 import { evalConfig } from "@/shared/config/eval";
 import { FactoryFn } from "@/lib/factory";
 
+// @ts-expect-error Script url import
+import contentScript from "@/inject/index.tsx?script";
+
 import rawConfig from "./config.yml?raw";
 import { injectedConfigEval } from "./injected-config-eval";
 
@@ -276,6 +279,10 @@ export async function evalConfigInTab(
   secrets: string,
   debug: boolean
 ): Promise<unknown> {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: [contentScript],
+  });
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
     func: injectedConfigEval,

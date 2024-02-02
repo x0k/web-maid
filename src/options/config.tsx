@@ -59,9 +59,6 @@ import { useRootFactory } from "@/shared/react-root-factory";
 import { useFormShower } from "@/shared/react-form-shower";
 import { useOkShower } from "@/shared/react-ok-shower";
 
-// @ts-expect-error Script url import
-import contentScript from '@/inject/index.tsx?script';
-
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
 import { CreateConfigFileForm } from "./create-config-file-form";
@@ -303,22 +300,6 @@ export function Config() {
               checked={debug}
               onChange={(_, v) => setDebug(v)}
             />
-            <Button
-              color="warning"
-              variant="contained"
-              size="small"
-              onClick={() => {
-                if (selectedTab === null) {
-                  return;
-                }
-                chrome.scripting.executeScript({
-                  target: { tabId: selectedTab.id },
-                  files: [contentScript],
-                });
-              }}
-            >
-              Test inject
-            </Button>
             <Button
               color="warning"
               variant="contained"

@@ -5,28 +5,31 @@ import {
   MessageType,
   makeActorLogic,
   makeRemoteActorLogic,
-} from "./lib/actor";
-import { ContextActor, ContextRemoteActor } from "./lib/actors/context";
-import { stringifyError } from "./lib/error";
-import { noop } from "./lib/function/function";
-import { prepareForSerialization } from "./lib/serialization";
+} from "@/lib/actor";
+import { ContextActor, ContextRemoteActor } from "@/lib/actors/context";
+import { stringifyError } from "@/lib/error";
+import { noop } from "@/lib/function/function";
+import { prepareForSerialization } from "@/lib/serialization";
 
 import {
   getAllTabs,
   migrateSyncSettings,
-} from "./shared/core";
+} from "@/shared/core";
 import {
   BackgroundAction,
   BackgroundActionResults,
   BackgroundActionType,
-} from "./shared/background/action";
-import { BACKGROUND_ACTOR_ID } from "./shared/background/core";
-import { Fetcher } from "./shared/fetcher";
+} from "@/shared/background/action";
+import { BACKGROUND_ACTOR_ID } from "@/shared/background/core";
+import { Fetcher } from "@/shared/fetcher";
 import {
   TabAction,
   TabActionResults,
   TabActionType,
-} from "./shared/tab/action";
+} from "@/shared/tab/action";
+
+// @ts-expect-error Script url import
+import contentScript from '@/inject/index.tsx?script';
 
 chrome.runtime.onInstalled.addListener(async function ({ reason }) {
   switch (reason) {
@@ -39,9 +42,11 @@ chrome.runtime.onInstalled.addListener(async function ({ reason }) {
 const fetcher = new Fetcher();
 
 const TABS_TO_ACTORS_MAP = new Map<number, ActorId>();
+const TABS_ACTORS_AWAITERS = new Map<number, (actorId: ActorId) => void>();
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   TABS_TO_ACTORS_MAP.delete(tabId);
+  TABS_ACTORS_AWAITERS.delete(tabId);
 });
 
 const remoteTabActor = new ContextRemoteActor<
@@ -54,24 +59,35 @@ const remoteTabActor = new ContextRemoteActor<
   },
 });
 
+const runConfig = (tabId: number, actorId: ActorId) => {
+  remoteTabActor.call({
+      id: nanoid(),
+      type: MessageType.Request,
+      handlerId: actorId,
+      request: {
+        type: TabActionType.RunConfig,
+        tabId,
+      },
+    });
+}
+
 chrome.action.onClicked.addListener((tab) => {
   const tabId = tab.id;
   if (!tabId) {
     return;
   }
   const actorId = TABS_TO_ACTORS_MAP.get(tabId);
-  if (!actorId) {
-    return;
+  if (actorId) {
+    runConfig(tabId, actorId);
+  } else {
+    TABS_ACTORS_AWAITERS.set(tabId, (actorId) => {
+      runConfig(tabId, actorId);
+    })
+    chrome.scripting.executeScript({
+      target: { tabId },
+      files: [contentScript]
+    })
   }
-  remoteTabActor.call({
-    id: nanoid(),
-    type: MessageType.Request,
-    handlerId: actorId,
-    request: {
-      type: TabActionType.RunConfig,
-      tabId,
-    },
-  });
 });
 
 const actor = new ContextActor<
@@ -87,6 +103,11 @@ const actor = new ContextActor<
     (msg, { tab }) => {
       if (tab && tab.id !== undefined) {
         TABS_TO_ACTORS_MAP.set(tab.id, msg.id);
+        const awaiter = TABS_ACTORS_AWAITERS.get(tab.id);
+        if (awaiter) {
+          TABS_ACTORS_AWAITERS.delete(tab.id);
+          awaiter(msg.id);
+        }
       }
     },
     stringifyError

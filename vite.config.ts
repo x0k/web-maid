@@ -50,7 +50,7 @@ export default defineConfig(({ mode }) => {
             default_title: "Scraper",
           },
           background: {
-            service_worker: "src/background.ts",
+            service_worker: "src/background/index.ts",
             type: "module",
           },
           options_page: "options.html",
@@ -58,12 +58,6 @@ export default defineConfig(({ mode }) => {
           permissions: ["storage", "activeTab", "scripting"],
           //@ts-expect-error wrong types
           optional_host_permissions: ["https://*/*", "http://*/*"],
-          // content_scripts: [
-          //   {
-          //     matches: ["https://*/*", "http://*/*"],
-          //     js: ["src/inject/index.tsx"],
-          //   },
-          // ],
           sandbox: {
             pages: ["sandbox.html"],
           },
