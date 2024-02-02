@@ -1,1 +1,1 @@
-export const sandboxIFrameId = "sandbox";
+export const SANDBOX_IFRAME_ID = `${import.meta.env.MODE}-sandbox`;

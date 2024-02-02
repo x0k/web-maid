@@ -2,8 +2,13 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { Docs } from "@/shared/config/docs";
 import "@/shared/styles.css";
+
+import { DocsPage } from "./docs-page";
+
+if (import.meta.env.MODE !== "production") {
+  document.title = `[${import.meta.env.MODE}] ${document.title}`;
+}
 
 const root = document.getElementById("root")!;
 
@@ -17,10 +22,8 @@ const client = new QueryClient({
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <div className="max-w-3xl mx-auto py-8">
-      <QueryClientProvider client={client}>
-        <Docs />
-      </QueryClientProvider>
-    </div>
+    <QueryClientProvider client={client}>
+      <DocsPage />
+    </QueryClientProvider>
   </React.StrictMode>
 );

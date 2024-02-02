@@ -11,7 +11,10 @@ import { stringifyError } from "./lib/error";
 import { noop } from "./lib/function/function";
 import { prepareForSerialization } from "./lib/serialization";
 
-import { getAllTabs } from "./shared/core";
+import {
+  getAllTabs,
+  migrateSyncSettings,
+} from "./shared/core";
 import {
   BackgroundAction,
   BackgroundActionResults,
@@ -24,6 +27,14 @@ import {
   TabActionResults,
   TabActionType,
 } from "./shared/tab/action";
+
+chrome.runtime.onInstalled.addListener(async function ({ reason }) {
+  switch (reason) {
+    case chrome.runtime.OnInstalledReason.INSTALL:
+    case chrome.runtime.OnInstalledReason.UPDATE:
+      await migrateSyncSettings();
+  }
+});
 
 const fetcher = new Fetcher();
 

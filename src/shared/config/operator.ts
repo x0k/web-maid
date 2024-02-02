@@ -25,6 +25,8 @@ import {
   TemplateRendererData,
 } from "@/lib/operators/template";
 import { mathOperatorsFactories } from "@/lib/operators/math";
+import { arrayOperatorsFactories } from "@/lib/operators/array";
+import { browserOperatorsFactories } from "@/lib/operators/browser";
 
 export interface OperatorFactoryConfig {
   window: Window;
@@ -73,6 +75,7 @@ export function compileOperatorFactories({
   const factories: Record<string, BaseOpFactory<ZodTypeAny, unknown>> = {};
   assign(factories, flowOperatorsFactories());
   assign(factories, mathOperatorsFactories());
+  assignWithPrefix("array.", factories, arrayOperatorsFactories());
   assignWithPrefix(
     "sys.",
     factories,
@@ -88,6 +91,7 @@ export function compileOperatorFactories({
     factories,
     documentOperatorsFactories(window, evaluator)
   );
+  assignWithPrefix("browser.", factories, browserOperatorsFactories(window));
   assignWithPrefix("html.", factories, htmlOperatorsFactories(window));
   assignWithPrefix("str.", factories, stringsOperatorsFactories());
   assignWithPrefix("fs.", factories, fsOperatorsFactories(okShower));

@@ -77,7 +77,7 @@ export const Form = forwardRef<FormRef<unknown>, FormProps<unknown>>(
       (event: IChangeEvent<unknown>) => {
         submitMutation.mutate(event);
       },
-      [submitMutation.mutate]
+      [submitMutation]
     );
     return (
       <MuiForm

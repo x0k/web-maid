@@ -1,136 +1,62 @@
-import { memo, useMemo } from "react";
-import { ZodTypeAny } from "zod";
+import { memo, useCallback, useMemo } from "react";
 import Markdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { zodToTs, printNode } from "zod-to-ts";
-import { useQuery } from "@tanstack/react-query";
+import { matchSorter } from "match-sorter";
 
-import {
-  BaseOpFactory,
-  OpExample,
-  OpSignature,
-  TaskOpFactory,
-} from "@/lib/operator";
+import { extractTextContent } from "@/lib/react";
+import { useComponents } from '@/lib/react-markdown';
 
-import { compileOperatorFactories } from "./operator";
-
-export let details = "";
-
-/* eslint-disable no-inner-declarations */
-if (import.meta.env.DEV) {
-  function renderExample(example: OpExample) {
-    return `${example.description}
-
-\`\`\`yaml
-${example.code}
-\`\`\`
-
-**Result:**
-
-\`\`\`yaml
-${example.result}
-\`\`\``;
-  }
-
-  function renderSignature(signature: OpSignature) {
-    return `${signature.description}
-
-\`\`\`typescript
-${signature.params}
-\`\`\`
-
-**Returns:**
-
-\`\`\`typescript
-${signature.returns}
-\`\`\``;
-  }
-
-  function renderFactorySchema(factory: BaseOpFactory<ZodTypeAny, unknown>) {
-    const { node } = zodToTs(factory.schema);
-    return `Raw validation schema.
-${
-  factory instanceof TaskOpFactory
-    ? "This schema describes the shape of the evaluated input."
-    : "This schema describes the shape of the unevaluated input and \
-additional type restrictions will be applied at runtime."
-}
-
-\`\`\`typescript
-interface Config ${printNode(node)}
-\`\`\``;
-  }
-
-  function renderFactory(
-    name: string,
-    factory: BaseOpFactory<ZodTypeAny, unknown>
-  ) {
-    return `## Operator \`${name}\`
-
-### Signatures
-
-${
-  factory.signatures.length
-    ? factory.signatures.map(renderSignature).join("\n\n")
-    : renderFactorySchema(factory)
-}${
-      factory.examples.length
-        ? `
-
-### Examples
-
-${factory.examples.map(renderExample).join("\n\n")}`
-        : ""
-    }`;
-  }
-  //@ts-expect-error empty deps is ok for metadata extraction
-  const operators = compileOperatorFactories({});
-
-  details = Object.keys(operators)
-    .map((key) => renderFactory(key, operators[key]))
-    .join("\n\n");
-  /* eslint-enable no-inner-declarations */
-}
+import { operatorNameRegExp, renderOperator } from "./operators-info";
+import { useOperators } from './react-operators-info';
+import preface from "./docs-preface.md?raw";
 
 export interface DocsProps {
   className?: string;
+  search?: string;
 }
 
-export const Docs = memo(({ className = "" }: DocsProps) => {
-  const { data: preface } = useQuery({
-    queryKey: ["/operators.md"],
-    queryFn: async () => {
-      const res = await fetch("/operators.md");
-      return res.text();
+export const Docs = memo(({ className = "", search = "" }: DocsProps) => {
+  const { data: operators } = useOperators();
+  const { renders, slugs } = useMemo(() => {
+    const slugs: Record<string, string> = {};
+    const renders: Record<string, string> = {};
+    for (const op of operators) {
+      renders[op.name] = renderOperator(op);
+      slugs[op.name] = op.slug;
+    }
+    return { renders, slugs };
+  }, [operators]);
+  const injectId = useCallback(
+    (props: JSX.IntrinsicElements["h1"]) => {
+      const text = extractTextContent(props.children);
+      const match = text.match(operatorNameRegExp);
+      return {
+        id: match ? slugs[match[1]] : undefined,
+        children: props.children,
+      };
     },
-    initialData: "# Operators\n\n",
-  });
-  const content = useMemo(() => `${preface}\n${details}`, [preface]);
+    [slugs]
+  );
+  const components = useComponents(injectId);
+  const fullRender = useMemo(
+    () => `${preface}\n${operators.map((op) => renders[op.name]).join("\n\n")}`,
+    [operators, renders]
+  );
+  const content = useMemo(() => {
+    if (search.trim() === "") {
+      return fullRender;
+    }
+    const matched = matchSorter(operators, search, {
+      keys: ["name", "signatures", "examples"],
+    });
+    return (
+      matched.map((op) => renders[op.name]).join("\n\n") ||
+      `Nothing found for "${search}"`
+    );
+  }, [search, operators, renders, fullRender]);
   return (
     <Markdown
       className={`prose max-w-none prose-pre:p-0 ${className}`}
-      components={{
-        code(props) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { children, className, node, ...rest } = props;
-          const match = /language-(\w+)/.exec(className || "");
-          return match ? (
-            // @ts-expect-error ref types conflict
-            <SyntaxHighlighter
-              {...rest}
-              PreTag="div"
-              children={String(children).replace(/\n$/, "")}
-              language={match[1]}
-              style={vscDarkPlus}
-            />
-          ) : (
-            <code {...rest} className={className}>
-              {children}
-            </code>
-          );
-        },
-      }}
+      components={components}
       children={content}
     />
   );

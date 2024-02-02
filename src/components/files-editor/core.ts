@@ -17,9 +17,10 @@ export interface InternalEditorFile {
 }
 
 export interface FilesEditorState {
+  editor: monaco.editor.IStandaloneCodeEditor | null;
   filesMap: Map<string, InternalEditorFile>;
   files: InternalEditorFile[];
-  active: InternalEditorFile | null;
+  activeFileIndex: number;
 }
 
 export function createInternalFile(file: EditorFile): InternalEditorFile {
@@ -47,21 +48,26 @@ export function updateEditorState(
   state: FilesEditorState,
   editorFiles: EditorFile[]
 ) {
-  const { filesMap } = state;
+  const { filesMap, files, activeFileIndex } = state;
   const nextFilesIds = new Set<string>();
   const nextFiles: InternalEditorFile[] = [];
-  let newFile: InternalEditorFile | undefined;
+  let newFileIndex = -1;
+  let newActiveFileIndex = activeFileIndex > -1 ? -1 : -2;
   for (const file of editorFiles) {
     nextFilesIds.add(file.id);
     const internalFile = filesMap.get(file.id);
     if (internalFile) {
-      nextFiles.push(updateInternalFile(internalFile, file));
+      const l = nextFiles.push(updateInternalFile(internalFile, file));
+      if (newActiveFileIndex === -1 && files[activeFileIndex].id === file.id) {
+        newActiveFileIndex = l - 1;
+      }
     } else {
-      newFile = createInternalFile(file);
+      const newFile = createInternalFile(file);
       filesMap.set(file.id, newFile);
-      nextFiles.push(newFile);
+      newFileIndex = nextFiles.push(newFile);
     }
   }
+  newFileIndex -= 1;
   for (const id of filesMap.keys()) {
     if (!nextFilesIds.has(id)) {
       filesMap.get(id)!.model.dispose();
@@ -69,23 +75,38 @@ export function updateEditorState(
     }
   }
   state.files = nextFiles;
-  if (newFile) {
-    state.active = newFile;
-  } else if (!state.active || !nextFilesIds.has(state.active.id)) {
-    const activeFile = nextFiles.length > 0 ? nextFiles[0] : null;
-    state.active = activeFile;
+  if (nextFiles.length === 0) {
+    state.activeFileIndex = -1;
+  } else if (files.length === 0) {
+    state.activeFileIndex = 0;
+  } else if (newFileIndex > -1) {
+    state.activeFileIndex = newFileIndex;
+  } else if (newActiveFileIndex > -1) {
+    state.activeFileIndex = newActiveFileIndex;
+  } else {
+    let i = activeFileIndex - 1;
+    while (i >= 0 && !filesMap.has(files[i].id)) {
+      i--;
+    }
+    if (i < 0) {
+      i = activeFileIndex + 1;
+      while (i < files.length && !filesMap.has(files[i].id)) {
+        i++;
+      }
+    }
+    state.activeFileIndex = Math.min(i, nextFiles.length - 1);
   }
 }
 
-export function saveFile(
-  file: InternalEditorFile,
-  { files }: FilesEditorState
-): EditorFile[] {
-  return files.map((f) => ({
+export function saveActiveFile({
+  files,
+  activeFileIndex,
+}: FilesEditorState): EditorFile[] {
+  return files.map((f, i) => ({
     id: f.id,
     name: f.name,
     isRemovable: f.isRemovable,
-    content: f.id === file.id ? file.model.getValue() : f.initialContent,
+    content: i === activeFileIndex ? f.model.getValue() : f.initialContent,
   }));
 }
 
@@ -98,9 +119,14 @@ export function saveAllFiles({ files }: FilesEditorState): EditorFile[] {
   }));
 }
 
-export function resetFile(file: InternalEditorFile) {
-  file.model.setValue(file.initialContent);
-  file.isChanged = false;
+export function resetActiveFile({ activeFileIndex, files }: FilesEditorState) {
+  if (activeFileIndex < 0) {
+    return false;
+  }
+  const active = files[activeFileIndex];
+  active.model.setValue(active.initialContent);
+  active.isChanged = false;
+  return true;
 }
 
 export function resetAllFiles({ files }: FilesEditorState) {
@@ -113,4 +139,37 @@ export function resetAllFiles({ files }: FilesEditorState) {
     }
   }
   return updated;
+}
+
+export function activeFileChanged({
+  activeFileIndex,
+  files,
+}: FilesEditorState) {
+  return activeFileIndex > -1 && files[activeFileIndex].isChanged;
+}
+
+export function someFileChanged(state: FilesEditorState) {
+  return activeFileChanged(state) || state.files.some((f) => f.isChanged);
+}
+
+export function activeFile({ activeFileIndex, files }: FilesEditorState) {
+  return activeFileIndex > -1 ? files[activeFileIndex] : null;
+}
+
+export function activeFileWithoutBoundaryCheck({
+  files,
+  activeFileIndex,
+}: FilesEditorState) {
+  return files[activeFileIndex];
+}
+
+export function activeFileRemovable({
+  activeFileIndex,
+  files,
+}: FilesEditorState) {
+  return activeFileIndex > -1 && files[activeFileIndex].isRemovable;
+}
+
+export function setActiveFile(state: FilesEditorState, index: number) {
+  state.activeFileIndex = index;
 }

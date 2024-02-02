@@ -46,6 +46,7 @@ export function TabsSelector({
       renderInput={(params) => (
         <TextField
           {...params}
+          size="small"
           placeholder="Select a tab to execute on it"
           fullWidth
         />

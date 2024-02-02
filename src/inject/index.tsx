@@ -25,7 +25,7 @@ import {
 } from "@/shared/sandbox/remote-impl";
 import { evalConfig, EvalConfigFile } from "@/shared/config/eval";
 
-import { sandboxIFrameId } from "./constants";
+import { SANDBOX_IFRAME_ID } from "./constants";
 import { Popup } from "./popup";
 import { renderInShadowDom } from "./shadow-dom";
 
@@ -71,9 +71,9 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
   );
   document.body.append(container);
   // For tests
-  const evaluator = new RemoteEvaluator(sandboxIFrameId, sandbox);
-  const rendered = new RemoteRenderer(sandboxIFrameId, sandbox);
-  const validator = new RemoteValidator(sandboxIFrameId, sandbox);
+  const evaluator = new RemoteEvaluator(SANDBOX_IFRAME_ID, sandbox);
+  const rendered = new RemoteRenderer(SANDBOX_IFRAME_ID, sandbox);
+  const validator = new RemoteValidator(SANDBOX_IFRAME_ID, sandbox);
   const INJECTED = {
     evalConfig: ({
       configFiles,
@@ -104,6 +104,6 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
 
 export type Injected = ReturnType<typeof inject>;
 
-connectToSandbox("sandbox.html", createAndMountIFrame(sandboxIFrameId)).then(
+connectToSandbox("sandbox.html", createAndMountIFrame(SANDBOX_IFRAME_ID)).then(
   inject
 );

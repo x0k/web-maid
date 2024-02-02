@@ -51,6 +51,9 @@ export interface Scope<R> {
   constants: Record<string, OpOrVal<Scope<R>, R>>;
   error: unknown;
   context: R;
+  // for array operators
+  index?: number;
+  array?: R[];
 }
 
 export type ScopedOp<R> = Op<Scope<unknown>, R>;
@@ -91,7 +94,7 @@ export abstract class BaseOpFactory<S extends ZodType, R>
   public abstract readonly schema: S;
   public signatures: OpSignature[] = [];
   public examples: OpExample[] = [];
-  abstract Create(config: unknown): ScopedOp<R>;
+  abstract Create(config: Record<string, unknown>): ScopedOp<R>;
 }
 
 export abstract class FlowOpFactory<S extends ZodType, R> extends BaseOpFactory<
@@ -100,7 +103,7 @@ export abstract class FlowOpFactory<S extends ZodType, R> extends BaseOpFactory<
 > {
   protected abstract create(config: TypeOf<this["schema"]>): ScopedOp<R>;
 
-  Create(config: unknown): ScopedOp<R> {
+  Create(config: Record<string, unknown>): ScopedOp<R> {
     return this.create(this.schema.parse(config));
   }
 }
@@ -111,10 +114,23 @@ export abstract class TaskOpFactory<S extends ZodType, R> extends BaseOpFactory<
 > {
   protected abstract execute(config: TypeOf<this["schema"]>): Result<R>;
 
-  Create(config: unknown): ScopedOp<R> {
+  protected async patchConfig(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _config: Record<string, unknown>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _scope: Scope<unknown>
+  ): Promise<void> {}
+
+  Create(config: Record<string, unknown>): ScopedOp<R> {
     return async (scope) => {
-      const resolvedConfig = await evalInScope(config, scope);
-      return this.execute(this.schema.parse(resolvedConfig));
+      const cfg = await evalInScope<unknown, Record<string, unknown>>(
+        config,
+        scope
+      );
+      // eval creates a copy of the config
+      // so patch is ok
+      await this.patchConfig(cfg, scope);
+      return this.execute(this.schema.parse(cfg));
     };
   }
 }

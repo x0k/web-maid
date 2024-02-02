@@ -65,3 +65,32 @@ token: Bearer token
 ## Operators
 
 Full documentation of operators is available in the [operators](docs/operators.md) section and on the `options` page of the extension.
+
+## Refs
+
+If you need to include code from other files, you can use the `$ref` key.
+
+Example:
+
+```yaml
+$ref: "./<filename>#<selector>"
+```
+
+- `<filename>` is the name of the file
+- `<selector>` is [JSONPath](https://github.com/dchester/jsonpath) selector
+- One of the parameters can be omitted (e.g. `./<filename>`, `#<selector>`)
+
+## Examples
+
+- [Save web content to Obsidian](examples/obsidian/)
+- [Render json as a table](examples/json-to-table/)
+
+## Things to do before release 1.x
+
+- Configure Vite to create a separate injection script instead of `content_script`
+- Think about a name for the project
+
+## See also
+
+- If you need a simple tool to save web content to Obsidian, try [obsidian-web](https://github.com/coddingtonbear/obsidian-web).
+- Simple build automation tool [mk](https://github.com/x0k/mk)

@@ -1,4 +1,11 @@
-import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Plus,
   Pen,
@@ -10,12 +17,14 @@ import {
   Trash,
 } from "lucide-react";
 
+import { monaco } from "@/lib/monaco";
 import { Editor } from "@/components/editor";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -24,11 +33,17 @@ import {
   EditorFile,
   FilesEditorState,
   InternalEditorFile,
+  activeFileChanged,
   resetAllFiles,
-  resetFile,
+  resetActiveFile,
   saveAllFiles,
-  saveFile,
+  saveActiveFile,
+  someFileChanged,
   updateEditorState,
+  activeFileRemovable,
+  setActiveFile,
+  activeFile,
+  activeFileWithoutBoundaryCheck,
 } from "./core";
 
 export interface FilesEditorProps {
@@ -41,10 +56,14 @@ export interface FilesEditorProps {
 export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
   ({ files: editorFiles, onCreateFile, onRemoveFile, onSaveFiles }, ref) => {
     const stateRef = useRef<FilesEditorState>({
-      active: null,
+      editor: null,
       filesMap: new Map<string, InternalEditorFile>(),
       files: [],
+      activeFileIndex: -1,
     });
+    const setEditorRef = useCallback((ref: monaco.editor.IStandaloneCodeEditor | null) => {
+      stateRef.current.editor = ref;
+    }, [])
     const [, setState] = useState(0);
     const rerender = useCallback(() => setState(Date.now()), []);
     useEffect(() => {
@@ -60,37 +79,123 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
       updateEditorState(stateRef.current, editorFiles);
       rerender();
     }, [editorFiles, rerender]);
+    const activeFileModel = activeFile(stateRef.current)?.model;
     useEffect(() => {
-      const {
-        current: { active },
-      } = stateRef;
-      if (active) {
-        const disposable = active.model.onDidChangeContent((e) => {
-          const { active } = stateRef.current;
-          if (active === null || e.isFlush) {
+      if (!activeFileModel) {
+        return;
+      }
+      const disposable = activeFileModel.onDidChangeContent((e) => {
+        const active = activeFile(stateRef.current);
+        if (active === null || e.isFlush) {
+          return;
+        }
+        if (active.isChanged) {
+          if (e.isUndoing) {
+            if (active.model.getValue() == active!.initialContent) {
+              active.isChanged = false;
+              rerender();
+            }
+          }
+        } else {
+          active.isChanged = true;
+          rerender();
+        }
+      });
+      return () => disposable.dispose();
+      // the model change itself does not trigger the effect
+      // but the condition will be checked on other component updates
+    }, [activeFileModel, rerender]);
+
+    const { save, saveAll, reset, resetAll, remove } = useMemo(
+      () => ({
+        save() {
+          {
+            if (activeFileChanged(stateRef.current)) {
+              onSaveFiles(saveActiveFile(stateRef.current));
+            }
+          }
+        },
+        saveAll() {
+          if (someFileChanged(stateRef.current)) {
+            onSaveFiles(saveAllFiles(stateRef.current));
+          }
+        },
+        reset() {
+          if (!activeFileChanged(stateRef.current)) {
             return;
           }
-          if (active.isChanged) {
-            if (e.isUndoing) {
-              if (active.model.getValue() == active!.initialContent) {
-                active.isChanged = false;
-                rerender();
-              }
-            }
-          } else {
-            active.isChanged = true;
+          if (resetActiveFile(stateRef.current)) {
             rerender();
           }
-        });
-        return () => disposable.dispose();
-      }
-    }, [stateRef.current.active?.model, rerender]);
+        },
+        resetAll() {
+          if (!someFileChanged(stateRef.current)) {
+            return;
+          }
+          if (resetAllFiles(stateRef.current) > 0) {
+            rerender();
+          }
+        },
+        remove() {
+          if (activeFileRemovable(stateRef.current)) {
+            onRemoveFile(activeFileWithoutBoundaryCheck(stateRef.current).id);
+          }
+        },
+      }),
+      [rerender, onRemoveFile, onSaveFiles]
+    );
+    const actions: monaco.editor.IActionDescriptor[] = useMemo(
+      () => [
+        {
+          id: "files-editor-create-file",
+          label: "Create file",
+          keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyN],
+          run: onCreateFile,
+        },
+        {
+          id: "files-editor-save-file",
+          label: "Save file",
+          keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+          run: save,
+        },
+        {
+          id: "files-editor-save-all-files",
+          label: "Save all files",
+          keybindings: [
+            monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS,
+          ],
+          run: saveAll,
+        },
+        {
+          id: "files-editor-reset-file",
+          label: "Reset file",
+          keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyR],
+          run: reset,
+        },
+        {
+          id: "files-editor-reset-all-files",
+          label: "Reset all files",
+          keybindings: [
+            monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyR,
+          ],
+          run: resetAll,
+        },
+        {
+          id: "files-editor-remove-file",
+          label: "Remove file",
+          keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyD],
+          run: remove,
+        },
+      ],
+      [onCreateFile, save, saveAll, reset, resetAll, remove]
+    );
     const {
-      current: { active, files },
+      current: { activeFileIndex, files },
     } = stateRef;
-    const hasActive = active !== null;
-    const isActiveChanged = hasActive && active.isChanged;
-    const isSomeFileChanged = isActiveChanged || files.some((f) => f.isChanged);
+    const hasActive = activeFileIndex > -1;
+    const isActiveRemovable = hasActive && files[activeFileIndex].isRemovable;
+    const isActiveChanged = activeFileChanged(stateRef.current);
+    const isSomeFileChanged = someFileChanged(stateRef.current);
     return (
       <div className="flex flex-col grow">
         <div className="flex flex-row items-center bg-neutral-950">
@@ -104,80 +209,43 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
               <DropdownMenuItem onClick={onCreateFile}>
                 <Plus className="mr-2 h-4 w-4" />
                 <span>New</span>
-                {/* <DropdownMenuShortcut>⌘N</DropdownMenuShortcut> */}
+                <DropdownMenuShortcut>Alt+N</DropdownMenuShortcut>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!isActiveChanged}
-                onClick={() => {
-                  if (active?.isChanged) {
-                    onSaveFiles(saveFile(active, stateRef.current));
-                  }
-                }}
-              >
+              <DropdownMenuItem disabled={!isActiveChanged} onClick={save}>
                 <Save className="mr-2 h-4 w-4" />
                 <span>Save</span>
-                {/* <DropdownMenuShortcut>⌘S</DropdownMenuShortcut> */}
+                <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!isSomeFileChanged}
-                onClick={() => {
-                  if (isSomeFileChanged) {
-                    onSaveFiles(saveAllFiles(stateRef.current));
-                  }
-                }}
-              >
+              <DropdownMenuItem disabled={!isSomeFileChanged} onClick={saveAll}>
                 <SaveAll className="mr-2 h-4 w-4" />
                 <span>Save All</span>
-                {/* <DropdownMenuShortcut>⇧⌘S</DropdownMenuShortcut> */}
+                <DropdownMenuShortcut>⇧⌘S</DropdownMenuShortcut>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!isActiveChanged}
-                onClick={() => {
-                  if (!active?.isChanged) {
-                    return;
-                  }
-                  resetFile(active);
-                  rerender();
-                }}
-              >
+              <DropdownMenuItem disabled={!isActiveChanged} onClick={reset}>
                 <Undo className="mr-2 h-4 w-4" />
                 <span>Reset</span>
+                <DropdownMenuShortcut>⌘R</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!isSomeFileChanged}
-                onClick={() => {
-                  if (!isSomeFileChanged) {
-                    return;
-                  }
-                  const changed = resetAllFiles(stateRef.current);
-                  if (changed > 0) {
-                    rerender();
-                  }
-                }}
+                onClick={resetAll}
               >
                 <Undo2 className="mr-2 h-4 w-4" />
                 <span>Reset All</span>
+                <DropdownMenuShortcut>⇧⌘R</DropdownMenuShortcut>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!hasActive || !active.isRemovable}
-                onClick={() => {
-                  if (active?.isRemovable) {
-                    onRemoveFile(active.id);
-                  }
-                }}
-              >
+              <DropdownMenuItem disabled={!isActiveRemovable} onClick={remove}>
                 <Trash className="mr-2 h-4 w-4" />
                 <span>Delete</span>
-                {/* <DropdownMenuShortcut>⌫</DropdownMenuShortcut> */}
+                <DropdownMenuShortcut>Alt+D</DropdownMenuShortcut>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
           <div
             className={`relative grow flex flex-row gap-[2px] flex-nowrap overflow-auto h-10 ${classes.tabs}`}
           >
-            {files.map((file) => {
-              const isActive = file.id === active?.id;
+            {files.map((file, i) => {
+              const isActive = i === activeFileIndex;
               return (
                 <div
                   key={file.id}
@@ -185,10 +253,11 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
                     isActive ? "bg-neutral-800" : "bg-neutral-700"
                   }`}
                   onClick={() => {
-                    if (active === file) {
+                    setTimeout(() => stateRef.current.editor?.focus(), 100);
+                    if (isActive) {
                       return;
                     }
-                    stateRef.current.active = file;
+                    setActiveFile(stateRef.current, i);
                     rerender();
                   }}
                 >
@@ -205,7 +274,11 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
             })}
           </div>
         </div>
-        <Editor model={active ? active.model : null} />
+        <Editor
+          ref={setEditorRef}
+          actions={actions}
+          model={activeFile(stateRef.current)?.model ?? null}
+        />
       </div>
     );
   }

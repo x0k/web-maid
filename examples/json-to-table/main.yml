@@ -1,0 +1,46 @@
+$op: sys.define
+constants:
+  json:
+    $op: doc.get
+    key:
+      - body
+      - firstChild
+      - innerText
+for:
+  $op: pipe
+  do:
+    - $op: if
+      condition:
+        $op: try
+        do:
+          $op: json.parse
+          value:
+            $op: sys.get
+            key: json
+        catch:
+          false
+      then:
+        $op: browser.open
+        url:
+          $op: str.join
+          values:
+            - https://x0k.github.io/json-to-table/?createOnOpen=true&data=
+            - $op: str.compress
+              value:
+                $op: if
+                condition:
+                  $op: gt
+                  left:
+                    $op: str.length
+                    value:
+                      $op: sys.get
+                      key: json
+                  right: 2000
+                then:
+                  $op: doc.get
+                  key:
+                    - location
+                    - href
+                else:
+                  $op: sys.get
+                  key: json

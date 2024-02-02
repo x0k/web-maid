@@ -89,6 +89,45 @@ conditions:
 0
 ```
 
+## Operator `or`
+
+### Signatures
+
+Evaluates conditions one by one.
+If any of the conditions succeeds, returns the result of the succeeded condition,
+otherwise returns the result of the last condition.
+
+```typescript
+interface Config<R> {
+  conditions: R[]
+}
+```
+
+**Returns:**
+
+```typescript
+R
+```
+
+### Examples
+
+Basic usage
+
+```yaml
+$op: or
+conditions:
+  - 0
+  - null
+  - string
+  - true
+```
+
+**Result:**
+
+```yaml
+string
+```
+
 ## Operator `not`
 
 ### Signatures
@@ -543,6 +582,24 @@ interface ThrowConfig {
 never
 ```
 
+## Operator `do`
+
+### Signatures
+
+Performs a side effect and returns the original `context`
+
+```typescript
+interface DoConfig {
+  effect: any;
+}
+```
+
+**Returns:**
+
+```typescript
+<context>
+```
+
 ## Operator `plus`
 
 ### Signatures
@@ -655,6 +712,95 @@ interface Config {
 
 ```typescript
 number
+```
+
+## Operator `array.length`
+
+### Signatures
+
+Returns the length of `value`
+
+```typescript
+interface Config {
+  value?: unknown[] // defaults to <context>
+}
+```
+
+**Returns:**
+
+```typescript
+number
+```
+
+## Operator `array.index`
+
+### Signatures
+
+Returns the `index` of the current element in the processed `array`.Throws an error if called outside `array` method.
+
+```typescript
+interface Config {}
+```
+
+**Returns:**
+
+```typescript
+number
+```
+
+## Operator `array.current`
+
+### Signatures
+
+Returns the current `array`.Throws an error if called outside `array` method.
+
+```typescript
+interface Config {}
+```
+
+**Returns:**
+
+```typescript
+unknown[]
+```
+
+## Operator `array.find`
+
+### Signatures
+
+Finds an element in an array that matches the predicate. Returns `null` if not found.
+
+```typescript
+interface Config {
+  source?: unknown[] // defaults to <context>
+  predicate: (value: unknown) => unknown
+}
+```
+
+**Returns:**
+
+```typescript
+unknown | null
+```
+
+### Examples
+
+Basic usage
+
+```yaml
+$op: array.find
+source: [1, 2, 3]
+predicate:
+  $op: eq
+  left: 2
+  right:
+    $op: get
+```
+
+**Result:**
+
+```yaml
+2
 ```
 
 ## Operator `sys.define`
@@ -976,7 +1122,7 @@ There are several ways to inject `data` into the expression:
 interface Config {
   expression: string
   /** @default {} */
-  data?: Record<string, any>
+  data?: unknown
   /** @default "context" */
   injectAs?: "context" | "scope"
   default?: any
@@ -1043,6 +1189,40 @@ interface Config<D> {
 D | string
 ```
 
+## Operator `browser.open`
+
+### Signatures
+
+Loads a specified resource into a new or existing browsing context.
+
+```typescript
+interface Config {
+  url?: string;
+  target?: string;
+  windowFeatures?: Record<string, unknown>;
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+### Examples
+
+Opens blank tab
+
+```yaml
+$op: browser.open
+```
+
+**Result:**
+
+```yaml
+<boolean>
+```
+
 ## Operator `html.readability`
 
 ### Signatures
@@ -1080,6 +1260,8 @@ interface Config<D> {
   siteName: string;
   /** content language */
   lang: string;
+  /** published time */
+  publishedTime: string;
 } | D | string"
 ```
 
@@ -1166,6 +1348,24 @@ interface Config {
 }
 ```
 
+## Operator `str.length`
+
+### Signatures
+
+Returns the length of `value`
+
+```typescript
+interface Config {
+  value: string // defaults to <context>
+}
+```
+
+**Returns:**
+
+```typescript
+number
+```
+
 ## Operator `str.join`
 
 ### Signatures
@@ -1224,6 +1424,125 @@ interface Config {
 
 ```typescript
 string
+```
+
+## Operator `str.match`
+
+### Signatures
+
+Returns an array of matches of `pattern` in `value` with `flags`.
+Behaves like `javascript` `String.prototype.match` or `String.prototype.matchAll` when `all` is `true.
+
+```typescript
+interface Config {
+  value: string
+  pattern: string
+  flags?: string
+  all?: boolean
+}
+```
+
+**Returns:**
+
+```typescript
+null | string[] | string[][]
+```
+
+## Operator `str.split`
+
+### Signatures
+
+Splits `value` by `separator`
+
+```typescript
+interface Config {
+  value: string
+  separator: string
+  limit?: number
+}
+```
+
+**Returns:**
+
+```typescript
+string[]
+```
+
+## Operator `str.splitByRegExp`
+
+### Signatures
+
+Splits `value` by regexp `separator`
+
+```typescript
+interface Config {
+  value: string
+  separator: string
+  limit?: number
+}
+```
+
+**Returns:**
+
+```typescript
+string[]
+```
+
+## Operator `str.search`
+
+### Signatures
+
+Returns the index of the first match of `pattern` in `value` with `flags`
+
+```typescript
+interface Config {
+  value: string
+  pattern: string
+  flags?: string
+}
+```
+
+**Returns:**
+
+```typescript
+number
+```
+
+## Operator `str.compress`
+
+### Signatures
+
+Compresses `value` as `format`.
+
+```typescript
+interface Config {
+  value: string // defaults to <context>
+  format?: 'encodedURIComponent'
+}
+```
+
+**Returns:**
+
+```typescript
+string
+```
+
+### Examples
+
+Basic usage
+
+```yaml
+$op: pipe
+  do:
+    - "Hello, World!"
+    - $op: str.compress
+
+```
+
+**Result:**
+
+```yaml
+BIUwNmD2A0AEDqkBOYAmBCIA
 ```
 
 ## Operator `fs.saveFile`

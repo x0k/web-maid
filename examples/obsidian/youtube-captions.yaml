@@ -1,0 +1,110 @@
+# Extracts caption data from youtube page as string
+#
+# https://github.com/algolia/youtube-captions-scraper/blob/master/src/index.js
+#
+# Expects defined `lang` constant.
+#
+$op: sys.define
+functions:
+  checkNullContext:
+    $op: if
+    condition:
+      $op: eq
+      left: null
+      right:
+        $op: get
+    then:
+      $op: throw
+      error: Caption not found
+    else:
+      $op: get
+for:
+  $op: pipe
+  do:
+    # Seems like yt removes initial data on client side, so request a clean page
+    - $op: http.request
+      url:
+        $op: doc.get
+        key:
+          - location
+          - href
+      as: text
+    - $op: str.match
+      value:
+        $op: get
+      pattern: "\"captionTracks\":(\\[.*?\\])"
+    - $op: sys.call
+      fn: checkNullContext
+    - $op: json.parse
+      value:
+        $op: str.join
+        values:
+          - "{"
+          - $op: get
+            key: 0
+          - "}"
+    # TODO: support for multiple languages
+    # TODO: match user submitted captions first
+    - $op: or
+      conditions:
+        - $op: array.find
+          source:
+            $op: get
+            key: captionTracks
+          predicate:
+            $op: if
+            condition:
+              $op: gt
+              left:
+                $op: str.search
+                value:
+                  $op: get
+                  key: vssId
+                pattern:
+                  $op: sys.get
+                  key: lang
+              right: -1
+        # Fallback to first caption
+        - $op: get
+          key:
+            - captionTracks
+            - 0
+    - $op: http.request
+      url:
+        $op: get
+        key: baseUrl
+      as: text
+    - $op: doc.eval
+      data:
+        $op: get
+      expression: |
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(this, "application/xml");
+        const nodes = doc.querySelectorAll("text");
+        const sentences = [];
+        let currentSentence = {
+          text: "",
+          end: 0,
+        };
+        for (const node of nodes) {
+          const start = parseFloat(node.getAttribute("start") || "0");
+          const duration = parseFloat(node.getAttribute("dur") || "0");
+          const text = parser.parseFromString(node.textContent, "text/html")
+            .documentElement.textContent;
+          const end = start + duration;
+          if (start <= currentSentence.end || text.length < 3) {
+            currentSentence.text += ` ${text}`;
+            currentSentence.end = end;
+          } else {
+            const sentence = currentSentence.text;
+            if (sentence) {
+              sentences.push(sentence);
+            }
+            currentSentence = {
+              text,
+              end,
+            };
+          }
+        }
+        sentences.push(currentSentence.text);
+        return sentences.join("\n");

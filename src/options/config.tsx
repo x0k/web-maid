@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -11,7 +11,6 @@ import { enqueueSnackbar } from "notistack";
 import { monaco } from "@/lib/monaco";
 import { stringifyError } from "@/lib/error";
 import { useMonacoLogger } from "@/lib/react-monaco-logger";
-import { some } from "@/lib/iterable";
 
 import { Editor } from "@/components/editor";
 import { Row } from "@/components/row";
@@ -19,6 +18,8 @@ import {
   EditorFile,
   FilesEditor,
   FilesEditorState,
+  saveAllFiles,
+  someFileChanged,
 } from "@/components/files-editor";
 import {
   Dialog,
@@ -57,11 +58,11 @@ import {
 import { useRootFactory } from "@/shared/react-root-factory";
 import { useFormShower } from "@/shared/react-form-shower";
 import { useOkShower } from "@/shared/react-ok-shower";
-import { Docs } from "@/shared/config/docs";
 
 import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
 import { CreateConfigFileForm } from "./create-config-file-form";
+import { SearchableDocs } from "./searchable-docs";
 
 const secretsModel = monaco.editor.createModel("", "yaml");
 const logsModel = monaco.editor.createModel("", "yaml");
@@ -144,7 +145,7 @@ export function Config() {
   } = useQuery({
     queryKey: ["settings", "sync"],
     queryFn: loadSyncSettings,
-    initialData: { configFiles: [] },
+    initialData: { version: 2, configFiles: [] },
   });
   const saveConfigFilesMutation = useMutation({
     mutationFn: (configFiles: EditorFile[]) =>
@@ -210,7 +211,20 @@ export function Config() {
   const showEditor =
     evalMutation.isPending || evalMutation.isSuccess || evalMutation.isError;
   const [isCreateOpen, setCreateOpen] = useState(false);
+  const openCreateDialog = useCallback(() => setCreateOpen(true), []);
+  const delayedEditorFocus = useCallback(
+    () => setTimeout(() => filesEditorStateRef.current?.editor?.focus(), 100),
+    []
+  );
+  const closeCreateDialog = useCallback(() => {
+    setCreateOpen(false);
+    delayedEditorFocus();
+  }, [delayedEditorFocus]);
   const [toRemove, setToRemove] = useState<string>("");
+  const closeRemoveDialog = useCallback(() => {
+    setToRemove("");
+    delayedEditorFocus();
+  }, [delayedEditorFocus]);
   return (
     <>
       <div className="grow grid grid-cols-1 lg:grid-cols-2 grid-rows-[1fr_auto_1fr] lg:grid-rows-[auto_1fr] gap-4 overflow-hidden">
@@ -267,9 +281,9 @@ export function Config() {
               <FilesEditor
                 ref={filesEditorStateRef}
                 files={configFiles}
-                onCreateFile={() => setCreateOpen(true)}
+                onCreateFile={openCreateDialog}
                 onSaveFiles={saveConfigFilesMutation.mutate}
-                onRemoveFile={(id) => setToRemove(id)}
+                onRemoveFile={setToRemove}
               />
             </>
           )}
@@ -308,18 +322,18 @@ export function Config() {
               size="small"
               onClick={() => {
                 const { current: editorState } = filesEditorStateRef;
-                if (
-                  editorState &&
-                  (editorState.active?.isChanged ||
-                    some((f) => f.isChanged, editorState.files.values()))
-                ) {
+                if (editorState && someFileChanged(editorState)) {
                   enqueueSnackbar({
                     message: "You have unsaved changes",
                     variant: "warning",
                   });
                 }
+                // Run unsaved files
+                const filesToRun = editorState
+                  ? saveAllFiles(editorState)
+                  : configFiles;
                 evalMutation.mutate({
-                  configFiles,
+                  configFiles: filesToRun,
                   secrets: secretsModel.getValue(),
                 });
               }}
@@ -377,17 +391,15 @@ export function Config() {
           {evalMutation.isPending && <LinearProgress />}
           {children}
           {evalMutation.isError && <ErrorAlert error={evalMutation.error} />}
-          <div
-            className={`h-full flex flex-col ${
-              showEditor ? "block" : "hidden"
-            }`}
-          >
-            <Editor ref={logsEditorRef} model={logsModel} />
-          </div>
-          <Docs className={showEditor ? "hidden" : "block"} />
+          <Editor
+            className={showEditor ? "block" : "hidden"}
+            ref={logsEditorRef}
+            model={logsModel}
+          />
+          <SearchableDocs className={showEditor ? "hidden" : "block"} />
         </div>
       </div>
-      <Dialog open={isCreateOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={closeCreateDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Create a new file</DialogTitle>
@@ -395,12 +407,12 @@ export function Config() {
           <CreateConfigFileForm
             onSubmit={async ({ name }) => {
               await createConfigFileMutation.mutateAsync(name);
-              setCreateOpen(false);
+              closeCreateDialog();
             }}
           />
         </DialogContent>
       </Dialog>
-      <Dialog open={toRemove !== ""} onOpenChange={() => setToRemove("")}>
+      <Dialog open={toRemove !== ""} onOpenChange={closeRemoveDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Remove file</DialogTitle>
@@ -414,7 +426,7 @@ export function Config() {
               type="submit"
               onClick={async () => {
                 await removeConfigFileMutation.mutateAsync(toRemove);
-                setToRemove("");
+                closeRemoveDialog();
               }}
             >
               Remove

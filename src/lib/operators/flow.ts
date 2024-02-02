@@ -106,6 +106,55 @@ conditions:
   }
 }
 
+const orConfig = z.object({
+  conditions: z.array(z.unknown()).min(1),
+});
+
+export class OrOpFactory extends FlowOpFactory<typeof orConfig, unknown> {
+  name = "or";
+  schema = orConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config<R> {
+  conditions: R[]
+}`,
+          returns: "R",
+          description: `Evaluates conditions one by one.
+If any of the conditions succeeds, returns the result of the succeeded condition,
+otherwise returns the result of the last condition.`,
+        },
+      ];
+      this.examples = [
+        {
+          description: "Basic usage",
+          code: `$op: or
+conditions:
+  - 0
+  - null
+  - string
+  - true`,
+          result: `string`,
+        },
+      ];
+    }
+  }
+  create({ conditions }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      let result: unknown;
+      for (const condition of conditions) {
+        result = await evalInScope(condition, scope);
+        if (result) {
+          return result;
+        }
+      }
+      return result;
+    };
+  }
+}
+
 const notConfig = z.object({
   value: z.unknown(),
 });
@@ -646,7 +695,37 @@ export class ThrowOpFactory extends FlowOpFactory<typeof throwConfig, unknown> {
     }
   }
   protected create({ error }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
-    return (scope) => evalInScope(error, scope).then(Promise.reject);
+    return (scope) =>
+      evalInScope(error, scope).then(Promise.reject.bind(Promise));
+  }
+}
+
+const doConfig = z.object({
+  effect: z.unknown(),
+});
+
+export class DoOpFactory extends FlowOpFactory<typeof doConfig, unknown> {
+  name = "do";
+  schema = doConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface DoConfig {
+  effect: any;
+}`,
+          returns: "<context>",
+          description: "Performs a side effect and returns the original `context`",
+        },
+      ];
+    }
+  }
+  protected create({ effect }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      await evalInScope(effect, scope);
+      return scope.context;
+    }
   }
 }
 
@@ -654,6 +733,7 @@ export function flowOperatorsFactories() {
   return [
     new PipeOpFactory(),
     new AndOpFactory(),
+    new OrOpFactory(),
     new NotOpFactory(),
     new IfOpFactory(),
     new CondOpFactory(),
@@ -667,5 +747,6 @@ export function flowOperatorsFactories() {
     new UpdateOpFactory(),
     new TryOpFactory(),
     new ThrowOpFactory(),
+    new DoOpFactory(),
   ];
 }
