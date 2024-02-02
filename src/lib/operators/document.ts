@@ -122,7 +122,7 @@ There are several ways to inject `data` into the expression:\n\n\
         {
           description: "Inject as context",
           code: `$op: doc.eval
-expression: this.key + 1
+expression: return this.key + 1
 data:
   key: 1`,
           result: "2",
@@ -130,7 +130,7 @@ data:
         {
           description: "Inject as scope",
           code: `$op: doc.eval
-expression: key + 1
+expression: return key + 1
 injectAs: scope
 data:
   key: 1`,

@@ -1141,7 +1141,7 @@ Inject as context
 
 ```yaml
 $op: doc.eval
-expression: this.key + 1
+expression: return this.key + 1
 data:
   key: 1
 ```
@@ -1156,7 +1156,7 @@ Inject as scope
 
 ```yaml
 $op: doc.eval
-expression: key + 1
+expression: return key + 1
 injectAs: scope
 data:
   key: 1
