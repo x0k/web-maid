@@ -1,5 +1,6 @@
 $op: sys.define
-constants:
+functions:
+# Can fail if firstChild is not a html node (comment, text, ...)
   json:
     $op: doc.get
     key:
@@ -15,8 +16,8 @@ for:
         do:
           $op: json.parse
           value:
-            $op: sys.get
-            key: json
+            $op: sys.call
+            fn: json
         catch:
           false
       then:
@@ -33,8 +34,8 @@ for:
                   left:
                     $op: str.length
                     value:
-                      $op: sys.get
-                      key: json
+                      $op: sys.call
+                      fn: json
                   right: 2000
                 then:
                   $op: doc.get
@@ -42,5 +43,5 @@ for:
                     - location
                     - href
                 else:
-                  $op: sys.get
-                  key: json
+                  $op: sys.call
+                  fn: json
