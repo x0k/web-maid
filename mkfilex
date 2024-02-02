@@ -14,13 +14,12 @@ d:
 docs:
   DEV=true bun scripts/docs.ts
 
-# dev build for features testing that don't work with dev server (sandboxes)
-# TODO: Check builds with `--bun` and new vite (5.0)
+# Test build
 b:
   MODE=TEST bun run build --mode test && \
     mk docs
 
-# production build
+# Production build
 build:
   bun run build && \
     mk docs
