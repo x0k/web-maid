@@ -159,13 +159,11 @@ export abstract class AbstractActor<
         }
         try {
           const result = await this.logic.handleRequest(msg.request);
-          if (result !== undefined) {
-            reply({
-              requestId: msg.id,
-              type: MessageType.Success,
-              result,
-            });
-          }
+          reply({
+            requestId: msg.id,
+            type: MessageType.Success,
+            result,
+          });
         } catch (e) {
           reply({
             requestId: msg.id,
