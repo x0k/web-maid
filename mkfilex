@@ -27,12 +27,12 @@ build:
 pack:
   docker run -it --rm --entrypoint "" \
     -v $(pwd):/usr/src/app \
-    -v $HOME/Sync/scraper/key.pem:/usr/src/key.pem \
+    -v $HOME/Sync/web-maid/key.pem:/usr/src/key.pem \
     zenika/alpine-chrome chromium-browser --no-sandbox \
     --pack-extension=/usr/src/app/dist --pack-extension-key=/usr/src/key.pem
 
 tag:
-  mv dist.crx scraper-$(jq -r .version package.json).crx
+  mv dist.crx web-maid-$(jq -r .version package.json).crx
 
 release:
   mk build && mk pack && mk tag

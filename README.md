@@ -1,6 +1,6 @@
-# Scraper Extension
+# WebMaid
 
-Extension to scrape data from web pages in free form.
+Automation in the browser.
 
 ## Config
 
@@ -76,7 +76,7 @@ Example:
 $ref: "./<filename>#<selector>"
 ```
 
-- `<filename>` is the name of the file
+- `<filename>` is a name of the file
 - `<selector>` is [JSONPath](https://github.com/dchester/jsonpath) selector
 - One of the parameters can be omitted (e.g. `./<filename>`, `#<selector>`)
 
@@ -84,11 +84,6 @@ $ref: "./<filename>#<selector>"
 
 - [Save web content to Obsidian](examples/obsidian/)
 - [Render json as a table](examples/json-to-table/)
-
-## Things to do before release 1.x
-
-- Configure Vite to create a separate injection script instead of `content_script`
-- Think about a name for the project
 
 ## See also
 

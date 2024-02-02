@@ -16,7 +16,7 @@ export function renderInShadowDom(
   const shadowRootElement = document.createElement("div");
   shadowContainer.appendChild(shadowRootElement);
   const cache = createCache({
-    key: "scraper-extension",
+    key: "web-maid-cache",
     prepend: true,
     container: emotionRoot,
   });
