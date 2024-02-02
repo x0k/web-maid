@@ -58,12 +58,12 @@ export default defineConfig(({ mode }) => {
           permissions: ["storage", "activeTab", "scripting"],
           //@ts-expect-error wrong types
           optional_host_permissions: ["https://*/*", "http://*/*"],
-          content_scripts: [
-            {
-              matches: ["https://*/*", "http://*/*"],
-              js: ["src/inject/index.tsx"],
-            },
-          ],
+          // content_scripts: [
+          //   {
+          //     matches: ["https://*/*", "http://*/*"],
+          //     js: ["src/inject/index.tsx"],
+          //   },
+          // ],
           sandbox: {
             pages: ["sandbox.html"],
           },
