@@ -252,7 +252,8 @@ export class CompressOpFactory extends TaskOpFactory<
       this.signatures = [
         {
           params: `interface Config {
-  value: string // defaults to <context>
+  /** @default <context> */
+  value?: string
   format?: 'encodedURIComponent'
 }`,
           returns: `string`,
@@ -301,7 +302,8 @@ export class LengthOpFactory extends TaskOpFactory<
       this.signatures = [
         {
           params: `interface Config {
-  value: string // defaults to <context>
+  /** @default <context> */
+  value?: string
 }`,
           returns: `number`,
           description: "Returns the length of `value`",

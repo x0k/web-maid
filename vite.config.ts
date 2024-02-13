@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => {
           },
           options_page: "options.html",
           optional_permissions: ["tabs"],
-          permissions: ["storage", "activeTab", "scripting"],
+          permissions: ["storage", "activeTab", "scripting", "downloads"],
           //@ts-expect-error wrong types
           optional_host_permissions: ["https://*/*", "http://*/*"],
           sandbox: {

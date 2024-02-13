@@ -722,7 +722,8 @@ Returns the length of `value`
 
 ```typescript
 interface Config {
-  value?: unknown[] // defaults to <context>
+  /** @default <context> */
+  value?: unknown[]
 }
 ```
 
@@ -772,7 +773,8 @@ Finds an element in an array that matches the predicate. Returns `null` if not f
 
 ```typescript
 interface Config {
-  source?: unknown[] // defaults to <context>
+  /** @default <context> */
+  source?: unknown[]
   predicate: (value: unknown) => unknown
 }
 ```
@@ -801,6 +803,67 @@ predicate:
 
 ```yaml
 2
+```
+
+## Operator `array.indexOf`
+
+### Signatures
+
+Returns the index of the first occurrence of a `value` in `source`, or -1 if it is not present.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  value: unknown
+}
+```
+
+**Returns:**
+
+```typescript
+number
+```
+
+## Operator `array.map`
+
+### Signatures
+
+Maps `source` with `mapper`
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  mapper: (value: unknown) => unknown
+}
+```
+
+**Returns:**
+
+```typescript
+unknown[]
+```
+
+## Operator `array.slice`
+
+### Signatures
+
+Returns a slice of `source`
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  start?: number
+  end?: number
+}
+```
+
+**Returns:**
+
+```typescript
+unknown[]
 ```
 
 ## Operator `sys.define`
@@ -1006,6 +1069,24 @@ interface Config {}
 string
 ```
 
+## Operator `sys.wait`
+
+### Signatures
+
+Waits for `ms` milliseconds and returns `context`.
+
+```typescript
+interface Config {
+  ms: number
+}
+```
+
+**Returns:**
+
+```typescript
+<context>
+```
+
 ## Operator `template.render`
 
 ### Signatures
@@ -1189,6 +1270,144 @@ interface Config<D> {
 D | string
 ```
 
+## Operator `dom.document`
+
+### Signatures
+
+Returns the current document
+
+```typescript
+void
+```
+
+**Returns:**
+
+```typescript
+Document
+```
+
+## Operator `dom.query`
+
+### Signatures
+
+Returns descendant element of `element` that matches `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: Document | HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element | null
+```
+
+## Operator `dom.queryAll`
+
+### Signatures
+
+Returns all element descendants of `element` that match `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: Document | HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element[]
+```
+
+## Operator `dom.sibling`
+
+### Signatures
+
+Returns the previous or next sibling of `element`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  /** @default "next" */
+  kind?: "previous" | "next"
+}
+```
+
+**Returns:**
+
+```typescript
+Element | null
+```
+
+## Operator `dom.closest`
+
+### Signatures
+
+Returns the closest element that matches `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element | null
+```
+
+## Operator `dom.parentsUntil`
+
+### Signatures
+
+Returns the first parent element that matches `predicate`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  predicate: (element: HTMLElement) => boolean
+}
+```
+
+**Returns:**
+
+```typescript
+Element[]
+```
+
+## Operator `dom.get`
+
+### Signatures
+
+Returns a value from `element`. Follows the same rules as `get` operator.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  key: string | number | (string | number)[]
+  default?: unknown
+}
+```
+
+**Returns:**
+
+```typescript
+unknown
+```
+
 ## Operator `browser.open`
 
 ### Signatures
@@ -1356,7 +1575,8 @@ Returns the length of `value`
 
 ```typescript
 interface Config {
-  value: string // defaults to <context>
+  /** @default <context> */
+  value?: string
 }
 ```
 
@@ -1516,7 +1736,8 @@ Compresses `value` as `format`.
 
 ```typescript
 interface Config {
-  value: string // defaults to <context>
+  /** @default <context> */
+  value?: string
   format?: 'encodedURIComponent'
 }
 ```
@@ -1556,6 +1777,8 @@ interface Config {
   filename: string
   content: string
   mimeType?: string
+  /** @default "native" */
+  saver?: "native" | "extension"
 }
 ```
 

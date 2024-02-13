@@ -63,6 +63,7 @@ import { contextId, sandboxIFrameId } from "./constants";
 import { TabsSelector } from "./tabs-selector";
 import { CreateConfigFileForm } from "./create-config-file-form";
 import { SearchableDocs } from "./searchable-docs";
+import { Downloader } from '@/shared/downloader';
 
 const secretsModel = monaco.editor.createModel("", "yaml");
 const logsModel = monaco.editor.createModel("", "yaml");
@@ -70,6 +71,7 @@ const logsModel = monaco.editor.createModel("", "yaml");
 const initialTabs: Tab[] = [];
 
 const fetcher = new Fetcher();
+const downloader = new Downloader();
 
 function showError(err: unknown) {
   enqueueSnackbar({
@@ -104,6 +106,7 @@ export function Config() {
           logger,
           formShower,
           okShower,
+          downloader,
         })
       ),
     [sandbox, logger, formShower, okShower]
@@ -111,7 +114,7 @@ export function Config() {
   const [debug, setDebug] = useState(true);
   const [selectedTab, selectTab] = useState<Tab | null>(null);
 
-  const logic = useExtensionActorLogic(formShower, okShower, logger, fetcher);
+  const logic = useExtensionActorLogic(formShower, okShower, logger, fetcher, downloader);
   const actor = useContextActor(contextId, logic);
   useEffect(() => {
     actor.start();

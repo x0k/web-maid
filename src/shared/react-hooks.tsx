@@ -8,16 +8,18 @@ import { FetcherData } from "@/lib/operators/http";
 
 import { ExtensionAction, ExtensionActionResults } from "./action";
 import { makeExtensionActor, makeExtensionActorLogic } from "./actor";
+import { DownloaderData } from '@/lib/operators/fs';
 
 export function useExtensionActorLogic(
   formShower: AsyncFactory<ShowFormData, unknown>,
   okShower: AsyncFactory<string, void>,
   logger: ILogger,
-  fetcher: AsyncFactory<FetcherData, unknown>
+  fetcher: AsyncFactory<FetcherData, unknown>,
+  downlaoder: AsyncFactory<DownloaderData, void>
 ) {
   return useMemo(
-    () => makeExtensionActorLogic(formShower, okShower, logger, fetcher),
-    [formShower, okShower, logger, fetcher]
+    () => makeExtensionActorLogic(formShower, okShower, logger, fetcher, downlaoder),
+    [formShower, okShower, logger, fetcher, downlaoder]
   );
 }
 

@@ -15,6 +15,7 @@ import { EvaluatorData } from "@/lib/operators/document";
 import { ILogger } from "@/lib/logger";
 
 import { compileOperatorFactories } from "./operator";
+import { DownloaderData } from '@/lib/operators/fs';
 
 let resolver: <C>(context: C) => ScopedOp<unknown> | C;
 
@@ -27,6 +28,7 @@ beforeEach(() => {
       validator: {} as AsyncFactory<AsyncValidatorData, boolean>,
       formShower: {} as AsyncFactory<ShowFormData, unknown>,
       fetcher: {} as AsyncFactory<unknown, unknown>,
+      downloader: {} as AsyncFactory<DownloaderData, void>,
       logger: {} as unknown as ILogger,
       operatorsFactory: {
         Create(config): ScopedOp<unknown> {

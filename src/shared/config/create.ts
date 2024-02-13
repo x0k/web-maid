@@ -10,6 +10,7 @@ import { AsyncValidatorData, ShowFormData } from "@/lib/operators/json-schema";
 import { TemplateRendererData } from "@/lib/operators/template";
 import { FetcherData } from "@/lib/operators/http";
 import { EvaluatorData } from "@/lib/operators/document";
+import { DownloaderData } from '@/lib/operators/fs';
 
 import { compileOperatorFactories } from "./operator";
 
@@ -22,6 +23,7 @@ export interface OperatorResolveOptions {
   fetcher: AsyncFactory<FetcherData, unknown>;
   okShower: AsyncFactory<string, void>;
   logger: ILogger;
+  downloader: AsyncFactory<DownloaderData, void>;
 }
 
 export function createOperatorResolver({
@@ -33,6 +35,7 @@ export function createOperatorResolver({
   logger,
   rendered,
   validator,
+  downloader,
 }: OperatorResolveOptions) {
   const operatorsFactory = makeComposedFactory(
     compileOperatorFactories({
@@ -44,6 +47,7 @@ export function createOperatorResolver({
       okShower,
       fetcher,
       logger,
+      downloader,
       operatorsFactory: {
         Create(config): ScopedOp<unknown> {
           return operatorsFactory(config);

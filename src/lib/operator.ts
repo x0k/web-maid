@@ -135,6 +135,14 @@ export abstract class TaskOpFactory<S extends ZodType, R> extends BaseOpFactory<
   }
 }
 
+export function contextDefaultedFieldPatch(field: string) {
+  return async (config: Record<string, unknown>, scope: Scope<unknown>) => {
+    if (!(field in config)) {
+      config[field] = scope.context;
+    }
+  };
+}
+
 export function makeComposedFactory<T extends Record<string, unknown>, R>(
   factories: Record<string, Factory<T, R>>
 ): FactoryFn<T, R> {

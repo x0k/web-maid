@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-import { FlowOpFactory, ScopedOp, evalInScope } from "@/lib/operator";
+import {
+  FlowOpFactory,
+  ScopedOp,
+  TaskOpFactory,
+  contextDefaultedFieldPatch,
+  evalInScope,
+} from "@/lib/operator";
 
 const dummyConfig = z.unknown();
 
@@ -76,7 +82,8 @@ export class FindOpFactory extends FlowOpFactory<typeof findSchema, unknown> {
       this.signatures = [
         {
           params: `interface Config {
-  source?: unknown[] // defaults to <context>
+  /** @default <context> */
+  source?: unknown[]
   predicate: (value: unknown) => unknown
 }`,
           returns: "unknown | null",
@@ -138,7 +145,8 @@ export class LengthOpFactory extends FlowOpFactory<
       this.signatures = [
         {
           params: `interface Config {
-  value?: unknown[] // defaults to <context>
+  /** @default <context> */
+  value?: unknown[]
 }`,
           returns: "number",
           description: "Returns the length of `value`",
@@ -157,11 +165,122 @@ export class LengthOpFactory extends FlowOpFactory<
   }
 }
 
+const indexOfConfig = z.object({
+  source: z.array(z.unknown()),
+  value: z.unknown(),
+});
+
+export class IndexOfOpFactory extends TaskOpFactory<
+  typeof indexOfConfig,
+  number
+> {
+  name = "indexOf";
+  schema = indexOfConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  value: unknown
+}`,
+          returns: "number",
+          description:
+            "Returns the index of the first occurrence of a `value` in `source`, or -1 if it is not present.",
+        },
+      ];
+    }
+  }
+  patchConfig = contextDefaultedFieldPatch("source");
+  protected execute({ source, value }: z.TypeOf<this["schema"]>): number {
+    return source.indexOf(value);
+  }
+}
+
+const mapConfig = z.object({
+  source: z.unknown(),
+  mapper: z.function(),
+});
+
+export class MapOpFactory extends FlowOpFactory<typeof mapConfig, unknown[]> {
+  name = "map";
+  schema = mapConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  mapper: (value: unknown) => unknown
+}`,
+          returns: "unknown[]",
+          description: "Maps `source` with `mapper`",
+        },
+      ];
+    }
+  }
+  protected create ({ source, mapper }: z.TypeOf<this['schema']>): ScopedOp<unknown[]> {
+    return async (scope) => {
+      const array = source ? await evalInScope(source, scope) : scope.context;
+      if (!Array.isArray(array)) {
+        throw new Error("Source must be an array");
+      }
+      const result = new Array(array.length);
+      const mutableScope = { ...scope, array }
+      for (let i = 0; i < array.length; i++) {
+        mutableScope.index = i;
+        mutableScope.context = array[i];
+        result[i] = await mapper(mutableScope);
+      }
+      return result;
+    }
+  }
+}
+
+const sliceConfig = z.object({
+  source: z.array(z.unknown()),
+  start: z.number().default(0),
+  end: z.number().optional(),
+});
+
+export class SliceOpFactory extends TaskOpFactory<typeof sliceConfig, unknown[]> {
+  name = "slice";
+  schema = sliceConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  start?: number
+  end?: number
+}`,
+          returns: "unknown[]",
+          description: "Returns a slice of `source`",
+        },
+      ];
+    }
+  }
+  patchConfig = contextDefaultedFieldPatch("source");
+  protected execute({ source, start, end }: z.TypeOf<this["schema"]>): unknown[] {
+    return source.slice(start, end);
+  }  
+}
+
 export function arrayOperatorsFactories() {
   return [
     new LengthOpFactory(),
     new IndexOpFactory(),
     new CurrentOpFactory(),
     new FindOpFactory(),
+    new IndexOfOpFactory(),
+    new MapOpFactory(),
+    new SliceOpFactory(),
   ];
 }

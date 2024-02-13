@@ -17,6 +17,7 @@ import {
   RemoteFormShower,
   RemoteFetcher,
   RemoteOkShower,
+  RemoteDownloader,
 } from "@/shared/remote-impl";
 import {
   RemoteEvaluator,
@@ -95,6 +96,7 @@ function inject(sandbox: IRemoteActor<SandboxAction, SandboxActionResults>) {
           okShower: new RemoteOkShower(contextId, extension),
           fetcher: new RemoteFetcher(contextId, extension),
           logger: new RemoteLogger(contextId, extension),
+          downloader: new RemoteDownloader(contextId, extension),
         }),
       }),
     stringifyError,

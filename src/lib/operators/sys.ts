@@ -150,7 +150,7 @@ for:
 }
 
 const getConfig = z.object({
-  key: z.unknown(),
+  key: z.string(),
   default: z.unknown().optional(),
 });
 
@@ -338,6 +338,36 @@ export class ErrorOpFactory extends FlowOpFactory<typeof errorConfig, unknown> {
   }
 }
 
+const waitConfig = z.object({
+  ms: z.number(),
+});
+
+export class WaitOpFactory extends FlowOpFactory<typeof waitConfig, unknown> {
+  name = "wait";
+  schema = waitConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  ms: number
+}`,
+          returns: "<context>",
+          description: "Waits for `ms` milliseconds and returns `context`.",
+        },
+      ];
+    }
+  }
+
+  protected create({ ms }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      await new Promise((resolve) => setTimeout(resolve, ms));
+      return scope.context;
+    };
+  }
+}
+
 export function sysOperatorsFactories(
   operatorsFactory: ScopedOpFactory<unknown>,
   operatorResolver: Factory<unknown, unknown>
@@ -349,5 +379,6 @@ export function sysOperatorsFactories(
     new ExecOpFactory(operatorsFactory),
     new EvalOpFactory(operatorResolver),
     new ErrorOpFactory(),
+    new WaitOpFactory(),
   ];
 }

@@ -34,7 +34,7 @@ import {
   RemoteValidator,
 } from "@/shared/sandbox/remote-impl";
 import { BACKGROUND_ACTOR_ID } from "@/shared/background/core";
-import { RemoteFetcher } from "@/shared/background/remote-impl";
+import { RemoteDownloader, RemoteFetcher } from "@/shared/background/remote-impl";
 import { useRootFactory } from "@/shared/react-root-factory";
 import {
   BackgroundAction,
@@ -90,6 +90,7 @@ export function Popup({ sandbox }: PopupProps) {
           formShower,
           okShower,
           fetcher: new RemoteFetcher(BACKGROUND_ACTOR_ID, background),
+          downloader: new RemoteDownloader(BACKGROUND_ACTOR_ID, background),
           logger: console,
         })
       ),

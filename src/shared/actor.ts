@@ -14,12 +14,14 @@ import {
   ExtensionActionType,
 } from "./action";
 import { getAllTabs } from "./core";
+import { DownloaderData } from '@/lib/operators/fs';
 
 export function makeExtensionActorLogic(
   formShower: AsyncFactory<ShowFormData, unknown>,
   okShower: AsyncFactory<string, void>,
   logger: ILogger,
-  fetcher: AsyncFactory<FetcherData, unknown>
+  fetcher: AsyncFactory<FetcherData, unknown>,
+  downlaoder: AsyncFactory<DownloaderData, void>
 ) {
   return makeActorLogic<ExtensionAction, ExtensionActionResults, string, chrome.runtime.MessageSender>(
     {
@@ -29,6 +31,11 @@ export function makeExtensionActorLogic(
       [ExtensionActionType.ShowOk]: ({ message }) => okShower.Create(message),
       [ExtensionActionType.ShowFrom]: formShower.Create.bind(formShower),
       [ExtensionActionType.MakeRequest]: fetcher.Create.bind(fetcher),
+      [ExtensionActionType.StartDownload]: ({
+        content,
+        filename,
+        mimeType,
+      }) => downlaoder.Create({ content, filename, type: mimeType }),
     },
     noop,
     stringifyError
