@@ -14,7 +14,7 @@ export interface MakeRequestAction
   method?: string;
   headers?: Record<string, string>;
   body?: string;
-  as?: "json" | "text";
+  as?: "json" | "text" | "dataUrl"
 }
 
 export interface StartDownloadAction

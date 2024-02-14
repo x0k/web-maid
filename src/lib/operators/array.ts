@@ -201,7 +201,7 @@ export class IndexOfOpFactory extends TaskOpFactory<
 
 const mapConfig = z.object({
   source: z.unknown(),
-  mapper: z.function(),
+  mapper: z.unknown(),
 });
 
 export class MapOpFactory extends FlowOpFactory<typeof mapConfig, unknown[]> {
@@ -215,7 +215,7 @@ export class MapOpFactory extends FlowOpFactory<typeof mapConfig, unknown[]> {
           params: `interface Config {
   /** @default <context> */
   source?: unknown[]
-  mapper: (value: unknown) => unknown
+  mapper: unknown
 }`,
           returns: "unknown[]",
           description: "Maps `source` with `mapper`",
@@ -234,7 +234,7 @@ export class MapOpFactory extends FlowOpFactory<typeof mapConfig, unknown[]> {
       for (let i = 0; i < array.length; i++) {
         mutableScope.index = i;
         mutableScope.context = array[i];
-        result[i] = await mapper(mutableScope);
+        result[i] = await evalInScope(mapper, mutableScope);
       }
       return result;
     }

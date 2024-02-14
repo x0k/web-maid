@@ -1,18 +1,24 @@
 import { z } from "zod";
 
-import {
-  TaskOpFactory,
-  contextDefaultedFieldPatch,
-} from "@/lib/operator";
+import { TaskOpFactory, contextDefaultedFieldPatch } from "@/lib/operator";
 import { neverError } from "@/lib/guards";
-import { get } from '@/lib/object';
 
 import { BrowserFactory } from "./shared/browser-factory";
+import { get } from '../object';
 
-const documentConfig = z.unknown();
+const documentConfig = z.object({
+  source: z.string().optional(),
+  type: z.enum([
+    "application/xhtml+xml",
+    "application/xml",
+    "image/svg+xml",
+    "text/html",
+    "text/xml",
+  ]).default("text/html"),
+});
 const elementConfig = z.custom<HTMLElement>(
   (value) => value instanceof HTMLElement
-)
+);
 
 export class DocumentOpFactory extends BrowserFactory<
   typeof documentConfig,
@@ -25,14 +31,22 @@ export class DocumentOpFactory extends BrowserFactory<
     if (import.meta.env.DEV) {
       this.signatures = [
         {
-          params: "void",
+          params: `interface Config {
+  source?: string
+  /** @default "text/html" */
+  type?: "application/xhtml+xml" | "application/xml" | "image/svg+xml" | "text/html" | "text/xml"
+}`,
           returns: "Document",
-          description: "Returns the current document",
+          description: "Returns the document instance.",
         },
       ];
     }
   }
-  protected execute(): Document {
+  protected execute({ source, type }: z.TypeOf<this["schema"]>): Document {
+    if (source) {
+      const parser = new DOMParser();
+      return parser.parseFromString(source, type);
+    }
     return this.window.document;
   }
 }
@@ -289,6 +303,243 @@ export class ParentsUntilOpFactory extends TaskOpFactory<
   }
 }
 
+const computedStyleConfig = z.object({
+  element: elementConfig,
+});
+
+export class ComputedStyleOpFactory extends BrowserFactory<
+  typeof computedStyleConfig,
+  CSSStyleDeclaration
+> {
+  name = "computedStyle";
+  schema = computedStyleConfig;
+  constructor(window: Window) {
+    super(window);
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+}`,
+          returns: `CSSStyleDeclaration`,
+          description: "Returns the computed style of `element`.",
+        },
+      ];
+    }
+  }
+  patchConfig = contextDefaultedFieldPatch("element");
+  protected execute({
+    element,
+  }: z.TypeOf<this["schema"]>): CSSStyleDeclaration {
+    return this.window.getComputedStyle(element, null);
+  }
+}
+
+const classListConfig = z.object({
+  element: elementConfig,
+  action: z.enum(["add", "remove", "toggle", "contains"]),
+  className: z.string(),
+});
+
+export class ClassListOpFactory extends TaskOpFactory<
+  typeof classListConfig,
+  boolean
+> {
+  name = "classList";
+  schema = classListConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "add"
+  className: string
+}`,
+          returns: `boolean`,
+          description:
+            "Adds `className` to `element`, returns `true` if `className` is now present.",
+        },
+        {
+          params: `interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "remove"
+  className: string
+}`,
+          returns: `boolean`,
+          description:
+            "Removes `className` from `element`, returns `true` if `className` is now absent.",
+        },
+        {
+          params: `interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "toggle"
+  className: string
+}`,
+          returns: `boolean`,
+          description:
+            "Toggles `className` on `element`, returns `true` if `className` is now present.",
+        },
+        {
+          params: `interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "contains"
+  className: string
+}`,
+          returns: `boolean`,
+          description: "Returns `true` if `className` is present.",
+        },
+      ];
+    }
+  }
+  patchConfig = contextDefaultedFieldPatch("element");
+  protected execute({
+    element,
+    action,
+    className,
+  }: z.TypeOf<this["schema"]>): boolean {
+    const contains = element.classList.contains(className);
+    switch (action) {
+      case "add":
+        element.classList.add(className);
+        return !contains;
+      case "remove":
+        element.classList.remove(className);
+        return contains;
+      case "toggle":
+        return element.classList.toggle(className);
+      case "contains":
+        return contains;
+      default:
+        throw neverError(action, "Invalid action");
+    }
+  }
+}
+
+const matchesConfig = z.object({
+  element: elementConfig,
+  query: z.string(),
+});
+
+export class MatchesOpFactory extends TaskOpFactory<
+  typeof matchesConfig,
+  boolean
+> {
+  name = "matches";
+  schema = matchesConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}`,
+          returns: `boolean`,
+          description: "Returns `true` if `element` matches `query`.",
+        },
+      ];
+    }
+  }
+  patchConfig = contextDefaultedFieldPatch("element");
+  protected execute({ element, query }: z.TypeOf<this["schema"]>): boolean {
+    return element.matches(query);
+  }
+}
+
+const xpathConfig = z.object({
+  element: elementConfig,
+  query: z.string(),
+});
+
+export class XPathOpFactory extends TaskOpFactory<
+  typeof xpathConfig,
+  Node | null
+> {
+  name = "xpath";
+  schema = xpathConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}`,
+          returns: `Element`,
+          description: "Returns the first element that matches `query`.",
+        },
+      ];
+    }
+  }
+  patchConfig = contextDefaultedFieldPatch("element");
+  protected execute({ element, query }: z.TypeOf<this["schema"]>): Node | null {
+    return element.ownerDocument.evaluate(
+      query,
+      element,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    ).singleNodeValue;
+  }
+}
+
+const xpathAllConfig = z.object({
+  element: elementConfig,
+  query: z.string(),
+});
+
+export class XPathAllOpFactory extends TaskOpFactory<
+  typeof xpathAllConfig,
+  Node[]
+> {
+  name = "xpathAll";
+  schema = xpathAllConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}`,
+          returns: `Element[]`,
+          description: "Returns all elements that match `query`.",
+        },
+      ];
+    }
+  }
+  patchConfig = contextDefaultedFieldPatch("element");
+  protected execute({ element, query }: z.TypeOf<this["schema"]>): Node[] {
+    const result = element.ownerDocument.evaluate(
+      query,
+      element,
+      null,
+      XPathResult.ORDERED_NODE_ITERATOR_TYPE,
+      null
+    );
+    const nodes = [];
+    let node = result.iterateNext();
+    while (node) {
+      nodes.push(node);
+      node = result.iterateNext();
+    }
+    return nodes;
+  }
+}
+
 const primitiveKeyConfig = z.union([z.string(), z.number().int()]);
 
 const composedKeyConfig = z.union([
@@ -342,6 +593,11 @@ export function domOperatorsFactories(window: Window) {
     new SiblingOpFactory(),
     new ClosestOpFactory(),
     new ParentsUntilOpFactory(),
+    new ComputedStyleOpFactory(window),
+    new ClassListOpFactory(),
+    new MatchesOpFactory(),
+    new XPathOpFactory(),
+    new XPathAllOpFactory(),
     new GetOpFactory(),
-  ]
+  ];
 }

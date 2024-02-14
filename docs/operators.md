@@ -835,7 +835,7 @@ Maps `source` with `mapper`
 interface Config {
   /** @default <context> */
   source?: unknown[]
-  mapper: (value: unknown) => unknown
+  mapper: unknown
 }
 ```
 
@@ -1073,11 +1073,16 @@ string
 
 ### Signatures
 
-Waits for `ms` milliseconds and returns `context`.
+Waits for interval and returns `context`.
 
 ```typescript
 interface Config {
-  ms: number
+  /** @default 0 */
+  ms?: number
+  /** @default 0 */
+  sec?: number
+  /** @default 0 */
+  min?: number
 }
 ```
 
@@ -1274,10 +1279,14 @@ D | string
 
 ### Signatures
 
-Returns the current document
+Returns the document instance.
 
 ```typescript
-void
+interface Config {
+  source?: string
+  /** @default "text/html" */
+  type?: "application/xhtml+xml" | "application/xml" | "image/svg+xml" | "text/html" | "text/xml"
+}
 ```
 
 **Returns:**
@@ -1378,6 +1387,157 @@ interface Config {
   /** @default <context> */
   element?: HTMLElement
   predicate: (element: HTMLElement) => boolean
+}
+```
+
+**Returns:**
+
+```typescript
+Element[]
+```
+
+## Operator `dom.computedStyle`
+
+### Signatures
+
+Returns the computed style of `element`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+}
+```
+
+**Returns:**
+
+```typescript
+CSSStyleDeclaration
+```
+
+## Operator `dom.classList`
+
+### Signatures
+
+Adds `className` to `element`, returns `true` if `className` is now present.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "add"
+  className: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+Removes `className` from `element`, returns `true` if `className` is now absent.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "remove"
+  className: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+Toggles `className` on `element`, returns `true` if `className` is now present.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "toggle"
+  className: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+Returns `true` if `className` is present.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "contains"
+  className: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+## Operator `dom.matches`
+
+### Signatures
+
+Returns `true` if `element` matches `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+## Operator `dom.xpath`
+
+### Signatures
+
+Returns the first element that matches `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element
+```
+
+## Operator `dom.xpathAll`
+
+### Signatures
+
+Returns all elements that match `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
 }
 ```
 
@@ -1945,7 +2105,7 @@ interface Config {
   method?: string
   headers?: Record<string, string>
   body?: string
-  as?: "json" | "text"
+  as?: "json" | "text" | "dataUrl"
 }
 ```
 

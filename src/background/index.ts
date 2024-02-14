@@ -87,7 +87,7 @@ chrome.action.onClicked.addListener((tab) => {
     })
     chrome.scripting.executeScript({
       target: { tabId },
-      files: [contentScript]
+      files: [contentScript],
     })
   }
 });

@@ -339,7 +339,9 @@ export class ErrorOpFactory extends FlowOpFactory<typeof errorConfig, unknown> {
 }
 
 const waitConfig = z.object({
-  ms: z.number(),
+  ms: z.number().default(0),
+  sec: z.number().default(0),
+  min: z.number().default(0),
 });
 
 export class WaitOpFactory extends FlowOpFactory<typeof waitConfig, unknown> {
@@ -351,18 +353,23 @@ export class WaitOpFactory extends FlowOpFactory<typeof waitConfig, unknown> {
       this.signatures = [
         {
           params: `interface Config {
-  ms: number
+  /** @default 0 */
+  ms?: number
+  /** @default 0 */
+  sec?: number
+  /** @default 0 */
+  min?: number
 }`,
           returns: "<context>",
-          description: "Waits for `ms` milliseconds and returns `context`.",
+          description: "Waits for interval and returns `context`.",
         },
       ];
     }
   }
 
-  protected create({ ms }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+  protected create({ ms, min, sec }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
-      await new Promise((resolve) => setTimeout(resolve, ms));
+      await new Promise((resolve) => setTimeout(resolve, ms + sec * 1000 + min * 60000));
       return scope.context;
     };
   }

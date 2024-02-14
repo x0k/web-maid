@@ -4,7 +4,7 @@ import { fileOpen, fileSave } from "browser-fs-access";
 
 import { TaskOpFactory } from "@/lib/operator";
 import { AsyncFactory } from "@/lib/factory";
-import { neverError } from "../guards";
+import { neverError } from "@/lib/guards";
 
 const saveConfig = z.object({
   filename: z.string(),
