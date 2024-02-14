@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { compressToEncodedURIComponent } from "lz-string";
 
-import { Scope, TaskOpFactory } from "@/lib/operator";
+import { TaskOpFactory, contextDefaultedFieldPatch } from "@/lib/operator";
 
 const joinConfig = z.object({
   values: z.array(z.string()),
@@ -273,9 +273,7 @@ export class CompressOpFactory extends TaskOpFactory<
       ]
     }
   }
-  async patchConfig (config: Record<string, unknown>, scope: Scope<unknown>) {
-      config.value ??= scope.context
-  }
+  patchConfig = contextDefaultedFieldPatch("value")
   execute({ value, format }: z.TypeOf<this["schema"]>): string {
     switch (format) {
       case "encodedURIComponent":
@@ -311,9 +309,7 @@ export class LengthOpFactory extends TaskOpFactory<
       ];
     }
   }
-  async patchConfig (config: Record<string, unknown>, scope: Scope<unknown>) {
-      config.value ??= scope.context
-  }
+  patchConfig = contextDefaultedFieldPatch("value")
   execute({ value }: z.TypeOf<this["schema"]>): number {
     return value.length;
   }

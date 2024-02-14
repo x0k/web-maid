@@ -14,7 +14,7 @@ import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { stringifyError } from "@/lib/error";
 
 const defineConfig = z.object({
-  functions: z.record(z.function()).optional(),
+  functions: z.record(z.unknown()).optional(),
   constants: z.record(z.unknown()).optional(),
   for: z.unknown(),
 });
@@ -142,7 +142,8 @@ for:
       if (!func) {
         throw new Error(`Function ${fnName} is not defined`);
       }
-      return func(
+      return evalInScope(
+        func,
         arg ? { ...scope, context: await evalInScope(arg, scope) } : scope
       );
     };
@@ -367,9 +368,15 @@ export class WaitOpFactory extends FlowOpFactory<typeof waitConfig, unknown> {
     }
   }
 
-  protected create({ ms, min, sec }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+  protected create({
+    ms,
+    min,
+    sec,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
     return async (scope) => {
-      await new Promise((resolve) => setTimeout(resolve, ms + sec * 1000 + min * 60000));
+      await new Promise((resolve) =>
+        setTimeout(resolve, ms + sec * 1000 + min * 60000)
+      );
       return scope.context;
     };
   }

@@ -4,7 +4,6 @@ import { TaskOpFactory, contextDefaultedFieldPatch } from "@/lib/operator";
 import { neverError } from "@/lib/guards";
 
 import { BrowserFactory } from "./shared/browser-factory";
-import { get } from '../object';
 
 const documentConfig = z.object({
   source: z.string().optional(),
@@ -540,51 +539,6 @@ export class XPathAllOpFactory extends TaskOpFactory<
   }
 }
 
-const primitiveKeyConfig = z.union([z.string(), z.number().int()]);
-
-const composedKeyConfig = z.union([
-  primitiveKeyConfig,
-  z.array(primitiveKeyConfig),
-]);
-
-const getConfig = z.object({
-  element: elementConfig,
-  key: composedKeyConfig,
-  default: z.unknown().optional(),
-});
-
-export class GetOpFactory extends TaskOpFactory<typeof getConfig, unknown> {
-  name = "get";
-  schema = getConfig;
-  constructor() {
-    super();
-    if (import.meta.env.DEV) {
-      this.signatures = [
-        {
-          params: `interface Config {
-  /** @default <context> */
-  element?: HTMLElement
-  key: string | number | (string | number)[]
-  default?: unknown
-}`,
-          returns: "unknown",
-          description:
-            "Returns a value from `element`. \
-Follows the same rules as `get` operator.",
-        },
-      ];
-    }
-  }
-  patchConfig = contextDefaultedFieldPatch("element");
-  protected execute({
-    element,
-    key,
-    default: defaultValue,
-  }: z.TypeOf<this["schema"]>): unknown {
-    return get(key, element, defaultValue);
-  }
-}
-
 export function domOperatorsFactories(window: Window) {
   return [
     new DocumentOpFactory(window),
@@ -598,6 +552,5 @@ export function domOperatorsFactories(window: Window) {
     new MatchesOpFactory(),
     new XPathOpFactory(),
     new XPathAllOpFactory(),
-    new GetOpFactory(),
   ];
 }
