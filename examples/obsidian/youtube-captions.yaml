@@ -60,6 +60,8 @@ for:
                 value:
                   $op: get
                   key: vssId
+                  from:
+                    $op: array.item
                 pattern:
                   $op: sys.get
                   key: lang

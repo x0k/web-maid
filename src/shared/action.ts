@@ -5,6 +5,7 @@ export enum ExtensionActionType {
   ShowOk = "form::ok",
   AppendLog = "log::append",
   MakeRequest = "request::make",
+  StartDownload = "download::start",
 }
 
 export interface AbstractExtensionAction<T extends ExtensionActionType>
@@ -20,8 +21,8 @@ export interface ShowFromAction
 
 export interface ShowOkAction
   extends AbstractExtensionAction<ExtensionActionType.ShowOk> {
-    message: string;
-  }
+  message: string;
+}
 export interface AppendLogAction
   extends AbstractExtensionAction<ExtensionActionType.AppendLog> {
   log: unknown;
@@ -33,18 +34,27 @@ export interface MakeRequestAction
   method?: string;
   headers?: Record<string, string>;
   body?: string;
-  as?: "json" | "text";
+  as?: "json" | "text" | "dataUrl"
+}
+
+export interface StartDownloadAction
+  extends AbstractExtensionAction<ExtensionActionType.StartDownload> {
+  content: string;
+  filename: string;
+  mimeType: string;
 }
 
 export type ExtensionAction =
   | ShowFromAction
   | ShowOkAction
   | AppendLogAction
-  | MakeRequestAction;
+  | MakeRequestAction
+  | StartDownloadAction;
 
 export interface ExtensionActionResults {
   [ExtensionActionType.ShowFrom]: unknown;
   [ExtensionActionType.ShowOk]: void;
   [ExtensionActionType.AppendLog]: void;
   [ExtensionActionType.MakeRequest]: unknown;
+  [ExtensionActionType.StartDownload]: void;
 }

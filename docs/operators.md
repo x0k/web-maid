@@ -722,7 +722,8 @@ Returns the length of `value`
 
 ```typescript
 interface Config {
-  value?: unknown[] // defaults to <context>
+  /** @default <context> */
+  value?: unknown[]
 }
 ```
 
@@ -746,6 +747,22 @@ interface Config {}
 
 ```typescript
 number
+```
+
+## Operator `array.item`
+
+### Signatures
+
+Returns the current `item`
+
+```typescript
+interface Config {}
+```
+
+**Returns:**
+
+```typescript
+unknown
 ```
 
 ## Operator `array.current`
@@ -772,7 +789,8 @@ Finds an element in an array that matches the predicate. Returns `null` if not f
 
 ```typescript
 interface Config {
-  source?: unknown[] // defaults to <context>
+  /** @default <context> */
+  source?: unknown[]
   predicate: (value: unknown) => unknown
 }
 ```
@@ -794,13 +812,113 @@ predicate:
   $op: eq
   left: 2
   right:
-    $op: get
+    $op: array.item
 ```
 
 **Result:**
 
 ```yaml
 2
+```
+
+## Operator `array.indexOf`
+
+### Signatures
+
+Returns the index of the first occurrence of a `value` in `source`, or -1 if it is not present.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  value: unknown
+}
+```
+
+**Returns:**
+
+```typescript
+number
+```
+
+## Operator `array.map`
+
+### Signatures
+
+Maps `source` with `mapper`
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  mapper: unknown
+}
+```
+
+**Returns:**
+
+```typescript
+unknown[]
+```
+
+## Operator `array.reduce`
+
+### Signatures
+
+Reduces `source` with `reducer`
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  reducer: unknown
+}
+```
+
+**Returns:**
+
+```typescript
+unknown
+```
+
+## Operator `array.slice`
+
+### Signatures
+
+Returns a slice of `source`
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  start?: number
+  end?: number
+}
+```
+
+**Returns:**
+
+```typescript
+unknown[]
+```
+
+## Operator `array.reverse`
+
+### Signatures
+
+Reverses `source`
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+}
+```
+
+**Returns:**
+
+```typescript
+unknown[]
 ```
 
 ## Operator `sys.define`
@@ -870,7 +988,7 @@ unknown
 
 ### Examples
 
-Basic usage
+Basic usage with function
 
 ```yaml
 $op: sys.define
@@ -892,16 +1010,38 @@ for:
 15
 ```
 
+Basic usage with data
+
+```yaml
+$op: sys.define
+functions:
+  config:
+    staticField: staticValue
+    dynamicField:
+      $op: get
+for:
+  $op: sys.call
+  fn: config
+  arg: dynamicValue
+```
+
+**Result:**
+
+```yaml
+staticField: staticValue
+dynamicField: dynamicValue
+```
+
 ## Operator `sys.get`
 
 ### Signatures
 
-Returns a `constant` from a current `scope`. If `constant` is not defined then `default` value is returned. If `default` is not defined then an error is thrown.
+Returns a `constant` from a current `scope`. If `constant` is not defined then `default` value is returned. If `default` is not defined then an error will be thrown.
 
 ```typescript
 interface Config {
   key: string
-  default?: any
+  default?: unknown
 }
 ```
 
@@ -1004,6 +1144,29 @@ interface Config {}
 
 ```typescript
 string
+```
+
+## Operator `sys.wait`
+
+### Signatures
+
+Waits for an interval and returns `context`.
+
+```typescript
+interface Config {
+  /** @default 0 */
+  ms?: number
+  /** @default 0 */
+  sec?: number
+  /** @default 0 */
+  min?: number
+}
+```
+
+**Returns:**
+
+```typescript
+<context>
 ```
 
 ## Operator `template.render`
@@ -1189,6 +1352,278 @@ interface Config<D> {
 D | string
 ```
 
+## Operator `dom.document`
+
+### Signatures
+
+Returns the document instance.
+
+```typescript
+interface Config {
+  source?: string
+  /** @default "text/html" */
+  type?: "application/xhtml+xml" | "application/xml" | "image/svg+xml" | "text/html" | "text/xml"
+}
+```
+
+**Returns:**
+
+```typescript
+Document
+```
+
+## Operator `dom.query`
+
+### Signatures
+
+Returns descendant element of `element` that matches `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: Document | HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element | null
+```
+
+## Operator `dom.queryAll`
+
+### Signatures
+
+Returns all element descendants of `element` that match `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: Document | HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element[]
+```
+
+## Operator `dom.sibling`
+
+### Signatures
+
+Returns the previous or next sibling of `element`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  /** @default "next" */
+  kind?: "previous" | "next"
+}
+```
+
+**Returns:**
+
+```typescript
+Element | null
+```
+
+## Operator `dom.closest`
+
+### Signatures
+
+Returns the closest element that matches `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element | null
+```
+
+## Operator `dom.parentsUntil`
+
+### Signatures
+
+Returns the first parent element that matches `predicate`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  predicate: (element: HTMLElement) => boolean
+}
+```
+
+**Returns:**
+
+```typescript
+Element[]
+```
+
+## Operator `dom.computedStyle`
+
+### Signatures
+
+Returns the computed style of `element`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+}
+```
+
+**Returns:**
+
+```typescript
+CSSStyleDeclaration
+```
+
+## Operator `dom.classList`
+
+### Signatures
+
+Adds `className` to `element`, returns `true` if `className` is now present.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "add"
+  className: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+Removes `className` from `element`, returns `true` if `className` is now absent.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "remove"
+  className: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+Toggles `className` on `element`, returns `true` if `className` is now present.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "toggle"
+  className: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+Returns `true` if `className` is present.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  action: "contains"
+  className: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+## Operator `dom.matches`
+
+### Signatures
+
+Returns `true` if `element` matches `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+boolean
+```
+
+## Operator `dom.xpath`
+
+### Signatures
+
+Returns the first element that matches `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element
+```
+
+## Operator `dom.xpathAll`
+
+### Signatures
+
+Returns all elements that match `query`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  query: string
+}
+```
+
+**Returns:**
+
+```typescript
+Element[]
+```
+
 ## Operator `browser.open`
 
 ### Signatures
@@ -1356,7 +1791,8 @@ Returns the length of `value`
 
 ```typescript
 interface Config {
-  value: string // defaults to <context>
+  /** @default <context> */
+  value?: string
 }
 ```
 
@@ -1516,7 +1952,8 @@ Compresses `value` as `format`.
 
 ```typescript
 interface Config {
-  value: string // defaults to <context>
+  /** @default <context> */
+  value?: string
   format?: 'encodedURIComponent'
 }
 ```
@@ -1549,13 +1986,21 @@ BIUwNmD2A0AEDqkBOYAmBCIA
 
 ### Signatures
 
-Trigger a file save dialog if possible. Otherwise, shows a download button. If `mimeType` is not provided, it will be guessed from `filename`. Returns the `filename`.
+By default it will trigger a file save dialog if possible. Otherwise, shows a download button.
+
+With `saver` set to `extension`, the file will be downloaded without showing a dialog.
+
+If `mimeType` is not provided, it will be guessed from `filename`.
+
+Returns the `filename`.
 
 ```typescript
 interface Config {
   filename: string
   content: string
   mimeType?: string
+  /** @default "native" */
+  saver?: "native" | "extension"
 }
 ```
 
@@ -1722,7 +2167,7 @@ interface Config {
   method?: string
   headers?: Record<string, string>
   body?: string
-  as?: "json" | "text"
+  as?: "json" | "text" | "dataUrl"
 }
 ```
 

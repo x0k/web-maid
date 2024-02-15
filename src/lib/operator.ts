@@ -2,8 +2,8 @@ import { type TypeOf, type ZodType } from "zod";
 
 import { isObject } from "@/lib/guards";
 import { Factory, FactoryFn } from "@/lib/factory";
-
-import { ILogger } from "./logger";
+import { ILogger } from "@/lib/logger";
+import { isUnSerializable } from '@/lib/serialization';
 
 export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
 
@@ -15,6 +15,9 @@ async function traverseAst<T, R>(
   visitor: AstVisitor<T, R>,
   value: Ast<T>
 ): Promise<R> {
+  if (isUnSerializable(value)) {
+    return visitor(value as R);
+  }
   if (Array.isArray(value)) {
     const tmp = new Array<Promise<R>>(value.length);
     for (let i = 0; i < value.length; i++) {
@@ -47,7 +50,7 @@ export type Op<T, R> = (context: T) => Result<R>;
 export type OpOrVal<T, R> = R | Op<T, R>;
 
 export interface Scope<R> {
-  functions: Record<string, ScopedOp<R>>;
+  functions: Record<string, unknown>;
   constants: Record<string, OpOrVal<Scope<R>, R>>;
   error: unknown;
   context: R;
@@ -133,6 +136,14 @@ export abstract class TaskOpFactory<S extends ZodType, R> extends BaseOpFactory<
       return this.execute(this.schema.parse(cfg));
     };
   }
+}
+
+export function contextDefaultedFieldPatch(field: string) {
+  return async (config: Record<string, unknown>, scope: Scope<unknown>) => {
+    if (!(field in config)) {
+      config[field] = scope.context;
+    }
+  };
 }
 
 export function makeComposedFactory<T extends Record<string, unknown>, R>(

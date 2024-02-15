@@ -9,7 +9,7 @@ import {
   documentOperatorsFactories,
 } from "@/lib/operators/document";
 import { flowOperatorsFactories } from "@/lib/operators/flow";
-import { fsOperatorsFactories } from "@/lib/operators/fs";
+import { DownloaderData, fsOperatorsFactories } from "@/lib/operators/fs";
 import { htmlOperatorsFactories } from "@/lib/operators/html";
 import { FetcherData, httpOperatorsFactories } from "@/lib/operators/http";
 import { jsonOperatorsFactories } from "@/lib/operators/json";
@@ -27,6 +27,7 @@ import {
 import { mathOperatorsFactories } from "@/lib/operators/math";
 import { arrayOperatorsFactories } from "@/lib/operators/array";
 import { browserOperatorsFactories } from "@/lib/operators/browser";
+import { domOperatorsFactories } from '@/lib/operators/dom';
 
 export interface OperatorFactoryConfig {
   window: Window;
@@ -39,6 +40,7 @@ export interface OperatorFactoryConfig {
   operatorsFactory: ScopedOpFactory<unknown>;
   operatorResolver: Factory<unknown, unknown>;
   okShower: AsyncFactory<string, void>;
+  downloader: AsyncFactory<DownloaderData, void>;
 }
 
 function assign(
@@ -71,6 +73,7 @@ export function compileOperatorFactories({
   operatorsFactory,
   operatorResolver,
   okShower,
+  downloader,
 }: OperatorFactoryConfig) {
   const factories: Record<string, BaseOpFactory<ZodTypeAny, unknown>> = {};
   assign(factories, flowOperatorsFactories());
@@ -91,10 +94,15 @@ export function compileOperatorFactories({
     factories,
     documentOperatorsFactories(window, evaluator)
   );
+  assignWithPrefix(
+    "dom.",
+    factories,
+    domOperatorsFactories(window)
+  )
   assignWithPrefix("browser.", factories, browserOperatorsFactories(window));
   assignWithPrefix("html.", factories, htmlOperatorsFactories(window));
   assignWithPrefix("str.", factories, stringsOperatorsFactories());
-  assignWithPrefix("fs.", factories, fsOperatorsFactories(okShower));
+  assignWithPrefix("fs.", factories, fsOperatorsFactories(okShower, downloader));
   assignWithPrefix("json.", factories, jsonOperatorsFactories());
   assignWithPrefix(
     "jsonSchema.",

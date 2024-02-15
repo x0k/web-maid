@@ -2,6 +2,7 @@ import { Request } from "@/lib/actor";
 
 export enum BackgroundActionType {
   MakeRequest = "request::make",
+  StartDownload = "download::start",
 }
 
 export interface AbstractBackgroundAction<T extends BackgroundActionType>
@@ -13,11 +14,19 @@ export interface MakeRequestAction
   method?: string;
   headers?: Record<string, string>;
   body?: string;
-  as?: "json" | "text";
+  as?: "json" | "text" | "dataUrl"
 }
 
-export type BackgroundAction = MakeRequestAction;
+export interface StartDownloadAction
+  extends AbstractBackgroundAction<BackgroundActionType.StartDownload> {
+  content: string;
+  filename: string;
+  mimeType: string;
+}
+
+export type BackgroundAction = MakeRequestAction | StartDownloadAction
 
 export interface BackgroundActionResults {
   [BackgroundActionType.MakeRequest]: unknown;
+  [BackgroundActionType.StartDownload]: void;
 }

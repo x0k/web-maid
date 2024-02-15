@@ -63,3 +63,13 @@ export function makeIsArrayOf<I, T extends I>(guard: (value: I) => value is T) {
 export function isDate(value: unknown): value is Date {
   return value instanceof Date;
 }
+
+export function isWindow(value: unknown): value is Window {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "window" in value &&
+    value.window === value
+  );
+}
+

@@ -14,7 +14,7 @@ import { traverseJsonLike } from "@/lib/json-like-traverser";
 import { stringifyError } from "@/lib/error";
 
 const defineConfig = z.object({
-  functions: z.record(z.function()).optional(),
+  functions: z.record(z.unknown()).optional(),
   constants: z.record(z.unknown()).optional(),
   for: z.unknown(),
 });
@@ -115,7 +115,7 @@ export class CallOpFactory extends FlowOpFactory<typeof callConfig, unknown> {
       ];
       this.examples = [
         {
-          description: "Basic usage",
+          description: "Basic usage with function",
           code: `$op: sys.define
 functions:
   add10:
@@ -129,6 +129,21 @@ for:
   arg: 5`,
           result: "15",
         },
+        {
+          description: "Basic usage with data",
+          code: `$op: sys.define
+functions:
+  config:
+    staticField: staticValue
+    dynamicField:
+      $op: get
+for:
+  $op: sys.call
+  fn: config
+  arg: dynamicValue`,
+          result: 'staticField: staticValue\n\
+dynamicField: dynamicValue'
+        }
       ];
     }
   }
@@ -142,7 +157,8 @@ for:
       if (!func) {
         throw new Error(`Function ${fnName} is not defined`);
       }
-      return func(
+      return evalInScope(
+        func,
         arg ? { ...scope, context: await evalInScope(arg, scope) } : scope
       );
     };
@@ -164,13 +180,13 @@ export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
         {
           params: `interface Config {
   key: string
-  default?: any
+  default?: unknown
 }`,
           returns: "unknown",
           description:
             "Returns a `constant` from a current `scope`. \
 If `constant` is not defined then `default` value is returned. \
-If `default` is not defined then an error is thrown.",
+If `default` is not defined then an error will be thrown.",
         },
       ];
     }
@@ -338,6 +354,49 @@ export class ErrorOpFactory extends FlowOpFactory<typeof errorConfig, unknown> {
   }
 }
 
+const waitConfig = z.object({
+  ms: z.number().default(0),
+  sec: z.number().default(0),
+  min: z.number().default(0),
+});
+
+export class WaitOpFactory extends FlowOpFactory<typeof waitConfig, unknown> {
+  name = "wait";
+  schema = waitConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default 0 */
+  ms?: number
+  /** @default 0 */
+  sec?: number
+  /** @default 0 */
+  min?: number
+}`,
+          returns: "<context>",
+          description: "Waits for an interval and returns `context`.",
+        },
+      ];
+    }
+  }
+
+  protected create({
+    ms,
+    min,
+    sec,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      await new Promise((resolve) =>
+        setTimeout(resolve, ms + sec * 1000 + min * 60000)
+      );
+      return scope.context;
+    };
+  }
+}
+
 export function sysOperatorsFactories(
   operatorsFactory: ScopedOpFactory<unknown>,
   operatorResolver: Factory<unknown, unknown>
@@ -349,5 +408,6 @@ export function sysOperatorsFactories(
     new ExecOpFactory(operatorsFactory),
     new EvalOpFactory(operatorResolver),
     new ErrorOpFactory(),
+    new WaitOpFactory(),
   ];
 }

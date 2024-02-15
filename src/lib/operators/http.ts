@@ -10,7 +10,7 @@ export const requestConfig = z.object({
     .optional(),
   headers: z.record(z.string()).optional(),
   body: z.string().optional(),
-  as: z.enum(["json", "text"]).optional(),
+  as: z.enum(["json", "text", "dataUrl"]).optional(),
 });
 
 export interface FetcherData {
@@ -18,7 +18,7 @@ export interface FetcherData {
   method?: string;
   headers?: Record<string, string>;
   body?: string;
-  as?: "json" | "text";
+  as?: "json" | "text" | "dataUrl"
 }
 
 export class RequestOpFactory extends TaskOpFactory<
@@ -38,7 +38,7 @@ export class RequestOpFactory extends TaskOpFactory<
   method?: string
   headers?: Record<string, string>
   body?: string
-  as?: "json" | "text"
+  as?: "json" | "text" | "dataUrl"
 }`,
           returns: `<json> | string`,
           description:
@@ -58,5 +58,7 @@ by the `Content-Type` header.",
 export function httpOperatorsFactories(
   fetcher: AsyncFactory<FetcherData, unknown>
 ) {
-  return [new RequestOpFactory(fetcher)];
+  return [
+    new RequestOpFactory(fetcher),
+  ];
 }

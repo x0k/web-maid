@@ -4,12 +4,20 @@ import { fileOpen, fileSave } from "browser-fs-access";
 
 import { TaskOpFactory } from "@/lib/operator";
 import { AsyncFactory } from "@/lib/factory";
+import { neverError } from "@/lib/guards";
 
 const saveConfig = z.object({
   filename: z.string(),
   content: z.string(),
   mimeType: z.string().optional(),
+  saver: z.enum(["native", "extension"]).default("native"),
 });
+
+export interface DownloaderData {
+  content: string
+  filename: string
+  type: string
+}
 
 export class SaveFileOpFactory extends TaskOpFactory<
   typeof saveConfig,
@@ -18,7 +26,10 @@ export class SaveFileOpFactory extends TaskOpFactory<
   name = "saveFile";
   readonly schema = saveConfig;
 
-  constructor(private readonly okShower: AsyncFactory<string, void>) {
+  constructor(
+    private readonly okShower: AsyncFactory<string, void>,
+    private readonly downloader: AsyncFactory<DownloaderData, void>
+  ) {
     super();
     if (import.meta.env.DEV) {
       this.signatures = [
@@ -27,11 +38,14 @@ export class SaveFileOpFactory extends TaskOpFactory<
   filename: string
   content: string
   mimeType?: string
+  /** @default "native" */
+  saver?: "native" | "extension"
 }`,
           returns: `string`,
           description:
-            "Trigger a file save dialog if possible. Otherwise, shows a download button. \
-If `mimeType` is not provided, it will be guessed from `filename`. \
+            "By default it will trigger a file save dialog if possible. Otherwise, shows a download button.\n\n\
+With `saver` set to `extension`, the file will be downloaded without showing a dialog.\n\n\
+If `mimeType` is not provided, it will be guessed from `filename`.\n\n\
 Returns the `filename`.",
         },
       ];
@@ -42,15 +56,29 @@ Returns the `filename`.",
     filename,
     content,
     mimeType,
+    saver,
   }: z.TypeOf<this["schema"]>): Promise<string> {
     const type = mimeType ?? mime.getType(filename);
     if (!type) {
       throw new Error(`Could not determine mime type for ${filename}`);
     }
     try {
-      await fileSave(new Blob([content], { type }), {
-        fileName: filename,
-      });
+      switch (saver) {
+        case "native":
+          await fileSave(new Blob([content], { type }), {
+            fileName: filename,
+          });
+          break;
+        case "extension":
+          await this.downloader.Create({
+            type,
+            filename,
+            content,
+          });
+          break;
+        default:
+          throw neverError(saver, "Invalid saver");
+      }
     } catch (error) {
       // Failed to execute 'showSaveFilePicker' on 'Window': Must be handling a user gesture to show a file picker.
       if (error instanceof DOMException && error.name === "SecurityError") {
@@ -89,7 +117,8 @@ export class OpenFileOpFactory extends TaskOpFactory<
   mimeTypes?: string[]
 }`,
           returns: `string`,
-          description: "Open a file dialog. \
+          description:
+            "Open a file dialog. \
 Returns the content of the selected file as string.",
         },
       ];
@@ -101,6 +130,12 @@ Returns the content of the selected file as string.",
   }
 }
 
-export function fsOperatorsFactories(okShower: AsyncFactory<string, void>) {
-  return [new SaveFileOpFactory(okShower), new OpenFileOpFactory()];
+export function fsOperatorsFactories(
+  okShower: AsyncFactory<string, void>,
+  downloader: AsyncFactory<DownloaderData, void>,
+) {
+  return [
+    new SaveFileOpFactory(okShower, downloader),
+    new OpenFileOpFactory(),
+  ];
 }

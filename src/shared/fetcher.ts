@@ -19,6 +19,15 @@ export class Fetcher implements AsyncFactory<FetcherData, unknown> {
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);
     }
+    if (as === "dataUrl") {
+      const blob = await response.blob()
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob)
+      });
+    }
     if (as) {
       return response[as]();
     }

@@ -22,6 +22,7 @@ import {
 } from "@/shared/background/action";
 import { BACKGROUND_ACTOR_ID } from "@/shared/background/core";
 import { Fetcher } from "@/shared/fetcher";
+import { Downloader } from '@/shared/downloader';
 import {
   TabAction,
   TabActionResults,
@@ -40,6 +41,7 @@ chrome.runtime.onInstalled.addListener(async function ({ reason }) {
 });
 
 const fetcher = new Fetcher();
+const downloader = new Downloader();
 
 const TABS_TO_ACTORS_MAP = new Map<number, ActorId>();
 const TABS_ACTORS_AWAITERS = new Map<number, (actorId: ActorId) => void>();
@@ -85,7 +87,7 @@ chrome.action.onClicked.addListener((tab) => {
     })
     chrome.scripting.executeScript({
       target: { tabId },
-      files: [contentScript]
+      files: [contentScript],
     })
   }
 });
@@ -99,6 +101,15 @@ const actor = new ContextActor<
   makeActorLogic(
     {
       [BackgroundActionType.MakeRequest]: fetcher.Create.bind(fetcher),
+      [BackgroundActionType.StartDownload]: ({
+        content,
+        filename,
+        mimeType,
+      }) => downloader.Create({
+        content,
+        filename,
+        type: mimeType,
+      }),
     },
     (msg, { tab }) => {
       if (tab && tab.id !== undefined) {

@@ -11,6 +11,7 @@ import {
   ExtensionActionResults,
   ExtensionActionType,
 } from "./action";
+import { DownloaderData } from '@/lib/operators/fs';
 
 export class RemoteFormShower implements AsyncFactory<ShowFormData, unknown> {
   constructor(
@@ -99,6 +100,29 @@ export class RemoteFetcher implements AsyncFactory<FetcherData, unknown> {
         headers: config.headers,
         body: config.body,
         as: config.as,
+      },
+    });
+  }
+}
+
+export class RemoteDownloader implements AsyncFactory<DownloaderData, void> {
+  constructor(
+    private readonly handlerId: ActorId,
+    private readonly actor: IRemoteActor<
+      ExtensionAction,
+      ExtensionActionResults
+    >
+  ) {}
+  Create(config: DownloaderData): Promise<void> {
+    return this.actor.call({
+      handlerId: this.handlerId,
+      id: nanoid(),
+      type: MessageType.Request,
+      request: {
+        type: ExtensionActionType.StartDownload,
+        content: config.content,
+        filename: config.filename,
+        mimeType: config.type,
       },
     });
   }
