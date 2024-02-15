@@ -1036,12 +1036,12 @@ dynamicField: dynamicValue
 
 ### Signatures
 
-Returns a `constant` from a current `scope`. If `constant` is not defined then `default` value is returned. If `default` is not defined then an error is thrown.
+Returns a `constant` from a current `scope`. If `constant` is not defined then `default` value is returned. If `default` is not defined then an error will be thrown.
 
 ```typescript
 interface Config {
   key: string
-  default?: any
+  default?: unknown
 }
 ```
 

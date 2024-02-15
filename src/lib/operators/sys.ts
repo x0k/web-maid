@@ -166,7 +166,7 @@ dynamicField: dynamicValue'
 }
 
 const getConfig = z.object({
-  key: z.string(),
+  key: z.unknown(),
   default: z.unknown().optional(),
 });
 
@@ -180,13 +180,13 @@ export class GetOpFactory extends FlowOpFactory<typeof getConfig, unknown> {
         {
           params: `interface Config {
   key: string
-  default?: any
+  default?: unknown
 }`,
           returns: "unknown",
           description:
             "Returns a `constant` from a current `scope`. \
 If `constant` is not defined then `default` value is returned. \
-If `default` is not defined then an error is thrown.",
+If `default` is not defined then an error will be thrown.",
         },
       ];
     }
