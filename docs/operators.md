@@ -1412,6 +1412,27 @@ interface Config {
 Element[]
 ```
 
+## Operator `dom.siblings`
+
+### Signatures
+
+Returns the siblings of `element`.
+
+```typescript
+interface Config {
+  /** @default <context> */
+  element?: HTMLElement
+  /** @default "all" */
+  kind?: "all" | "previous" | "next"
+}
+```
+
+**Returns:**
+
+```typescript
+Element[]
+```
+
 ## Operator `dom.sibling`
 
 ### Signatures
@@ -1457,7 +1478,7 @@ Element | null
 
 ### Signatures
 
-Returns the first parent element that matches `predicate`.
+Return a list of parents elements.
 
 ```typescript
 interface Config {
