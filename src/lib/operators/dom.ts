@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { TaskOpFactory, contextDefaultedFieldPatch } from "@/lib/operator";
+import { FlowOpFactory, ScopedOp, TaskOpFactory, contextDefaultedFieldPatch, evalInScope } from "@/lib/operator";
 import { neverError } from "@/lib/guards";
 
 import { BrowserFactory } from "./shared/browser-factory";
@@ -260,11 +260,11 @@ export class ClosestOpFactory extends TaskOpFactory<
 }
 
 const parentsUntilConfig = z.object({
-  element: elementConfig,
+  element: z.unknown(),
   predicate: z.function(),
 });
 
-export class ParentsUntilOpFactory extends TaskOpFactory<
+export class ParentsUntilOpFactory extends FlowOpFactory<
   typeof parentsUntilConfig,
   Element[]
 > {
@@ -281,24 +281,26 @@ export class ParentsUntilOpFactory extends TaskOpFactory<
   predicate: (element: HTMLElement) => boolean
 }`,
           returns: `Element[]`,
-          description:
-            "Returns the first parent element that matches `predicate`.",
+          description: "Return a list of parents elements.",
         },
       ];
     }
   }
-  patchConfig = contextDefaultedFieldPatch("element");
-  protected execute({
-    element,
-    predicate,
-  }: z.TypeOf<this["schema"]>): Element[] {
-    const parents = [];
-    let el = element.parentElement;
-    while (el && !predicate(el)) {
-      parents.push(el);
-      el = el.parentElement;
+  protected create ({ element, predicate }: z.TypeOf<this['schema']>): ScopedOp<Element[]> {
+    return async (scope) => {
+      const el = element ? await evalInScope(element, scope) : scope.context
+      if (!(el instanceof HTMLElement)) {
+        throw new Error("Element should be HTMLElement")
+      }
+      const parents: Element[] = []
+      let parent = el.parentElement
+      const mutableScope = { ...scope, context: parent }
+      while (parent && !(await predicate(mutableScope))) {
+        parents.push(parent)
+        mutableScope.context = parent = parent.parentElement
+      }
+      return parents
     }
-    return parents;
   }
 }
 
