@@ -115,7 +115,7 @@ export class CallOpFactory extends FlowOpFactory<typeof callConfig, unknown> {
       ];
       this.examples = [
         {
-          description: "Basic usage",
+          description: "Basic usage with function",
           code: `$op: sys.define
 functions:
   add10:
@@ -129,6 +129,21 @@ for:
   arg: 5`,
           result: "15",
         },
+        {
+          description: "Basic usage with data",
+          code: `$op: sys.define
+functions:
+  config:
+    staticField: staticValue
+    dynamicField:
+      $op: get
+for:
+  $op: sys.call
+  fn: config
+  arg: dynamicValue`,
+          result: 'staticField: staticValue\n\
+dynamicField: dynamicValue'
+        }
       ];
     }
   }
@@ -362,7 +377,7 @@ export class WaitOpFactory extends FlowOpFactory<typeof waitConfig, unknown> {
   min?: number
 }`,
           returns: "<context>",
-          description: "Waits for interval and returns `context`.",
+          description: "Waits for an interval and returns `context`.",
         },
       ];
     }

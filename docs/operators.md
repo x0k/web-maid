@@ -988,7 +988,7 @@ unknown
 
 ### Examples
 
-Basic usage
+Basic usage with function
 
 ```yaml
 $op: sys.define
@@ -1008,6 +1008,28 @@ for:
 
 ```yaml
 15
+```
+
+Basic usage with data
+
+```yaml
+$op: sys.define
+functions:
+  config:
+    staticField: staticValue
+    dynamicField:
+      $op: get
+for:
+  $op: sys.call
+  fn: config
+  arg: dynamicValue
+```
+
+**Result:**
+
+```yaml
+staticField: staticValue
+dynamicField: dynamicValue
 ```
 
 ## Operator `sys.get`
@@ -1128,7 +1150,7 @@ string
 
 ### Signatures
 
-Waits for interval and returns `context`.
+Waits for an interval and returns `context`.
 
 ```typescript
 interface Config {
