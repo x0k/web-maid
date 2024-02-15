@@ -1986,7 +1986,13 @@ BIUwNmD2A0AEDqkBOYAmBCIA
 
 ### Signatures
 
-Trigger a file save dialog if possible. Otherwise, shows a download button. If `mimeType` is not provided, it will be guessed from `filename`. Returns the `filename`.
+By default it will trigger a file save dialog if possible. Otherwise, shows a download button.
+
+With `saver` set to `extension`, the file will be downloaded without showing a dialog.
+
+If `mimeType` is not provided, it will be guessed from `filename`.
+
+Returns the `filename`.
 
 ```typescript
 interface Config {
