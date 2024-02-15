@@ -6,16 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  Plus,
-  Pen,
-  Undo,
-  Dot,
-  Save,
-  SaveAll,
-  Undo2,
-  Trash,
-} from "lucide-react";
+import { Plus, Undo, Save, SaveAll, Undo2, Trash } from "lucide-react";
 
 import { monaco } from "@/lib/monaco";
 import { Editor } from "@/components/editor";
@@ -28,7 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import classes from "./styles.module.css";
 import {
   EditorFile,
   FilesEditorState,
@@ -41,10 +31,10 @@ import {
   someFileChanged,
   updateEditorState,
   activeFileRemovable,
-  setActiveFile,
   activeFile,
   activeFileWithoutBoundaryCheck,
 } from "./core";
+import { Tabs } from "./tabs";
 
 export interface FilesEditorProps {
   files: EditorFile[];
@@ -60,10 +50,14 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
       filesMap: new Map<string, InternalEditorFile>(),
       files: [],
       activeFileIndex: -1,
+      freeIndicatorRef: { current: null },
     });
-    const setEditorRef = useCallback((ref: monaco.editor.IStandaloneCodeEditor | null) => {
-      stateRef.current.editor = ref;
-    }, [])
+    const setEditorRef = useCallback(
+      (ref: monaco.editor.IStandaloneCodeEditor | null) => {
+        stateRef.current.editor = ref;
+      },
+      []
+    );
     const [, setState] = useState(0);
     const rerender = useCallback(() => setState(Date.now()), []);
     useEffect(() => {
@@ -241,38 +235,11 @@ export const FilesEditor = forwardRef<FilesEditorState, FilesEditorProps>(
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <div
-            className={`relative grow flex flex-row gap-[2px] flex-nowrap overflow-auto h-10 ${classes.tabs}`}
-          >
-            {files.map((file, i) => {
-              const isActive = i === activeFileIndex;
-              return (
-                <div
-                  key={file.id}
-                  className={`cursor-pointer relative shrink-0 flex flex-row gap-2 items-center max-w-[200px] h-full p-2 overflow-hidden ${
-                    isActive ? "bg-neutral-800" : "bg-neutral-700"
-                  }`}
-                  onClick={() => {
-                    setTimeout(() => stateRef.current.editor?.focus(), 100);
-                    if (isActive) {
-                      return;
-                    }
-                    setActiveFile(stateRef.current, i);
-                    rerender();
-                  }}
-                >
-                  <p className="text-neutral-200 truncate w-full">
-                    {file.name}
-                  </p>
-                  {file.isChanged ? (
-                    <Pen className="text-neutral-500" />
-                  ) : isActive ? (
-                    <Dot className="text-neutral-500" />
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+          <Tabs
+            stateRef={stateRef}
+            onSaveFiles={onSaveFiles}
+            rerender={rerender}
+          />
         </div>
         <Editor
           ref={setEditorRef}

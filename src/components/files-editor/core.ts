@@ -1,4 +1,7 @@
+import { MutableRefObject, DragEvent } from "react";
+
 import { monaco } from "@/lib/monaco";
+import { moveItemBeforeInPlace } from '@/lib/array';
 
 export interface EditorFile {
   id: string;
@@ -14,6 +17,7 @@ export interface InternalEditorFile {
   isChanged: boolean;
   isRemovable: boolean;
   model: monaco.editor.ITextModel;
+  indicatorRef: MutableRefObject<HTMLDivElement | null>;
 }
 
 export interface FilesEditorState {
@@ -21,7 +25,10 @@ export interface FilesEditorState {
   filesMap: Map<string, InternalEditorFile>;
   files: InternalEditorFile[];
   activeFileIndex: number;
+  freeIndicatorRef: MutableRefObject<HTMLDivElement | null>;
 }
+
+export const FREE_INDICATOR_ID = "free";
 
 export function createInternalFile(file: EditorFile): InternalEditorFile {
   return {
@@ -31,6 +38,7 @@ export function createInternalFile(file: EditorFile): InternalEditorFile {
     isChanged: false,
     isRemovable: file.isRemovable,
     model: monaco.editor.createModel(file.content, "yaml"),
+    indicatorRef: { current: null },
   };
 }
 
@@ -172,4 +180,56 @@ export function activeFileRemovable({
 
 export function setActiveFile(state: FilesEditorState, index: number) {
   state.activeFileIndex = index;
+}
+
+export function getNearestIndicator<T>(
+  { files, freeIndicatorRef: { current: freeIndicator } }: FilesEditorState,
+  e: DragEvent<T>
+) {
+  if (freeIndicator === null) {
+    return null;
+  }
+  return files.reduce(
+    (acc, { indicatorRef: { current } }, index) => {
+      if (current === null) {
+        return acc;
+      }
+      const box = current.getBoundingClientRect();
+      const offset = Math.abs(e.clientX - box.left);
+      if (offset < acc.offset) {
+        return {
+          index,
+          offset,
+          element: current,
+        };
+      }
+      return acc;
+    },
+    {
+      index: files.length,
+      offset: Math.abs(e.clientX - freeIndicator.getBoundingClientRect().left),
+      element: freeIndicator,
+    }
+  );
+}
+
+export function getNearestIndicatorElement<T>(
+  state: FilesEditorState,
+  e: DragEvent<T>
+) {
+  return getNearestIndicator(state, e)?.element || null;
+}
+
+export function moveFileBefore(
+  state: FilesEditorState,
+  fileIndex: number,
+  beforeIndex: number
+) {
+  const { files } = state
+  const newFileIndex = moveItemBeforeInPlace(files, fileIndex, beforeIndex);
+  if (fileIndex === newFileIndex) {
+    return false
+  }
+  state.activeFileIndex = newFileIndex
+  return true
 }
