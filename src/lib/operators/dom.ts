@@ -544,6 +544,7 @@ export function domOperatorsFactories(window: Window) {
     new DocumentOpFactory(window),
     new QueryOpFactory(),
     new QueryAllOpFactory(),
+    new SiblingsOpFactory(),
     new SiblingOpFactory(),
     new ClosestOpFactory(),
     new ParentsUntilOpFactory(),
