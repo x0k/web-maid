@@ -67,6 +67,34 @@ Throws an error if called outside `array` method.",
   }
 }
 
+export class ItemOfFactory extends FlowOpFactory<typeof dummyConfig, unknown> {
+  name = "item";
+  schema = dummyConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {}`,
+          returns: "unknown",
+          description: "Returns the current `item`",
+        },
+      ];
+    }
+  }
+  protected create(): ScopedOp<unknown> {
+    return (scope) => {
+      if (scope.array === undefined) {
+        throw new Error("Array is not defined");
+      }
+      if (scope.index === undefined) {
+        throw new Error("Index is not defined");
+      }
+      return scope.array[scope.index];
+    };
+  }
+}
+
 const findSchema = z.object({
   source: z.unknown().optional(),
   predicate: z.function(),
@@ -119,7 +147,6 @@ predicate:
       const mutableScope = { ...scope, array };
       for (let i = 0; i < array.length; i++) {
         mutableScope.index = i;
-        mutableScope.context = array[i];
         if (await predicate(mutableScope)) {
           return array[i];
         }
@@ -223,21 +250,69 @@ export class MapOpFactory extends FlowOpFactory<typeof mapConfig, unknown[]> {
       ];
     }
   }
-  protected create ({ source, mapper }: z.TypeOf<this['schema']>): ScopedOp<unknown[]> {
+  protected create({
+    source,
+    mapper,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown[]> {
     return async (scope) => {
       const array = source ? await evalInScope(source, scope) : scope.context;
       if (!Array.isArray(array)) {
         throw new Error("Source must be an array");
       }
       const result = new Array(array.length);
-      const mutableScope = { ...scope, array }
+      const mutableScope = { ...scope, array };
       for (let i = 0; i < array.length; i++) {
         mutableScope.index = i;
-        mutableScope.context = array[i];
         result[i] = await evalInScope(mapper, mutableScope);
       }
       return result;
+    };
+  }
+}
+
+const reduceConfig = z.object({
+  source: z.unknown(),
+  reducer: z.unknown(),
+});
+
+export class ReduceOpFactory extends FlowOpFactory<
+  typeof reduceConfig,
+  unknown
+> {
+  name = "reduce";
+  schema = reduceConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  reducer: unknown
+}`,
+          returns: "unknown",
+          description: "Reduces `source` with `reducer`",
+        },
+      ];
     }
+  }
+  protected create({
+    source,
+    reducer,
+  }: z.TypeOf<this["schema"]>): ScopedOp<unknown> {
+    return async (scope) => {
+      const array = source ? await evalInScope(source, scope) : scope.context;
+      if (!Array.isArray(array)) {
+        throw new Error("Source must be an array");
+      }
+      const mutableScope = { ...scope, array };
+      for (let i = 0; i < array.length; i++) {
+        mutableScope.index = i;
+        mutableScope.context = await evalInScope(reducer, mutableScope);
+      }
+      return mutableScope.context;
+    };
   }
 }
 
@@ -247,7 +322,10 @@ const sliceConfig = z.object({
   end: z.number().optional(),
 });
 
-export class SliceOpFactory extends TaskOpFactory<typeof sliceConfig, unknown[]> {
+export class SliceOpFactory extends TaskOpFactory<
+  typeof sliceConfig,
+  unknown[]
+> {
   name = "slice";
   schema = sliceConfig;
   constructor() {
@@ -268,19 +346,57 @@ export class SliceOpFactory extends TaskOpFactory<typeof sliceConfig, unknown[]>
     }
   }
   patchConfig = contextDefaultedFieldPatch("source");
-  protected execute({ source, start, end }: z.TypeOf<this["schema"]>): unknown[] {
+  protected execute({
+    source,
+    start,
+    end,
+  }: z.TypeOf<this["schema"]>): unknown[] {
     return source.slice(start, end);
-  }  
+  }
+}
+
+const reverseConfig = z.object({
+  source: z.array(z.unknown()),
+});
+
+export class ReverseOpFactory extends TaskOpFactory<
+  typeof reverseConfig,
+  unknown[]
+> {
+  name = "reverse";
+  schema = reverseConfig;
+  constructor() {
+    super();
+    if (import.meta.env.DEV) {
+      this.signatures = [
+        {
+          params: `interface Config {
+  /** @default <context> */
+  source?: unknown[]
+}`,
+          returns: "unknown[]",
+          description: "Reverses `source`",
+        },
+      ];
+    }
+  }
+  patchConfig = contextDefaultedFieldPatch("source");
+  protected execute({ source }: z.TypeOf<this["schema"]>): unknown[] {
+    return source.slice().reverse();
+  }
 }
 
 export function arrayOperatorsFactories() {
   return [
     new LengthOpFactory(),
     new IndexOpFactory(),
+    new ItemOfFactory(),
     new CurrentOpFactory(),
     new FindOpFactory(),
     new IndexOfOpFactory(),
     new MapOpFactory(),
+    new ReduceOpFactory(),
     new SliceOpFactory(),
+    new ReverseOpFactory(),
   ];
 }
