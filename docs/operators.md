@@ -749,6 +749,22 @@ interface Config {}
 number
 ```
 
+## Operator `array.item`
+
+### Signatures
+
+Returns the current `item`
+
+```typescript
+interface Config {}
+```
+
+**Returns:**
+
+```typescript
+unknown
+```
+
 ## Operator `array.current`
 
 ### Signatures
@@ -796,7 +812,7 @@ predicate:
   $op: eq
   left: 2
   right:
-    $op: get
+    $op: array.item
 ```
 
 **Result:**
@@ -845,6 +861,26 @@ interface Config {
 unknown[]
 ```
 
+## Operator `array.reduce`
+
+### Signatures
+
+Reduces `source` with `reducer`
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
+  reducer: unknown
+}
+```
+
+**Returns:**
+
+```typescript
+unknown
+```
+
 ## Operator `array.slice`
 
 ### Signatures
@@ -857,6 +893,25 @@ interface Config {
   source?: unknown[]
   start?: number
   end?: number
+}
+```
+
+**Returns:**
+
+```typescript
+unknown[]
+```
+
+## Operator `array.reverse`
+
+### Signatures
+
+Reverses `source`
+
+```typescript
+interface Config {
+  /** @default <context> */
+  source?: unknown[]
 }
 ```
 
@@ -1545,27 +1600,6 @@ interface Config {
 
 ```typescript
 Element[]
-```
-
-## Operator `dom.get`
-
-### Signatures
-
-Returns a value from `element`. Follows the same rules as `get` operator.
-
-```typescript
-interface Config {
-  /** @default <context> */
-  element?: HTMLElement
-  key: string | number | (string | number)[]
-  default?: unknown
-}
-```
-
-**Returns:**
-
-```typescript
-unknown
 ```
 
 ## Operator `browser.open`

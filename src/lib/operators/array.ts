@@ -128,7 +128,7 @@ predicate:
   $op: eq
   left: 2
   right:
-    $op: get`,
+    $op: array.item`,
           result: "2",
         },
       ];
