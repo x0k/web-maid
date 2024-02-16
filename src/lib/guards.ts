@@ -47,7 +47,7 @@ export function isArray<T = unknown>(value: unknown): value is T[] {
 export function isRecord<T = unknown>(
   value: unknown
 ): value is Record<string, T> {
-  return isObject(value) && !isArray(value);
+  return isObject(value) && value.constructor === Object;
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -72,4 +72,3 @@ export function isWindow(value: unknown): value is Window {
     value.window === value
   );
 }
-

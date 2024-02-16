@@ -1,9 +1,8 @@
 import { type TypeOf, type ZodType } from "zod";
 
-import { isObject } from "@/lib/guards";
+import { isRecord } from "@/lib/guards";
 import { Factory, FactoryFn } from "@/lib/factory";
 import { ILogger } from "@/lib/logger";
-import { isUnSerializable } from '@/lib/serialization';
 
 export type Ast<T> = T | Array<Ast<T>> | { [k: string]: Ast<T> };
 
@@ -15,9 +14,6 @@ async function traverseAst<T, R>(
   visitor: AstVisitor<T, R>,
   value: Ast<T>
 ): Promise<R> {
-  if (isUnSerializable(value)) {
-    return visitor(value as R);
-  }
   if (Array.isArray(value)) {
     const tmp = new Array<Promise<R>>(value.length);
     for (let i = 0; i < value.length; i++) {
@@ -25,7 +21,7 @@ async function traverseAst<T, R>(
     }
     return visitor(await Promise.all(tmp));
   }
-  if (isObject(value)) {
+  if (isRecord(value)) {
     const keys = Object.keys(value);
     const promises = new Array<Promise<R>>(keys.length);
     for (let i = 0; i < keys.length; i++) {
