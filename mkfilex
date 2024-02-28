@@ -31,6 +31,9 @@ pack:
     zenika/alpine-chrome chromium-browser --no-sandbox \
     --pack-extension=/usr/src/app/dist --pack-extension-key=/usr/src/key.pem
 
+pack2:
+  $BROWSER --pack-extension=dist --pack-extension-key=$HOME/Sync/web-maid/key.pem
+
 tag:
   mv dist.crx web-maid-$(jq -r .version package.json).crx
 
