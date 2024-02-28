@@ -6,10 +6,10 @@ export function isUnSerializable(value: unknown): boolean {
     value instanceof Error ||
     value instanceof Blob ||
     value instanceof Date ||
-    value instanceof Node ||
+    (self.Node && value instanceof Node) ||
     value instanceof ImageData ||
     value instanceof File ||
-    value instanceof Image ||
+    (self.Image && value instanceof Image) ||
     value instanceof ArrayBuffer ||
     value instanceof URL ||
     value instanceof URLSearchParams ||
@@ -24,7 +24,7 @@ export function prepareForSerialization<T>(value: T): T {
   return traverseJsonLikeWithGuard(
     isUnSerializable as (value: unknown) => value is T,
     (v): T => {
-      if (v instanceof Node) {
+      if (self.Node && v instanceof Node) {
         return {
           nodeType: v.nodeType,
           nodeName: v.nodeName,
