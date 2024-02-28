@@ -1,47 +1,44 @@
-$op: sys.define
-functions:
-# Can fail if firstChild is not a html node (comment, text, ...)
-  json:
-    $op: doc.get
-    key:
-      - body
-      - firstChild
-      - innerText
-for:
-  $op: pipe
-  do:
-    - $op: if
-      condition:
-        $op: try
-        do:
-          $op: json.parse
-          value:
-            $op: sys.call
-            fn: json
-        catch:
-          false
-      then:
-        $op: browser.open
-        url:
-          $op: str.join
-          values:
-            - https://x0k.github.io/json-to-table/?createOnOpen=true&data=
-            - $op: str.compress
-              value:
-                $op: if
-                condition:
-                  $op: gt
-                  left:
-                    $op: str.length
-                    value:
-                      $op: sys.call
-                      fn: json
-                  right: 2000
-                then:
-                  $op: doc.get
-                  key:
-                    - location
-                    - href
-                else:
-                  $op: sys.call
-                  fn: json
+$op: pipe
+do:
+  - $op: array.find
+    source:
+      - $op: doc.get
+        key:
+          - body
+          - firstElementChild
+          - innerText
+      - $op: doc.selection
+    predicate:
+      $op: try
+      do:
+        $op: json.parse
+        value:
+          $op: array.item
+      catch:
+        false
+  - $op: if
+    condition:
+      $op: get
+    then:
+      $op: browser.open
+      url:
+        $op: str.join
+        values:
+          - https://x0k.github.io/json-to-table/?createOnOpen=true&data=
+          - $op: str.compress
+            value:
+              $op: if
+              condition:
+                $op: gt
+                left:
+                  $op: str.length
+                  value:
+                    $op: get
+                right: 2000
+              then:
+                $op: doc.get
+                key:
+                  - location
+                  - href
+              else:
+                $op: get
