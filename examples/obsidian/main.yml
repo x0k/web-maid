@@ -51,7 +51,16 @@ for:
         $op: doc.selection
       text:
         $op: get
-      # Note title as file name with folder
+      # For the `media_link` property (Media Notes plugin)
+      isYoutube:
+        $op: eq
+        left: www.youtube.com
+        right:
+          $op: doc.get
+          key:
+            - location
+            - hostname
+    # Note title as file name with folder
     - fileName:
         $op: str.join
         values:
@@ -78,6 +87,9 @@ for:
           description: {{json metadata.description}}
           author: {{metadata.author}}
           image: {{metadata.image}}
+          {{#if isYoutube}}
+          media_link: {{url}}
+          {{/if}}
           reviewed: false
           ---
           {{#if selection}}
