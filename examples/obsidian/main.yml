@@ -17,14 +17,14 @@ for:
     - $op: doc.get
       key:
         - location
-        - hostname
+        - href
     # Extraction of text content depending on the current site
     - $op: cond
       cases:
-        - - $op: eq
-            left: www.youtube.com
-            right:
+        - - $op: str.match
+            value:
               $op: get
+            pattern: "https?://www\\.youtube\\.com/watch"
           - $op: sys.define
             constants:
               lang: en
@@ -53,13 +53,13 @@ for:
         $op: get
       # For the `media_link` property (Media Notes plugin)
       isYoutube:
-        $op: eq
-        left: www.youtube.com
-        right:
+        $op: str.match
+        value:
           $op: doc.get
           key:
             - location
-            - hostname
+            - href
+        pattern: "https?://www\\.youtube\\.com/watch"
     # Note title as file name with folder
     - fileName:
         $op: str.join
