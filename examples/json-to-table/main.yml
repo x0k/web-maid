@@ -7,6 +7,7 @@ do:
           - body
           - firstElementChild
           - innerText
+        default: "\""
       - $op: doc.selection
     predicate:
       $op: try
