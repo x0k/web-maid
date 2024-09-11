@@ -4,25 +4,24 @@
 c:
   bun --bun run check
 
+# dev
+d: docs
+  MODE=DEV bun --bun run dev
+
 # test
 t:
   bun run test
 
-d:
-  MODE=DEV bun --bun run dev || mk docs
+# Test build
+b: docs
+  MODE=TEST bun run build --mode test
+
+# Production build
+build: docs
+  bun run build
 
 docs:
   DEV=true bun scripts/docs.ts
-
-# Test build
-b:
-  MODE=TEST bun run build --mode test && \
-    mk docs
-
-# Production build
-build:
-  bun run build && \
-    mk docs
 
 pack:
   docker run -it --rm --entrypoint "" \
@@ -37,5 +36,4 @@ pack2:
 tag:
   mv dist.crx web-maid-$(jq -r .version package.json).crx
 
-release:
-  mk build && mk pack && mk tag
+release: build pack2 tag
