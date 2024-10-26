@@ -25,7 +25,7 @@ do:
       url:
         $op: str.join
         values:
-          - https://x0k.github.io/json-to-table/?createOnOpen=true&data=
+          - https://x0k.github.io/json-table/?createOnOpen=true&data=
           - $op: str.compress
             value:
               $op: if
